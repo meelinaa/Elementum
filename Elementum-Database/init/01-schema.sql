@@ -30,18 +30,38 @@ CREATE TABLE IF NOT EXISTS price_history (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     metal_id INT NOT NULL,
     currency VARCHAR(3) NOT NULL,
+    exchange VARCHAR(50),
+    symbol VARCHAR(100),
 
-    -- Prices (DECIMAL for financial precision)
-    price_unze DECIMAL(18, 4) NOT NULL,
-    price_gram_24k DECIMAL(18, 4),
+    -- Timestamps (API)
+    reference_timestamp BIGINT,
+    open_time BIGINT,
+    entry_date DATE NOT NULL,
+
+    -- Main price & OHLC (DECIMAL for financial precision)
+    price DECIMAL(18, 4) NOT NULL,
     prev_close_price DECIMAL(18, 4),
     open_price DECIMAL(18, 4),
     low_price DECIMAL(18, 4),
     high_price DECIMAL(18, 4),
 
-    -- API metadata
-    reference_timestamp BIGINT,
-    entry_date DATE NOT NULL,
+    -- Change
+    ch DECIMAL(18, 4),
+    chp DECIMAL(18, 4),
+
+    -- Ask/Bid
+    ask DECIMAL(18, 4),
+    bid DECIMAL(18, 4),
+
+    -- Price per gram by purity (24k, 22k, 21k, 20k, 18k, 16k, 14k, 10k)
+    price_gram_24k DECIMAL(18, 4),
+    price_gram_22k DECIMAL(18, 4),
+    price_gram_21k DECIMAL(18, 4),
+    price_gram_20k DECIMAL(18, 4),
+    price_gram_18k DECIMAL(18, 4),
+    price_gram_16k DECIMAL(18, 4),
+    price_gram_14k DECIMAL(18, 4),
+    price_gram_10k DECIMAL(18, 4),
 
     FOREIGN KEY (metal_id) REFERENCES metals(id) ON DELETE CASCADE,
     UNIQUE KEY uk_metal_currency_date (metal_id, currency, entry_date),

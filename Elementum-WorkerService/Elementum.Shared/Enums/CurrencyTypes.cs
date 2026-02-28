@@ -3,6 +3,6 @@
 public enum CurrencyTypes
 {
     USD,
-    CHF,
-    EUR
+    //CHF,
+    //EUR
 }

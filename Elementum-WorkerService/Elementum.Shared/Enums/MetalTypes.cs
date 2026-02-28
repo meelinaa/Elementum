@@ -1,4 +1,4 @@
-﻿namespace Elementum.Shared.Enums;
+namespace Elementum.Shared.Enums;
 
 public enum MetalTypes
 {
