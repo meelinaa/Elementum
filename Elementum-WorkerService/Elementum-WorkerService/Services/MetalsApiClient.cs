@@ -9,17 +9,20 @@ namespace Elementum_WorkerService.Services;
 
 /// <summary>
 /// Client for the GoldAPI (goldapi.io). Fetches current metal prices (XAU, XAG, etc.) in USD.
+/// Uses <see cref="IHttpClientFactory"/> for managed HTTP client lifecycle (connection pooling, no socket exhaustion).
 /// </summary>
 public class MetalsApiClient : IMetalsApiClient
 {
     private readonly ILogger<MetalsApiClient> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly MetalsApiOptions _options;
 
     /// <summary>
-    /// Initializes the client with logging and API options (key, base URL).
+    /// Initializes the client with HTTP client factory, logging and API options.
     /// </summary>
-    public MetalsApiClient(ILogger<MetalsApiClient> logger, IOptions<MetalsApiOptions> options)
+    public MetalsApiClient(IHttpClientFactory httpClientFactory, ILogger<MetalsApiClient> logger, IOptions<MetalsApiOptions> options)
     {
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
         _options = options.Value;
     }
@@ -32,6 +35,8 @@ public class MetalsApiClient : IMetalsApiClient
     /// <returns>List of daily price DTOs from the API; may be empty.</returns>
     public async Task<IReadOnlyList<DailyPrices>> GetPricesAsync(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         var results = new List<DailyPrices>();
         if (string.IsNullOrEmpty(_options.ApiKey))
         {
@@ -39,12 +44,11 @@ public class MetalsApiClient : IMetalsApiClient
             return results;
         }
 
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Add("x-access-token", _options.ApiKey);
-        client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+        var client = _httpClientFactory.CreateClient("GoldApi");
 
         foreach (MetalTypes metal in Enum.GetValues(typeof(MetalTypes)))
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var symbol = metal.ToApiSymbol();
             _logger.LogInformation("Fetching data for {Metal} ({Symbol})...", metal, symbol);
             var data = await FetchMetalDataAsync(client, symbol, CurrencyTypes.USD.ToString(), cancellationToken);
@@ -73,7 +77,7 @@ public class MetalsApiClient : IMetalsApiClient
     {
         try
         {
-            var url = $"https://www.goldapi.io/api/{metal}/{currency}";
+            var url = $"api/{metal}/{currency}";
             return await client.GetFromJsonAsync<DailyPrices>(url, cancellationToken);
         }
         catch

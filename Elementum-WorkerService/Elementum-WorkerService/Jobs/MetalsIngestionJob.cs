@@ -1,4 +1,5 @@
 using Elementum_WorkerService.Abstractions;
+using Elementum_WorkerService.Observability;
 
 namespace Elementum_WorkerService.Jobs;
 
@@ -11,20 +12,23 @@ public class MetalsIngestionJob
     private readonly IMetalsApiClient _apiClient;
     private readonly IDatabaseCheckService _databaseCheck;
     private readonly IPriceHistoryRepository _repository;
+    private readonly IngestionMetrics _metrics;
 
     /// <summary>
-    /// Initializes the job with its dependencies (API client, database checks, repository).
+    /// Initializes the job with its dependencies (API client, database checks, repository, metrics).
     /// </summary>
     public MetalsIngestionJob(
         ILogger<MetalsIngestionJob> logger,
         IMetalsApiClient apiClient,
         IDatabaseCheckService databaseCheck,
-        IPriceHistoryRepository repository)
+        IPriceHistoryRepository repository,
+        IngestionMetrics metrics)
     {
         _logger = logger;
         _apiClient = apiClient;
         _databaseCheck = databaseCheck;
         _repository = repository;
+        _metrics = metrics;
     }
 
     /// <summary>
@@ -34,17 +38,28 @@ public class MetalsIngestionJob
     /// <param name="cancellationToken">Cancellation token.</param>
     public async Task RunAsync(CancellationToken cancellationToken = default)
     {
+        _metrics.RecordRun();
         _logger.LogInformation("Metals ingestion job started.");
-        if (!await _databaseCheck.IsDatabaseAvailableAsync(cancellationToken))
-            return;
-        if (await _databaseCheck.DataExistsForTodayAsync(cancellationToken))
-            return;
+        try
+        {
+            if (!await _databaseCheck.IsDatabaseAvailableAsync(cancellationToken))
+                return;
+            if (await _databaseCheck.DataExistsForTodayAsync(cancellationToken))
+                return;
 
-        var prices = await _apiClient.GetPricesAsync(cancellationToken);
-        if (prices.Count == 0)
-            return;
+            var prices = await _apiClient.GetPricesAsync(cancellationToken);
+            if (prices.Count == 0)
+                return;
 
-        await _repository.SavePricesAsync(prices, cancellationToken);
-        _logger.LogInformation("Metals ingestion job completed.");
+            await _repository.SavePricesAsync(prices, cancellationToken);
+            _metrics.RecordPricesSaved(prices.Count);
+            _logger.LogInformation("Metals ingestion job completed.");
+        }
+        catch (Exception ex)
+        {
+            _metrics.RecordError(ex.GetType().Name);
+            _logger.LogError(ex, "Metals ingestion job failed");
+            throw;
+        }
     }
 }

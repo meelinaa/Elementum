@@ -8,12 +8,19 @@ namespace Elementum.WorkerService.Tests.Services;
 
 public class MetalsApiClientTests
 {
+    private static IHttpClientFactory CreateHttpClientFactory(HttpClient? client = null)
+    {
+        var factory = new Mock<IHttpClientFactory>();
+        factory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(client ?? new HttpClient());
+        return factory.Object;
+    }
+
     [Fact]
     public async Task GetPricesAsync_WhenApiKeyIsEmpty_ReturnsEmptyList()
     {
         var options = Options.Create(new MetalsApiOptions { ApiKey = "" });
         var logger = new Mock<ILogger<MetalsApiClient>>().Object;
-        var client = new MetalsApiClient(logger, options);
+        var client = new MetalsApiClient(CreateHttpClientFactory(), logger, options);
 
         var result = await client.GetPricesAsync();
 
@@ -26,7 +33,7 @@ public class MetalsApiClientTests
     {
         var options = Options.Create(new MetalsApiOptions { ApiKey = null! });
         var logger = new Mock<ILogger<MetalsApiClient>>().Object;
-        var client = new MetalsApiClient(logger, options);
+        var client = new MetalsApiClient(CreateHttpClientFactory(), logger, options);
 
         var result = await client.GetPricesAsync();
 
@@ -39,12 +46,11 @@ public class MetalsApiClientTests
     {
         var options = Options.Create(new MetalsApiOptions { ApiKey = "test-key" });
         var logger = new Mock<ILogger<MetalsApiClient>>().Object;
-        var client = new MetalsApiClient(logger, options);
+        var client = new MetalsApiClient(CreateHttpClientFactory(), logger, options);
 
         var result = await client.GetPricesAsync();
 
         Assert.NotNull(result);
-        // With real HTTP the list may be empty (no network) or contain data; we only assert it doesn't throw and returns a list.
         Assert.True(result.Count >= 0);
     }
 }

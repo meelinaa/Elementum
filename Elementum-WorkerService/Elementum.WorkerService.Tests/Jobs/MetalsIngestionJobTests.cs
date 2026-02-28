@@ -1,6 +1,7 @@
 using Elementum.Shared.Objects;
 using Elementum_WorkerService.Abstractions;
 using Elementum_WorkerService.Jobs;
+using Elementum_WorkerService.Observability;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -12,6 +13,7 @@ public class MetalsIngestionJobTests
     private readonly Mock<IMetalsApiClient> _apiClientMock;
     private readonly Mock<IDatabaseCheckService> _databaseCheckMock;
     private readonly Mock<IPriceHistoryRepository> _repositoryMock;
+    private readonly IngestionMetrics _metrics;
 
     public MetalsIngestionJobTests()
     {
@@ -19,19 +21,22 @@ public class MetalsIngestionJobTests
         _apiClientMock = new Mock<IMetalsApiClient>();
         _databaseCheckMock = new Mock<IDatabaseCheckService>();
         _repositoryMock = new Mock<IPriceHistoryRepository>();
+        _metrics = new IngestionMetrics();
     }
 
     private static MetalsIngestionJob CreateJob(
         ILogger<MetalsIngestionJob>? logger = null,
         IMetalsApiClient? apiClient = null,
         IDatabaseCheckService? databaseCheck = null,
-        IPriceHistoryRepository? repository = null)
+        IPriceHistoryRepository? repository = null,
+        IngestionMetrics? metrics = null)
     {
         return new MetalsIngestionJob(
             logger ?? new Mock<ILogger<MetalsIngestionJob>>().Object,
             apiClient ?? new Mock<IMetalsApiClient>().Object,
             databaseCheck ?? new Mock<IDatabaseCheckService>().Object,
-            repository ?? new Mock<IPriceHistoryRepository>().Object);
+            repository ?? new Mock<IPriceHistoryRepository>().Object,
+            metrics ?? new IngestionMetrics());
     }
 
     [Fact]
@@ -39,7 +44,7 @@ public class MetalsIngestionJobTests
     {
         _databaseCheckMock.Setup(x => x.IsDatabaseAvailableAsync(It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
-        var job = CreateJob(_loggerMock.Object, _apiClientMock.Object, _databaseCheckMock.Object, _repositoryMock.Object);
+        var job = CreateJob(_loggerMock.Object, _apiClientMock.Object, _databaseCheckMock.Object, _repositoryMock.Object, _metrics);
         await job.RunAsync();
 
         _databaseCheckMock.Verify(x => x.IsDatabaseAvailableAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -54,7 +59,7 @@ public class MetalsIngestionJobTests
         _databaseCheckMock.Setup(x => x.IsDatabaseAvailableAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _databaseCheckMock.Setup(x => x.DataExistsForTodayAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
-        var job = CreateJob(_loggerMock.Object, _apiClientMock.Object, _databaseCheckMock.Object, _repositoryMock.Object);
+        var job = CreateJob(_loggerMock.Object, _apiClientMock.Object, _databaseCheckMock.Object, _repositoryMock.Object, _metrics);
         await job.RunAsync();
 
         _databaseCheckMock.Verify(x => x.IsDatabaseAvailableAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -70,7 +75,7 @@ public class MetalsIngestionJobTests
         _databaseCheckMock.Setup(x => x.DataExistsForTodayAsync(It.IsAny<CancellationToken>())).ReturnsAsync(false);
         _apiClientMock.Setup(x => x.GetPricesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(Array.Empty<DailyPrices>());
 
-        var job = CreateJob(_loggerMock.Object, _apiClientMock.Object, _databaseCheckMock.Object, _repositoryMock.Object);
+        var job = CreateJob(_loggerMock.Object, _apiClientMock.Object, _databaseCheckMock.Object, _repositoryMock.Object, _metrics);
         await job.RunAsync();
 
         _apiClientMock.Verify(x => x.GetPricesAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -88,7 +93,7 @@ public class MetalsIngestionJobTests
         _databaseCheckMock.Setup(x => x.DataExistsForTodayAsync(It.IsAny<CancellationToken>())).ReturnsAsync(false);
         _apiClientMock.Setup(x => x.GetPricesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(prices);
 
-        var job = CreateJob(_loggerMock.Object, _apiClientMock.Object, _databaseCheckMock.Object, _repositoryMock.Object);
+        var job = CreateJob(_loggerMock.Object, _apiClientMock.Object, _databaseCheckMock.Object, _repositoryMock.Object, _metrics);
         await job.RunAsync();
 
         _apiClientMock.Verify(x => x.GetPricesAsync(It.IsAny<CancellationToken>()), Times.Once);
