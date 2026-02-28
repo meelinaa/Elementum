@@ -39,10 +39,10 @@ services:
         max-file: "3"
 
     # Persistente Speicherung: Daten überleben Container-Neustarts
-    # "mysql_data" = Name des Docker-Volumes (wird automatisch erstellt)
-    # "/var/lib/mysql" = Pfad im Container, wo MySQL Daten speichert
     volumes:
       - mysql_data:/var/lib/mysql
+      # Init-Skripte laufen nur beim ersten Start (leere DB)
+      - ./init:/docker-entrypoint-initdb.d:ro
 
     # Optional: Gesundheitstest – Docker prüft, ob MySQL bereit ist
     # Nutzt Root-Passwort aus .env (kein Passwort im YAML)
