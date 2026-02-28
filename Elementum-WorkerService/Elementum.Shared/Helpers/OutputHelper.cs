@@ -1,4 +1,4 @@
-namespace Elementum_WorkerService;
+namespace Elementum.Shared.Helpers;
 
 /// <summary>
 /// Writes to both ILogger and (in Development) to the console with a single call.

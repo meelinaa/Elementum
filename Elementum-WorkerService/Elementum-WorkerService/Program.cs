@@ -1,3 +1,4 @@
+using Elementum.Shared.Helpers;
 using Elementum_WorkerService;
 
 var builder = Host.CreateApplicationBuilder(args);

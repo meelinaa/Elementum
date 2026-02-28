@@ -1,3 +1,5 @@
+using Elementum.Shared.Helpers;
+
 namespace Elementum_WorkerService;
 
 public class Worker(OutputHelper output, IHostEnvironment env) : BackgroundService
@@ -40,7 +42,12 @@ public class Worker(OutputHelper output, IHostEnvironment env) : BackgroundServi
     private async Task DoWorkAsync()
     {
         output.WriteLine("Work is being done...");
-        // My Logic
+        // 1. get Request to the API
+
+
+
+        // 2. process the Request
+        // 3. save the result to the database
         await Task.Delay(1000);
     }
 }
