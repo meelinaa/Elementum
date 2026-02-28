@@ -1,0 +1,62 @@
+# =============================================================================
+# Docker Compose für Elementum-Database
+# Start: docker compose up -d
+# Stopp: docker compose down
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # MySQL-Datenbankservice
+  # ---------------------------------------------------------------------------
+  mysql:
+    # Offizielles MySQL-Image von Docker Hub (aktuell stabile Version 8)
+    image: mysql:8
+
+    # Name des Containers (erscheint bei docker ps)
+    container_name: elementum-mysql
+
+    # Container startet neu, wenn er abstürzt (z.B. bei DB-Fehlern)
+    restart: unless-stopped
+
+    # Umgebungsvariablen für MySQL (Werte aus .env werden hier eingetragen)
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+
+    # Port-Mapping: Host-Port aus .env (MYSQL_PORT) → Container-Port 3306 (immer 3306 im Container)
+    # Verbindung: localhost:${MYSQL_PORT}
+    ports:
+      - "${MYSQL_PORT}:3306"
+
+    # Logging: Begrenzt Größe und Anzahl der Logdateien (verhindert volle Festplatte)
+    # json-file = Standard-Driver, Logs mit "docker compose logs mysql" sichtbar
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Persistente Speicherung: Daten überleben Container-Neustarts
+    # "mysql_data" = Name des Docker-Volumes (wird automatisch erstellt)
+    # "/var/lib/mysql" = Pfad im Container, wo MySQL Daten speichert
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+    # Optional: Gesundheitstest – Docker prüft, ob MySQL bereit ist
+    # Nutzt Root-Passwort aus .env (kein Passwort im YAML)
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+# =============================================================================
+# Volumes (benannte Datenspeicher)
+# =============================================================================
+volumes:
+  # Volume für MySQL-Daten – bleibt erhalten bei "docker compose down"
+  # Löschen mit: docker compose down -v (dann sind alle Daten weg!)
+  mysql_data:
