@@ -1,4 +1,3 @@
-using Elementum.Shared.Helpers;
 using Elementum_WorkerService;
 using Elementum_WorkerService.Options;
 
@@ -14,7 +13,6 @@ catch (FileNotFoundException) { /* .env optional when using real env vars */ }
 
 var builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.AddSingleton<OutputHelper>();
 builder.Services.AddHostedService<Worker>();
 
 // Bind options from env / appsettings (keys: METALS_API_KEY, METALS_API_BASE_URL, etc.)

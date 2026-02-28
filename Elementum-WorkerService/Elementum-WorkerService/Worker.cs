@@ -1,14 +1,12 @@
 using Elementum.Shared.Enums;
-using Elementum.Shared.Helpers;
 using Elementum.Shared.Objects;
 using Elementum_WorkerService.Options;
 using Microsoft.Extensions.Options;
 using System.Net.Http.Json;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Elementum_WorkerService;
 
-public class Worker(OutputHelper output, IOptions<MetalsApiOptions> apiOptions, IHostEnvironment env) : BackgroundService
+public class Worker(ILogger<Worker> logger, IOptions<MetalsApiOptions> apiOptions, IHostEnvironment env) : BackgroundService
 {
     private readonly TimeSpan _runTime = new(12, 0, 0); // 12:00
     private bool _isFirstRun = true; // Flag for the initial start
@@ -20,7 +18,7 @@ public class Worker(OutputHelper output, IOptions<MetalsApiOptions> apiOptions, 
             // DEBUG: Start immediately the first time in development mode
             if (_isFirstRun && env.IsDevelopment())
             {
-                output.WriteLine("Debug mode detected: Start first run immediately...");
+                logger.LogInformation("Debug mode detected: Start first run immediately...");
                 await DoWorkAsync();
                 _isFirstRun = false; // Then back to the normal rhythm
             }
@@ -34,7 +32,7 @@ public class Worker(OutputHelper output, IOptions<MetalsApiOptions> apiOptions, 
             }
 
             var delay = nextRun - now;
-            output.Info($"Next regular run: {nextRun}");
+            logger.LogInformation("Next regular run: {NextRun}", nextRun);
 
             await Task.Delay(delay, stoppingToken);
 
@@ -47,7 +45,7 @@ public class Worker(OutputHelper output, IOptions<MetalsApiOptions> apiOptions, 
 
     private async Task DoWorkAsync()
     {
-        output.WriteLine("Work is being done...");
+        logger.LogInformation("Work is being done...");
         // 1. get Request to the API
         string? result = await GetAPIDataAsync();
 
@@ -62,7 +60,7 @@ public class Worker(OutputHelper output, IOptions<MetalsApiOptions> apiOptions, 
         var opts = apiOptions.Value;
         if (string.IsNullOrEmpty(opts.ApiKey))
         {
-            output.Warning("METALS_API_KEY not set; check .env or environment variables.");
+            logger.LogWarning("METALS_API_KEY not set; check .env or environment variables.");
             return null;
         }
 
@@ -73,12 +71,12 @@ public class Worker(OutputHelper output, IOptions<MetalsApiOptions> apiOptions, 
         foreach (MetalTypes metal in Enum.GetValues(typeof(MetalTypes)))
         {
             string symbol = metal.ToApiSymbol();
-            output.WriteLine($"Fetching data for {metal} ({symbol})...");
+            logger.LogInformation("Fetching data for {Metal} ({Symbol})...", metal, symbol);
             DailyPrices? data = await FetchMetalDataAsync(client, opts.BaseUrl, symbol, CurrencyTypes.USD.ToString());
             if (data != null)
-                output.WriteLine($"Price for {metal}: {data.Price} USD");
+                logger.LogInformation("Price for {Metal}: {Price} USD", metal, data.Price);
             else
-                output.Warning($"Failed to fetch data for {metal}");
+                logger.LogWarning("Failed to fetch data for {Metal}", metal);
             await Task.Delay(1000);
         }
 
@@ -89,14 +87,17 @@ public class Worker(OutputHelper output, IOptions<MetalsApiOptions> apiOptions, 
     {
         try
         {
-            // GoldAPI: https://www.goldapi.io/api/{symbol}/{currency} (symbol = XAU, XAG, etc.)
+            //// GoldAPI base URL pattern: .../api/:symbol/:currency (no date = latest)
+            //string url = string.IsNullOrEmpty(baseUrl)
+            //    ? $"https://www.goldapi.io/api/{metal}/{currency}"
+            //    : baseUrl.Replace(":symbol", metal).Replace(":currency", currency).Replace(":date?", "").Trim();
             string url = $"https://www.goldapi.io/api/{metal}/{currency}";
             DailyPrices? result = await client.GetFromJsonAsync<DailyPrices>(url);
             return result;
         }
         catch (Exception ex)
         {
-            output.Error($"Request failed: {ex.Message}", ex);
+            logger.LogError(ex, "Request failed: {Message}", ex.Message);
             return null;
         }
     }
