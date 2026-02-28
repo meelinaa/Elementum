@@ -8,9 +8,9 @@ public static class MetalTypesExtensions
     public static string ToApiSymbol(this MetalTypes metal) => metal switch
     {
         MetalTypes.Gold => "XAU",
-        MetalTypes.Silver => "XAG",
-        MetalTypes.Platinum => "XPT",
-        MetalTypes.Palladium => "XPD",
+        //MetalTypes.Silver => "XAG",
+        //MetalTypes.Platinum => "XPT",
+        //MetalTypes.Palladium => "XPD",
         _ => metal.ToString()
     };
 }

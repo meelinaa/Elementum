@@ -1,5 +1,8 @@
+using Elementum.Infrastructure.Data;
 using Elementum_WorkerService;
+using Elementum_WorkerService.Jobs;
 using Elementum_WorkerService.Options;
+using Elementum_WorkerService.Services;
 
 // Load .env from current or parent directory (optional; in production use real env vars)
 try
@@ -12,6 +15,17 @@ try
 catch (FileNotFoundException) { /* .env optional when using real env vars */ }
 
 var builder = Host.CreateApplicationBuilder(args);
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? builder.Configuration["CONNECTION_STRING"];
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection or CONNECTION_STRING in appsettings.json or .env.");
+builder.Services.AddElementumDbContext(connectionString);
+
+builder.Services.AddSingleton<MetalsApiClient>();
+builder.Services.AddSingleton<DatabaseCheckService>();
+builder.Services.AddSingleton<PriceHistoryRepository>();
+builder.Services.AddScoped<MetalsIngestionJob>();
 
 builder.Services.AddHostedService<Worker>();
 

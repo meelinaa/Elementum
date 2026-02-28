@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="Elementum-WorkerService/Elementum-WorkerService.csproj" />
+  <Project Path="Elementum.Infrastructure/Elementum.Infrastructure.csproj" />
   <Project Path="Elementum.Shared/Elementum.Shared.csproj" />
 </Solution>

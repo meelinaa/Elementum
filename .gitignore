@@ -21,4 +21,6 @@ local.env
 *.local
 *.secret
 
+appsettings.json
+
 
