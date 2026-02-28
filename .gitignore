@@ -1,0 +1,24 @@
+# Visual Studio temporäre Dateien
+.vs/
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+*.shellmnt
+*.sln.docstates
+
+# Falls du Node.js/React nutzt
+node_modules/
+.env
+
+# Ignore all files that may contain real secrets.
+# Only env.example and this .gitignore are committed.
+.env
+.env.local
+env.local
+credentials.env
+local.env
+*.local
+*.secret
+
+
