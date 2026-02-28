@@ -1,4 +1,5 @@
 using Elementum.Infrastructure.Data;
+using Elementum_WorkerService.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Elementum_WorkerService.Services;
@@ -6,7 +7,7 @@ namespace Elementum_WorkerService.Services;
 /// <summary>
 /// Provides preconditions for the ingestion job: database connectivity and whether data for today already exists.
 /// </summary>
-public class DatabaseCheckService
+public class DatabaseCheckService : IDatabaseCheckService
 {
     private readonly ILogger<DatabaseCheckService> _logger;
     private readonly IServiceScopeFactory _scopeFactory;

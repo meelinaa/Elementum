@@ -1,5 +1,6 @@
 using Elementum.Infrastructure.Data;
 using Elementum.Shared.Objects;
+using Elementum_WorkerService.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -8,7 +9,7 @@ namespace Elementum_WorkerService.Services;
 /// <summary>
 /// Persists API price data into the <c>price_history</c> table. Resolves <c>metal_id</c> from the <c>metals</c> table by symbol.
 /// </summary>
-public class PriceHistoryRepository
+public class PriceHistoryRepository : IPriceHistoryRepository
 {
     private readonly ILogger<PriceHistoryRepository> _logger;
     private readonly IServiceScopeFactory _scopeFactory;

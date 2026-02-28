@@ -1,4 +1,4 @@
-using Elementum_WorkerService.Services;
+using Elementum_WorkerService.Abstractions;
 
 namespace Elementum_WorkerService.Jobs;
 
@@ -8,15 +8,18 @@ namespace Elementum_WorkerService.Jobs;
 public class MetalsIngestionJob
 {
     private readonly ILogger<MetalsIngestionJob> _logger;
-    private readonly MetalsApiClient _apiClient;
-    private readonly DatabaseCheckService _databaseCheck;
-    private readonly PriceHistoryRepository _repository;
+    private readonly IMetalsApiClient _apiClient;
+    private readonly IDatabaseCheckService _databaseCheck;
+    private readonly IPriceHistoryRepository _repository;
 
+    /// <summary>
+    /// Initializes the job with its dependencies (API client, database checks, repository).
+    /// </summary>
     public MetalsIngestionJob(
         ILogger<MetalsIngestionJob> logger,
-        MetalsApiClient apiClient,
-        DatabaseCheckService databaseCheck,
-        PriceHistoryRepository repository)
+        IMetalsApiClient apiClient,
+        IDatabaseCheckService databaseCheck,
+        IPriceHistoryRepository repository)
     {
         _logger = logger;
         _apiClient = apiClient;

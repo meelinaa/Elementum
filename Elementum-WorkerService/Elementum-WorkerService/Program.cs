@@ -1,5 +1,6 @@
 using Elementum.Infrastructure.Data;
 using Elementum_WorkerService;
+using Elementum_WorkerService.Abstractions;
 using Elementum_WorkerService.Jobs;
 using Elementum_WorkerService.Options;
 using Elementum_WorkerService.Services;
@@ -22,9 +23,9 @@ if (string.IsNullOrWhiteSpace(connectionString))
     throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection or CONNECTION_STRING in appsettings.json or .env.");
 builder.Services.AddElementumDbContext(connectionString);
 
-builder.Services.AddSingleton<MetalsApiClient>();
-builder.Services.AddSingleton<DatabaseCheckService>();
-builder.Services.AddSingleton<PriceHistoryRepository>();
+builder.Services.AddSingleton<IMetalsApiClient, MetalsApiClient>();
+builder.Services.AddSingleton<IDatabaseCheckService, DatabaseCheckService>();
+builder.Services.AddSingleton<IPriceHistoryRepository, PriceHistoryRepository>();
 builder.Services.AddScoped<MetalsIngestionJob>();
 
 builder.Services.AddHostedService<Worker>();
