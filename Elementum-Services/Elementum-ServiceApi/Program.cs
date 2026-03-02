@@ -1,10 +1,25 @@
 using Elementum.Infrastructure.Data;
+using Elementum_ServiceApi.Middleware;
 using Elementum_ServiceApi.Services;
 using Elementum_ServiceApi.Services.Interfaces;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Serilog;
 using System.Text.Json;
 
+// Bootstrap Serilog so that startup and config loading can be logged.
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
+
+try
+{
 var builder = WebApplication.CreateBuilder(args);
+
+// Replace default logging with Serilog (structured logs, config from appsettings).
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .ReadFrom.Configuration(context.Configuration)
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("Application", "Elementum-ServiceApi"));
 
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -35,18 +50,31 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
+// Correlation ID and structured logging: run early so every log line includes CorrelationId.
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseSerilogRequestLogging(options =>
+{
+    options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+    options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+    {
+        var correlationId = httpContext.Items[CorrelationIdMiddleware.HttpContextItemKey]?.ToString();
+        if (!string.IsNullOrEmpty(correlationId))
+            diagnosticContext.Set("CorrelationId", correlationId);
+    };
+});
+
 // Global exception handler: unhandled exceptions return ProblemDetails JSON (no raw exception leak).
 app.UseExceptionHandler(exceptionHandlerApp =>
 {
     exceptionHandlerApp.Run(async context =>
     {
-        var problemDetailsService = context.RequestServices.GetRequiredService<Microsoft.AspNetCore.Mvc.Infrastructure.IProblemDetailsService>();
+        var problemDetailsService = context.RequestServices.GetRequiredService<IProblemDetailsService>();
         var exceptionHandlerFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
         if (exceptionHandlerFeature?.Error != null)
         {
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;
             context.Response.ContentType = "application/problem+json";
-            await problemDetailsService.WriteAsync(new Microsoft.AspNetCore.Mvc.ProblemDetailsContext
+            await problemDetailsService.WriteAsync(new ProblemDetailsContext
             {
                 HttpContext = context,
                 ProblemDetails = new Microsoft.AspNetCore.Mvc.ProblemDetails
@@ -70,10 +98,10 @@ if (app.Environment.IsDevelopment())
 }
 else // In production
 {
+    app.UseHttpsRedirection();
     app.UseCors("FrontendPolicy"); // Use the defined CORS policy in production to restrict access to the frontend URL.
 }
 
-app.UseHttpsRedirection();
 app.UseAuthorization();
 app.UseStatusCodePages(); // Return status code pages for non-successful HTTP responses (e.g. 404, 500) instead of empty responses.
 
@@ -105,4 +133,14 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 
 app.MapControllers();
 
+Log.Information("Elementum-ServiceApi started");
 app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

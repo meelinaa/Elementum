@@ -57,42 +57,57 @@ public class ElementumDbContext : DbContext, IElementumDbContext
 
     public async Task<PriceHistory?> GetPriceHistoryByMetalSymbolLatest(string symbol, CancellationToken ct)
     {
-        return await PriceHistory.Where(x => x.Symbol == symbol)
-                                 .OrderByDescending(x => x.EntryDate)
-                                 .FirstOrDefaultAsync(ct);
+        return await PriceHistory
+            .Include(x => x.Metal)
+            .Where(x => x.Metal != null && x.Metal.Symbol == symbol)
+            .OrderByDescending(x => x.EntryDate)
+            .FirstOrDefaultAsync(ct);
     }
 
     public async Task<IEnumerable<PriceHistory>> GetPriceHistoryAll(CancellationToken ct)
     {
-        return await PriceHistory.ToListAsync(ct);
+        return await PriceHistory
+            .Include(x => x.Metal)
+            .ToListAsync(ct);
     }
 
     public async Task<IEnumerable<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken ct)
     {
-        return await PriceHistory.GroupBy(x => x.Symbol) 
-                                 .Select(group => group
-                                 .OrderByDescending(x => x.EntryDate) 
-                                 .First())
-                                 .ToListAsync(ct);
+        return await PriceHistory
+            .Include(x => x.Metal)
+            .GroupBy(x => x.MetalId)
+            .Select(group => group
+                .OrderByDescending(x => x.EntryDate)
+                .First())
+            .ToListAsync(ct);
     }
 
     public async Task<IEnumerable<PriceHistory>> GetPriceHistoryByMetalSymbol(string symbol, CancellationToken ct)
     {
-        return await PriceHistory.Where(x => x.Symbol == symbol).ToListAsync(ct);
+        return await PriceHistory
+            .Include(x => x.Metal)
+            .Where(x => x.Metal != null && x.Metal.Symbol == symbol)
+            .ToListAsync(ct);
     }
 
     public async Task<IEnumerable<PriceHistory>> GetPriceHistoryAllByDateRange(DateOnly firstDate, DateOnly lastDate, CancellationToken ct)
     {
-        return await PriceHistory.Where(x => x.EntryDate >= firstDate &&
-                                        x.EntryDate <= lastDate).ToListAsync(ct);
+        return await PriceHistory
+            .Include(x => x.Metal)
+            .Where(x => x.EntryDate >= firstDate &&
+                        x.EntryDate <= lastDate)
+            .ToListAsync(ct);
     }
-
 
     public async Task<IEnumerable<PriceHistory>> GetPriceHistoryByMetalSymbolAndDateRange(string symbol, DateOnly firstDate, DateOnly lastDate, CancellationToken ct)
     {
-        return await PriceHistory.Where(x => x.Symbol == symbol &&
-                                        x.EntryDate >= firstDate &&
-                                        x.EntryDate <= lastDate).ToListAsync(ct);
+        return await PriceHistory
+            .Include(x => x.Metal)
+            .Where(x => x.Metal != null &&
+                        x.Metal.Symbol == symbol &&
+                        x.EntryDate >= firstDate &&
+                        x.EntryDate <= lastDate)
+            .ToListAsync(ct);
     }
 
     #endregion PriceHistory

@@ -136,7 +136,7 @@ Optional improvement: **auto-interval**. Derive the interval from the requested 
 
 ---
 
-### Structured logging and correlation IDs
+### Structured logging and correlation IDs ✅
 
 **What:** Log important operations (request start/end, errors, maybe key queries) in a structured format (e.g. JSON). Add a correlation ID per request (in a header or response) and include it in every log line for that request.
 
