@@ -8,6 +8,7 @@ using Elementum_WorkerService.HealthChecks;
 using Elementum_WorkerService.Options;
 using Elementum_WorkerService.Services;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Extensions.Http;
@@ -69,6 +70,8 @@ builder.Services.AddScoped<MetalsIngestionJob>();
 
 builder.Services.AddHostedService<Worker>();
 
+builder.Host.UseWindowsService();
+
 // Bind options from env / appsettings (keys: METALS_API_KEY, METALS_API_BASE_URL, etc.)
 builder.Services.Configure<MetalsApiOptions>(options =>
 {
@@ -83,6 +86,19 @@ var app = builder.Build();
 
 app.MapHealthChecks("/health");
 
-Log.Information("Elementum Worker Service starting.");
-await app.RunAsync();
-Log.CloseAndFlush();
+try
+{
+    Log.Information("Elementum Worker Service starting.");
+    await app.RunAsync();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly.");
+    Console.WriteLine();
+    Console.WriteLine("Press any key to exit...");
+    Console.ReadKey(true);
+}
+finally
+{
+    Log.CloseAndFlush();
+}
