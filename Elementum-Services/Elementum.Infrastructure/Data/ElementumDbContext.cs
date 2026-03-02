@@ -71,6 +71,20 @@ public class ElementumDbContext : DbContext
 
     #region PriceHistory
 
+    public async Task<PriceHistory?> GetLastPriceHistoryEntryByMetalId(int metalId, CancellationToken ct)
+    {
+        return await PriceHistory.Where(x => x.MetalId == metalId)
+                                 .OrderByDescending(x => x.EntryDate)
+                                 .FirstOrDefaultAsync(ct);
+    }
+
+    public async Task<PriceHistory?> GetLastPriceHistoryEntryByMetalSymbol(string symbol, CancellationToken ct)
+    {
+        return await PriceHistory.Where(x => x.Symbol == symbol)
+                                 .OrderByDescending(x => x.EntryDate)
+                                 .FirstOrDefaultAsync(ct);
+    }
+
     /// <summary>Returns all rows from the <c>price_history</c> table.</summary>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>List of all price history entries.</returns>

@@ -5,7 +5,7 @@ using Elementum_ServiceApi.Services;
 namespace Elementum_ServiceApi.Controllers
 {
     [ApiController]
-    [Route("api")]
+    [Route("api/v1")]
     public class FrontendService : ControllerBase
     {
         private readonly ApiService _apiService;

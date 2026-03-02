@@ -11,19 +11,33 @@ builder.Services.AddElementumDbContext(connectionString);
 builder.Services.AddScoped<ApiService>();
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+// CORS configuration to allow requests from the frontend.
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendPolicy", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000") // TODO: needs to be changed to the actual frontend URL in production
+              .AllowAnyMethod()       
+              .AllowAnyHeader();                   
+    });
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// For development.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+}
+else // In production
+{
+    app.UseCors("FrontendPolicy");
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
 
 app.MapControllers();
