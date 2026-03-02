@@ -71,14 +71,7 @@ public class ElementumDbContext : DbContext
 
     #region PriceHistory
 
-    public async Task<PriceHistory?> GetLastPriceHistoryEntryByMetalId(int metalId, CancellationToken ct)
-    {
-        return await PriceHistory.Where(x => x.MetalId == metalId)
-                                 .OrderByDescending(x => x.EntryDate)
-                                 .FirstOrDefaultAsync(ct);
-    }
-
-    public async Task<PriceHistory?> GetLastPriceHistoryEntryByMetalSymbol(string symbol, CancellationToken ct)
+    public async Task<PriceHistory?> GetPriceHistoryByMetalSymbolLatest(string symbol, CancellationToken ct)
     {
         return await PriceHistory.Where(x => x.Symbol == symbol)
                                  .OrderByDescending(x => x.EntryDate)
@@ -93,13 +86,13 @@ public class ElementumDbContext : DbContext
         return await PriceHistory.ToListAsync(ct);
     }
 
-    /// <summary>Returns price history for a specific metal by its ID.</summary>
-    /// <param name="metalId">The metal ID (foreign key).</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>Price history for the given metal.</returns>
-    public async Task<IEnumerable<PriceHistory>> GetPriceHistoryByMetalId(int metalId, CancellationToken ct)
+    public async Task<IEnumerable<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken ct)
     {
-        return await PriceHistory.Where(x => x.MetalId == metalId).ToListAsync(ct);
+        return await PriceHistory.GroupBy(x => x.Symbol) 
+                                 .Select(group => group
+                                 .OrderByDescending(x => x.EntryDate) 
+                                 .First())
+                                 .ToListAsync(ct);
     }
 
     /// <summary>Returns price history for a specific metal by its symbol.</summary>
@@ -122,18 +115,6 @@ public class ElementumDbContext : DbContext
                                         x.EntryDate <= lastDate).ToListAsync(ct);
     }
 
-    /// <summary>Returns price history for a metal (by ID) within a date range (inclusive).</summary>
-    /// <param name="metalId">The metal ID.</param>
-    /// <param name="firstDate">Start date of the range.</param>
-    /// <param name="lastDate">End date of the range.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>Price history for the metal in the given date range.</returns>
-    public async Task<IEnumerable<PriceHistory>> GetPriceHistoryByMetalIdAndDateRange(int metalId, DateOnly firstDate, DateOnly lastDate, CancellationToken ct)
-    {
-        return await PriceHistory.Where(x => x.MetalId == metalId &&
-                                        x.EntryDate >= firstDate &&
-                                        x.EntryDate <= lastDate).ToListAsync(ct);
-    }
 
     /// <summary>Returns price history for a metal (by symbol) within a date range (inclusive).</summary>
     /// <param name="symbol">The metal symbol (e.g. XAU, XAG).</param>
@@ -189,6 +170,9 @@ public class ElementumDbContext : DbContext
             e.Property(x => x.PriceGram10k).HasColumnName("price_gram_10k");
         });
     }
+
+   
+
 
     #endregion CREATING
 }

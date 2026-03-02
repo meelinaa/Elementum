@@ -48,15 +48,37 @@ A prioritized list of improvements and features for the Elementum Service API, f
 
 ## 2.
 
-### Pagination and sorting for list endpoints
+### Aggregation
 
-**What:** For endpoints that return lists (e.g. all history, history by symbol), support query parameters like `page`, `pageSize` (or `limit`/`offset`), and optionally `sortBy` and `order` (asc/desc). Return metadata (total count, page count) in the response or in headers.
+**Aggregation / downsampling**: for **charts**. A chart needs one continuous line from start to end; it does **not** want “only the first 50 rows”. Sending thousands of daily points (e.g. 10 years × 365 ≈ 3 650 points) makes the payload huge and the chart slow or “muddy”. The solution is to **aggregate** by time interval so the API returns a small, fixed number of points (e.g. 50–200) that still represent the full range.
 
-**Why:** Large result sets become manageable; the frontend can show tables or infinite scroll without loading everything at once. It also reduces payload size and improves performance.
+#### Aggregation (downsampling) for chart endpoints
+
+**What:** For history endpoints used by charts, support an **interval** or **granularity** (e.g. query param `interval=daily|weekly|monthly|quarterly`). Serverside: group by that interval and return one value per bucket (e.g. average price per month). Aim for roughly **50–200 data points** per response: too few and the line looks jagged; too many and the browser struggles and the trend is hard to see.
+
+**Suggested mapping (time range → resolution):**
+
+| Time range   | Resolution (granularity)   | Approx. points in chart |
+|--------------|----------------------------|--------------------------|
+| 7 days       | 1 value per day            | 7                        |
+| 1 month      | 1 value per day            | ~30                      |
+| 1 year       | 1 value per week (e.g. avg)| ~52                      |
+| 5 years      | 1 value per month (e.g. avg)| ~60                     |
+| All time     | 1 value per quarter or year| variable                 |
+
+**How:** Extend the API with something like `interval` or `granularity`. In the service/repository, filter by date range and symbol as now, then:
+
+- If `interval=daily`: return one row per day (no grouping).
+- If `interval=monthly`: `GroupBy(Year, Month)`, return e.g. `Date = first of month`, `Price = Average(Price)` (or open/close if you prefer), ordered by date.
+- Same idea for weekly, quarterly, etc.
+
+Optional improvement: **auto-interval**. Derive the interval from the requested date range (e.g. if `lastDate - firstDate > 2 years` then use monthly) so the frontend can send only `firstDate` and `lastDate` and still get a good number of points. (Similar to TradingView / Yahoo Finance.)
+
+**Why:** Charts need the full time range in one response, but with a bounded number of points. Aggregation keeps the API and the frontend fast and the chart readable.
 
 ---
 
-### “Latest” / current price per metal
+### “Latest” / current price per metal ✅
 
 **What:** An endpoint that returns the most recent price (or latest row in `price_history`) per metal, e.g. `GET /api/metals/current` or include “latest price” in the metals list. Optionally add a simple day-over-day or week-over-week change.
 

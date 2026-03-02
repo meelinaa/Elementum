@@ -52,6 +52,12 @@ namespace Elementum_ServiceApi.Controllers
             return await _apiService.GetPriceHistoryAll(cancellationToken);
         }
 
+        [HttpGet("history/all/latest")]
+        public async Task<IEnumerable<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken cancellationToken)
+        {
+            return await _apiService.GetPriceHistoryAllLatest(cancellationToken);
+        }
+
         /// <summary>GET /api/history/{symbol} — price history for one metal. Returns JSON array.</summary>
         [HttpGet("history/{symbol}")]
         public async Task<ActionResult<IEnumerable<PriceHistory>>> GetPriceHistoryByMetalSymbol([FromRoute] SymbolRequest symbolRequest, CancellationToken cancellationToken)
@@ -60,6 +66,17 @@ namespace Elementum_ServiceApi.Controllers
                 return ValidationProblem(ModelState);
 
             var historyData = await _apiService.GetPriceHistoryByMetalSymbol(symbolRequest.Symbol.Trim(), cancellationToken);
+            return Ok(historyData);
+        }
+
+        /// <summary>GET /api/history/{symbol} — price history for one metal. Returns JSON array.</summary>
+        [HttpGet("history/{symbol}/latest")]
+        public async Task<ActionResult<IEnumerable<PriceHistory>>> GetPriceHistoryByMetalSymbolLatest([FromRoute] SymbolRequest symbolRequest, CancellationToken cancellationToken)
+        {
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            var historyData = await _apiService.GetPriceHistoryByMetalSymbolLatest(symbolRequest.Symbol.Trim(), cancellationToken);
             return Ok(historyData);
         }
 
