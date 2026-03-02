@@ -1,3 +1,4 @@
+using Elementum.Infrastructure.Data.Interfaces;
 using Elementum.Shared.Objects;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,7 +8,7 @@ namespace Elementum.Infrastructure.Data;
 /// EF Core DbContext for Elementum. Maps to the existing MySQL schema with tables <c>metals</c> and <c>price_history</c>.
 /// Used by the Worker (ingestion) and the ServiceApi (read API).
 /// </summary>
-public class ElementumDbContext : DbContext
+public class ElementumDbContext : DbContext, IElementumDbContext
 {
     /// <summary>Initializes the context with the given options (e.g. connection string, provider).</summary>
     public ElementumDbContext(DbContextOptions<ElementumDbContext> options)
@@ -27,12 +28,6 @@ public class ElementumDbContext : DbContext
 
     #region GET
 
-    /// <summary>
-    /// Returns whether any row in <c>price_history</c> has <see cref="PriceHistory.EntryDate"/> equal to today (UTC).
-    /// Used by the ingestion job to avoid duplicate daily runs.
-    /// </summary>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>True if at least one such row exists; otherwise false.</returns>
     public async Task<bool> IsDataAlreadyIngestedToday(CancellationToken ct)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -41,27 +36,16 @@ public class ElementumDbContext : DbContext
 
     #region Metals
 
-    /// <summary>Returns all metals from the <c>metals</c> table.</summary>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>List of all metals.</returns>
     public async Task<IEnumerable<Metals>> GetMetalsAll(CancellationToken ct)
     {
         return await Metals.ToListAsync(ct);
     }
 
-    /// <summary>Returns a single metal by its primary key.</summary>
-    /// <param name="id">The metal ID.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>The metal if found; otherwise <c>null</c>.</returns>
     public async Task<Metals?> GetMetalById(int id, CancellationToken ct)
     {
         return await Metals.FirstOrDefaultAsync(x => x.Id == id, ct);
     }
 
-    /// <summary>Returns a single metal by its symbol (e.g. XAU, XAG, XPT).</summary>
-    /// <param name="symbol">The metal symbol.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>The metal if found; otherwise <c>null</c>.</returns>
     public async Task<Metals?> GetMetalBySymbol(string symbol, CancellationToken ct)
     {
         return await Metals.FirstOrDefaultAsync(x => x.Symbol == symbol, ct);
@@ -78,9 +62,6 @@ public class ElementumDbContext : DbContext
                                  .FirstOrDefaultAsync(ct);
     }
 
-    /// <summary>Returns all rows from the <c>price_history</c> table.</summary>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>List of all price history entries.</returns>
     public async Task<IEnumerable<PriceHistory>> GetPriceHistoryAll(CancellationToken ct)
     {
         return await PriceHistory.ToListAsync(ct);
@@ -95,20 +76,11 @@ public class ElementumDbContext : DbContext
                                  .ToListAsync(ct);
     }
 
-    /// <summary>Returns price history for a specific metal by its symbol.</summary>
-    /// <param name="symbol">The metal symbol (e.g. XAU, XAG).</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>Price history for the given metal.</returns>
     public async Task<IEnumerable<PriceHistory>> GetPriceHistoryByMetalSymbol(string symbol, CancellationToken ct)
     {
         return await PriceHistory.Where(x => x.Symbol == symbol).ToListAsync(ct);
     }
 
-    /// <summary>Returns all price history within a date range (inclusive).</summary>
-    /// <param name="firstDate">Start date of the range.</param>
-    /// <param name="lastDate">End date of the range.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>Price history entries where <see cref="PriceHistory.EntryDate"/> is between the two dates.</returns>
     public async Task<IEnumerable<PriceHistory>> GetPriceHistoryAllByDateRange(DateOnly firstDate, DateOnly lastDate, CancellationToken ct)
     {
         return await PriceHistory.Where(x => x.EntryDate >= firstDate &&
@@ -116,12 +88,6 @@ public class ElementumDbContext : DbContext
     }
 
 
-    /// <summary>Returns price history for a metal (by symbol) within a date range (inclusive).</summary>
-    /// <param name="symbol">The metal symbol (e.g. XAU, XAG).</param>
-    /// <param name="firstDate">Start date of the range.</param>
-    /// <param name="lastDate">End date of the range.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>Price history for the metal in the given date range.</returns>
     public async Task<IEnumerable<PriceHistory>> GetPriceHistoryByMetalSymbolAndDateRange(string symbol, DateOnly firstDate, DateOnly lastDate, CancellationToken ct)
     {
         return await PriceHistory.Where(x => x.Symbol == symbol &&

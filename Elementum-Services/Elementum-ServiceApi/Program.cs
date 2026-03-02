@@ -1,5 +1,6 @@
 using Elementum.Infrastructure.Data;
 using Elementum_ServiceApi.Services;
+using Elementum_ServiceApi.Services.Interfaces;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using System.Text.Json;
 
@@ -10,7 +11,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? builder.Configuration["CONNECTION_STRING"]
     ?? throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection or CONNECTION_STRING.");
 builder.Services.AddElementumDbContext(connectionString);
-builder.Services.AddScoped<ApiService>();
+builder.Services.AddScoped<IApiService, ApiService>();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();

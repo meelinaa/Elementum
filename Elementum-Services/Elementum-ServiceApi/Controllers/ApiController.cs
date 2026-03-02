@@ -1,6 +1,6 @@
 using Elementum.Shared.Objects;
 using Elementum_ServiceApi.Models;
-using Elementum_ServiceApi.Services;
+using Elementum_ServiceApi.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Elementum_ServiceApi.Controllers
@@ -9,9 +9,9 @@ namespace Elementum_ServiceApi.Controllers
     [Route("api/v1")]
     public class FrontendService : ControllerBase
     {
-        private readonly ApiService _apiService;
+        private readonly IApiService _apiService;
 
-        public FrontendService(ApiService apiService)
+        public FrontendService(IApiService apiService)
         {
             _apiService = apiService;
         }

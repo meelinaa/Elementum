@@ -86,7 +86,7 @@ Optional improvement: **auto-interval**. Derive the interval from the requested 
 
 ---
 
-### API versioning
+### API versioning ✅
 
 **What:** Put the API under a version prefix, e.g. `/api/v1/metals`. When you introduce breaking changes later, you add `/api/v2/...` and can keep v1 for a while.
 
@@ -102,7 +102,7 @@ Optional improvement: **auto-interval**. Derive the interval from the requested 
 
 ---
 
-### Service interfaces (e.g. IApiService)
+### Service interfaces (e.g. IApiService) ✅
 
 **What:** Define interfaces for the service layer (e.g. `IMetalsService`, `IPriceHistoryService` or a single `IApiService`) and register the implementation in DI. Controllers depend on the interface, not the concrete class.
 
