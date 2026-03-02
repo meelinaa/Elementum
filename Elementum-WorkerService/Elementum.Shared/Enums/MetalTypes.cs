@@ -3,7 +3,7 @@ namespace Elementum.Shared.Enums;
 public enum MetalTypes
 {
     Gold,
-    //Silver,
-    //Platinum,
+    Silver,
+    Platinum,
     //Palladium
 }

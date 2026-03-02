@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Elementum-WorkerService\Elementum-WorkerService.csproj" />
+    <ProjectReference Include="..\Elementum-WorkerService\Elementum_WorkerService.csproj" />
     <ProjectReference Include="..\Elementum.Infrastructure\Elementum.Infrastructure.csproj" />
   </ItemGroup>
 

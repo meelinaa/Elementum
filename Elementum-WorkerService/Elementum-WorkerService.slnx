@@ -1,5 +1,5 @@
 <Solution>
-  <Project Path="Elementum-WorkerService/Elementum-WorkerService.csproj" />
+  <Project Path="Elementum-WorkerService/Elementum_WorkerService.csproj" />
   <Project Path="Elementum.Infrastructure/Elementum.Infrastructure.csproj" />
   <Project Path="Elementum.Shared/Elementum.Shared.csproj" />
   <Project Path="Elementum.WorkerService.Tests/Elementum.WorkerService.Tests.csproj" />

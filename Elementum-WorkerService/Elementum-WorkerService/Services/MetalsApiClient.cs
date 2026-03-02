@@ -17,6 +17,8 @@ public class MetalsApiClient : IMetalsApiClient
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly MetalsApiOptions _options;
 
+    public record ApiStatusResponse(bool Result);
+
     /// <summary>
     /// Initializes the client with HTTP client factory, logging and API options.
     /// </summary>
@@ -37,6 +39,7 @@ public class MetalsApiClient : IMetalsApiClient
     {
         cancellationToken.ThrowIfCancellationRequested();
 
+
         var results = new List<DailyPrices>();
         if (string.IsNullOrEmpty(_options.ApiKey))
         {
@@ -46,23 +49,30 @@ public class MetalsApiClient : IMetalsApiClient
 
         var client = _httpClientFactory.CreateClient("GoldApi");
 
-        foreach (MetalTypes metal in Enum.GetValues(typeof(MetalTypes)))
+        if (await ApiIsAviable(client, cancellationToken))
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var symbol = metal.ToApiSymbol();
-            _logger.LogInformation("Fetching data for {Metal} ({Symbol})...", metal, symbol);
-            var data = await FetchMetalDataAsync(client, symbol, CurrencyTypes.USD.ToString(), cancellationToken);
-            if (data != null)
+            foreach (MetalTypes metal in Enum.GetValues(typeof(MetalTypes)))
             {
-                _logger.LogInformation("Price for {Metal}: {Price} USD", metal, data.Price);
-                results.Add(data);
+                cancellationToken.ThrowIfCancellationRequested();
+                var symbol = metal.ToApiSymbol();
+                _logger.LogInformation("Fetching data for {Metal} ({Symbol})...", metal, symbol);
+                var data = await FetchMetalDataAsync(client, symbol, CurrencyTypes.USD.ToString(), cancellationToken);
+                if (data != null)
+                {
+                    _logger.LogInformation("Price for {Metal}: {Price} USD", metal, data.Price);
+                    results.Add(data);
+                }
+                else
+                    _logger.LogWarning("Failed to fetch data for {Metal}", metal);
+                await Task.Delay(1000, cancellationToken);
             }
-            else
-                _logger.LogWarning("Failed to fetch data for {Metal}", metal);
-            await Task.Delay(1000, cancellationToken);
+            return results;
         }
-
-        return results;
+        else
+        {
+            _logger.LogError("GoldAPI is not available. Check API key, endpoint, and network connectivity.");
+            return results;
+        }
     }
 
     /// <summary>
@@ -73,7 +83,7 @@ public class MetalsApiClient : IMetalsApiClient
     /// <param name="currency">Currency code (e.g. USD).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Deserialized daily price, or null on failure.</returns>
-    private static async Task<DailyPrices?> FetchMetalDataAsync(HttpClient client, string metal, string currency, CancellationToken cancellationToken)
+    private async Task<DailyPrices?> FetchMetalDataAsync(HttpClient client, string metal, string currency, CancellationToken cancellationToken)
     {
         try
         {
@@ -82,7 +92,35 @@ public class MetalsApiClient : IMetalsApiClient
         }
         catch
         {
+            _logger.LogError("Error fetching data for {Metal}/{Currency} from GoldAPI. Check API key, endpoint, and network connectivity.", metal, currency);
             return null;
+        }
+    }
+
+    /// <summary>
+    /// Checks whether the GoldAPI status endpoint (api/status) is reachable and returns <c>result: true</c>.
+    /// Logs and returns <c>false</c> on HTTP or deserialization errors.
+    /// </summary>
+    /// <param name="client">Configured HTTP client with base address and API key.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns><c>true</c> if the API responded with success and <c>result: true</c>; otherwise <c>false</c>.</returns>
+    private async Task<bool> ApiIsAviable(HttpClient client, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var response = await client.GetFromJsonAsync<ApiStatusResponse>("api/status", cancellationToken);
+
+            return response?.Result ?? false;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "HTTP request to GoldAPI failed. Check network connectivity and API endpoint.");
+            return false;
+        }
+        catch (Exception)
+        {
+            _logger.LogError("Unexpected error while checking GoldAPI status. Check API key and endpoint configuration.");
+            return false;
         }
     }
 }
