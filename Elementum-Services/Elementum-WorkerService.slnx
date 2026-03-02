@@ -2,6 +2,7 @@
   <Project Path="Elementum-ServiceApi/Elementum_ServiceApi.csproj" Id="e2b99fa3-97a0-414d-9cf5-bf0b3bfa4d9c" />
   <Project Path="Elementum-WorkerService/Elementum_WorkerService.csproj" />
   <Project Path="Elementum.Infrastructure/Elementum.Infrastructure.csproj" />
+  <Project Path="Elementum.ServiceApi.Tests/Elementum.ServiceApi.Tests.csproj" Id="e78d5f60-694a-4c9b-8723-18790f997bc8" />
   <Project Path="Elementum.Shared/Elementum.Shared.csproj" />
   <Project Path="Elementum.WorkerService.Tests/Elementum.WorkerService.Tests.csproj" />
 </Solution>
