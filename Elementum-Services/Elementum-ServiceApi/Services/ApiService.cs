@@ -50,7 +50,7 @@ namespace Elementum_ServiceApi.Services
         /// <summary>Returns all price history entries from the database.</summary>
         /// <param name="cancellationToken">Cancellation token for the async operation.</param>
         /// <returns>List of all price history records.</returns>
-        public async Task<IEnumerable<PriceHistory>> GetAllPriceHistory(CancellationToken cancellationToken)
+        public async Task<IEnumerable<PriceHistory>> GetPriceHistoryAll(CancellationToken cancellationToken)
         {
             return await _db.GetPriceHistoryAll(cancellationToken);
         }

@@ -14,7 +14,7 @@ A prioritized list of improvements and features for the Elementum Service API, f
 
 ---
 
-### Health checks
+### Health checks ✅
 
 **What:** Add endpoints like `GET /health` or `GET /ready` that return the API status and optionally the database connection status (e.g. “healthy” / “degraded”). ASP.NET Core has built-in health check middleware.
 
@@ -22,7 +22,7 @@ A prioritized list of improvements and features for the Elementum Service API, f
 
 ---
 
-### Consistent error responses (e.g. ProblemDetails)
+### Consistent error responses (e.g. ProblemDetails) ✅
 
 **What:** When something goes wrong (validation error, not found, server error), return a uniform JSON shape (e.g. RFC 7807 Problem Details) with fields like `type`, `title`, `status`, `detail`, and optional `errors` for validation. Use exception handling middleware so raw exceptions never leak to the client.
 
