@@ -27,7 +27,8 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? builder.Configuration["CONNECTION_STRING"]
     ?? throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection or CONNECTION_STRING.");
-builder.Services.AddElementumDbContext(connectionString);
+// Enable DB resilience: retry on transient MySQL errors (connection lost, deadlock). Options live in Infrastructure; Worker can use the same overload later.
+builder.Services.AddElementumDbContext(connectionString, configureResilience: _ => { });
 builder.Services.AddScoped<IApiService, ApiService>();
 
 builder.Services.AddControllers();
@@ -46,9 +47,9 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Health checks for monitoring the database connection.
+// Health checks for monitoring the database connection. Tag "ready" so /health/ready runs this check.
 builder.Services.AddHealthChecks()
-                .AddDbContextCheck<ElementumDbContext>("Database");
+                .AddDbContextCheck<ElementumDbContext>("database", failureStatus: HealthStatus.Unhealthy, tags: new[] { "ready" });
 
 // Request timeouts: set a default timeout for all requests to prevent hanging requests from consuming resources indefinitely.
 builder.Services.AddRequestTimeouts(options => {
@@ -113,10 +114,6 @@ app.UseExceptionHandler(exceptionHandlerApp =>
     });
 });
 
-// Health checks for monitoring the database connection.
-builder.Services.AddHealthChecks()
-            .AddDbContextCheck<ElementumDbContext>("database", failureStatus: HealthStatus.Unhealthy, tags: new[] { "ready" });
-    
 // For development.
 if (app.Environment.IsDevelopment())
 {
