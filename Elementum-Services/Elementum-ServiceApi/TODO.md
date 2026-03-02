@@ -4,9 +4,9 @@ A prioritized list of improvements and features for the Elementum Service API, f
 
 ---
 
-## 1. Easier / Quick Wins
+## 1.
 
-### CORS configuration
+### CORS configuration ✅
 
 **What:** Configure Cross-Origin Resource Sharing so that the frontend (running on another origin, e.g. `https://myapp.com` or `http://localhost:3000`) is allowed to call this API. Without it, browsers block requests from different origins.
 
@@ -46,7 +46,7 @@ A prioritized list of improvements and features for the Elementum Service API, f
 
 ---
 
-## 2. Medium Effort
+## 2.
 
 ### Pagination and sorting for list endpoints
 
@@ -96,7 +96,7 @@ A prioritized list of improvements and features for the Elementum Service API, f
 
 ---
 
-## 3. More Advanced
+## 3.
 
 ### Authentication and authorization
 
@@ -149,9 +149,3 @@ A prioritized list of improvements and features for the Elementum Service API, f
 - **Multi-metal comparison:** e.g. normalized series (e.g. “all metals = 100 on date X”) for chart comparison.
 - **Favorites / watchlist:** (after auth) user saves a list of symbols; one endpoint returns only those metals with latest price and optional mini-stats.
 - **Alerts / notifications:** (later) user defines thresholds (e.g. “Gold > 2000”); a background job checks and triggers events; frontend shows an “Alerts” section.
-
-These can be added once the base API (versioning, auth, analytics) is in place.
-
----
-
-*Order: roughly easy → medium → advanced. You can tackle items in this order or pick by priority (e.g. CORS and health first if you need the frontend and ops soon).*
