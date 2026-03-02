@@ -30,7 +30,7 @@ A prioritized list of improvements and features for the Elementum Service API, f
 
 ---
 
-### Request validation
+### Request validation ✅
 
 **What:** Validate incoming request data (query params, route params, body) using DataAnnotations or FluentValidation. For example: date format and range for `firstDate`/`lastDate`, symbol allowed values, page size limits for pagination.
 
