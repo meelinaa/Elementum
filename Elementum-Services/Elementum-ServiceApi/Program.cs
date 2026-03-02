@@ -4,6 +4,7 @@ using Elementum_ServiceApi.Services;
 using Elementum_ServiceApi.Services.Interfaces;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http.Timeouts;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
 using System.Text.Json;
 
@@ -69,7 +70,6 @@ builder.Services.AddRequestTimeouts(options => {
     };
 });
 
-
 var app = builder.Build();
 
 // Correlation ID and structured logging: run early so every log line includes CorrelationId.
@@ -113,6 +113,10 @@ app.UseExceptionHandler(exceptionHandlerApp =>
     });
 });
 
+// Health checks for monitoring the database connection.
+builder.Services.AddHealthChecks()
+            .AddDbContextCheck<ElementumDbContext>("database", failureStatus: HealthStatus.Unhealthy, tags: new[] { "ready" });
+    
 // For development.
 if (app.Environment.IsDevelopment())
 {

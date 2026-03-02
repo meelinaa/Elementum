@@ -1,17 +1,17 @@
-using Elementum.Infrastructure.Data;
+using Elementum.Infrastructure.Data.Interfaces;
 using Elementum.Shared.Objects;
 using Elementum_ServiceApi.Services.Interfaces;
 
 namespace Elementum_ServiceApi.Services
 {
     /// <summary>
-    /// Service layer for the Elementum API. Delegates data access to <see cref="ElementumDbContext"/>.
+    /// Service layer for the Elementum API. Delegates data access to <see cref="IElementumDbContext"/>.
     /// </summary>
     public class ApiService : IApiService
     {
-        private readonly ElementumDbContext _db;
+        private readonly IElementumDbContext _db;
 
-        public ApiService(ElementumDbContext db)
+        public ApiService(IElementumDbContext db)
         {
             _db = db;
         }
