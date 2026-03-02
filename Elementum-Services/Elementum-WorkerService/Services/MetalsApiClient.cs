@@ -1,0 +1,126 @@
+using Elementum.Shared.Enums;
+using Elementum.Shared.Objects;
+using Elementum_WorkerService.Abstractions;
+using Elementum_WorkerService.Options;
+using Microsoft.Extensions.Options;
+using System.Net.Http.Json;
+
+namespace Elementum_WorkerService.Services;
+
+/// <summary>
+/// Client for the GoldAPI (goldapi.io). Fetches current metal prices (XAU, XAG, etc.) in USD.
+/// Uses <see cref="IHttpClientFactory"/> for managed HTTP client lifecycle (connection pooling, no socket exhaustion).
+/// </summary>
+public class MetalsApiClient : IMetalsApiClient
+{
+    private readonly ILogger<MetalsApiClient> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly MetalsApiOptions _options;
+
+    public record ApiStatusResponse(bool Result);
+
+    /// <summary>
+    /// Initializes the client with HTTP client factory, logging and API options.
+    /// </summary>
+    public MetalsApiClient(IHttpClientFactory httpClientFactory, ILogger<MetalsApiClient> logger, IOptions<MetalsApiOptions> options)
+    {
+        _httpClientFactory = httpClientFactory;
+        _logger = logger;
+        _options = options.Value;
+    }
+
+    /// <summary>
+    /// Fetches latest prices for all configured <see cref="MetalTypes"/> (e.g. Gold, Silver) in USD.
+    /// Returns an empty list if the API key is not set or requests fail.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>List of daily price DTOs from the API; may be empty.</returns>
+    public async Task<IReadOnlyList<DailyPrices>> GetPricesAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+
+        var results = new List<DailyPrices>();
+        if (string.IsNullOrEmpty(_options.ApiKey))
+        {
+            _logger.LogWarning("METALS_API_KEY not set; check .env or environment variables.");
+            return results;
+        }
+
+        var client = _httpClientFactory.CreateClient("GoldApi");
+
+        if (await ApiIsAviable(client, cancellationToken))
+        {
+            foreach (MetalTypes metal in Enum.GetValues(typeof(MetalTypes)))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var symbol = metal.ToApiSymbol();
+                _logger.LogInformation("Fetching data for {Metal} ({Symbol})...", metal, symbol);
+                var data = await FetchMetalDataAsync(client, symbol, CurrencyTypes.USD.ToString(), cancellationToken);
+                if (data != null)
+                {
+                    _logger.LogInformation("Price for {Metal}: {Price} USD", metal, data.Price);
+                    results.Add(data);
+                }
+                else
+                    _logger.LogWarning("Failed to fetch data for {Metal}", metal);
+                await Task.Delay(1000, cancellationToken);
+            }
+            return results;
+        }
+        else
+        {
+            _logger.LogError("GoldAPI is not available. Check API key, endpoint, and network connectivity.");
+            return results;
+        }
+    }
+
+    /// <summary>
+    /// Performs a single GET request to the GoldAPI for the given metal symbol and currency.
+    /// </summary>
+    /// <param name="client">Configured HTTP client (with API key header).</param>
+    /// <param name="metal">Metal symbol (e.g. XAU, XAG).</param>
+    /// <param name="currency">Currency code (e.g. USD).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Deserialized daily price, or null on failure.</returns>
+    private async Task<DailyPrices?> FetchMetalDataAsync(HttpClient client, string metal, string currency, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var url = $"api/{metal}/{currency}";
+            return await client.GetFromJsonAsync<DailyPrices>(url, cancellationToken);
+        }
+        catch
+        {
+            _logger.LogError("Error fetching data for {Metal}/{Currency} from GoldAPI. Check API key, endpoint, and network connectivity.", metal, currency);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Checks whether the GoldAPI status endpoint (api/status) is reachable and returns <c>result: true</c>.
+    /// Logs and returns <c>false</c> on HTTP or deserialization errors.
+    /// </summary>
+    /// <param name="client">Configured HTTP client with base address and API key.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns><c>true</c> if the API responded with success and <c>result: true</c>; otherwise <c>false</c>.</returns>
+    private async Task<bool> ApiIsAviable(HttpClient client, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var response = await client.GetFromJsonAsync<ApiStatusResponse>("api/status", cancellationToken);
+
+            return response?.Result ?? false;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "HTTP request to GoldAPI failed. Check network connectivity and API endpoint.");
+            return false;
+        }
+        catch (Exception)
+        {
+            _logger.LogError("Unexpected error while checking GoldAPI status. Check API key and endpoint configuration.");
+            return false;
+        }
+    }
+}
