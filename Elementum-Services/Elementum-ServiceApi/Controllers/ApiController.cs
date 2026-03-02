@@ -1,6 +1,7 @@
 using Elementum.Shared.Objects;
 using Elementum_ServiceApi.Models;
 using Elementum_ServiceApi.Services.Interfaces;
+using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Elementum_ServiceApi.Controllers
@@ -47,6 +48,7 @@ namespace Elementum_ServiceApi.Controllers
 
         /// <summary>GET /api/history — all price history. Returns JSON array.</summary>
         [HttpGet("history/all")]
+        [RequestTimeout("DataCruncher")]
         public async Task<IEnumerable<PriceHistory>> GetPriceHistoryAll(CancellationToken cancellationToken)
         {
             return await _apiService.GetPriceHistoryAll(cancellationToken);
@@ -60,6 +62,7 @@ namespace Elementum_ServiceApi.Controllers
 
         /// <summary>GET /api/history/{symbol} — price history for one metal. Returns JSON array.</summary>
         [HttpGet("history/{symbol}")]
+        [RequestTimeout("DataCruncher")]
         public async Task<ActionResult<IEnumerable<PriceHistory>>> GetPriceHistoryByMetalSymbol([FromRoute] SymbolRequest symbolRequest, CancellationToken cancellationToken)
         {
             if (!ModelState.IsValid)
@@ -85,6 +88,7 @@ namespace Elementum_ServiceApi.Controllers
         /// Returns JSON array. Dates: yyyy-MM-dd. Uses request validation via <see cref="DateRangeRequest"/>.
         /// </summary>
         [HttpGet("history/all/{firstDate}/{lastDate}")]
+        [RequestTimeout("DataCruncher")]
         public async Task<IActionResult> GetPriceHistoryAllByDateRange([FromRoute] DateRangeRequest request, CancellationToken ct)
         {
             if (!ModelState.IsValid)
@@ -98,6 +102,7 @@ namespace Elementum_ServiceApi.Controllers
 
         /// <summary>GET /api/v1/history/{symbol}/{firstDate}/{lastDate} — history for one metal in date range. Uses <see cref="SymbolRequest"/> and <see cref="DateRangeRequest"/>.</summary>
         [HttpGet("history/{symbol}/{firstDate}/{lastDate}")]
+        [RequestTimeout("DataCruncher")]
         public async Task<IActionResult> GetPriceHistoryByMetalSymbolAndDateRange([FromRoute] SymbolRequest symbolRequest, [FromRoute] DateRangeRequest dateRangeRequest, CancellationToken ct)
         {
             if (!ModelState.IsValid)

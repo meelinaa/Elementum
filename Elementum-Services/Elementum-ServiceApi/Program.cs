@@ -3,6 +3,7 @@ using Elementum_ServiceApi.Middleware;
 using Elementum_ServiceApi.Services;
 using Elementum_ServiceApi.Services.Interfaces;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Http.Timeouts;
 using Serilog;
 using System.Text.Json;
 
@@ -48,10 +49,33 @@ builder.Services.AddCors(options =>
 builder.Services.AddHealthChecks()
                 .AddDbContextCheck<ElementumDbContext>("Database");
 
+// Request timeouts: set a default timeout for all requests to prevent hanging requests from consuming resources indefinitely.
+builder.Services.AddRequestTimeouts(options => {
+    options.AddPolicy("Strict", TimeSpan.FromSeconds(5));
+
+    options.AddPolicy("DataCruncher", TimeSpan.FromMinutes(1));
+
+    options.DefaultPolicy = new RequestTimeoutPolicy
+    {
+        Timeout = TimeSpan.FromSeconds(30),
+        WriteTimeoutResponse = async (context) => {
+            context.Response.StatusCode = StatusCodes.Status504GatewayTimeout;
+            await context.Response.WriteAsJsonAsync(new
+            {
+                error = "Timeout",
+                message = "The server took too long to respond."
+            });
+        }
+    };
+});
+
+
 var app = builder.Build();
 
 // Correlation ID and structured logging: run early so every log line includes CorrelationId.
-app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<CorrelationIdMiddleware>(); // Assigns a unique CorrelationId to each request (from header or new) and adds it to the logging context for traceability across logs.
+app.UseRequestTimeouts();
+
 app.UseSerilogRequestLogging(options =>
 {
     options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
