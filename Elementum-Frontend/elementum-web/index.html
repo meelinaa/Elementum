@@ -7,6 +7,14 @@
     <title>elementum-web</title>
   </head>
   <body>
+    <script>
+      (function() {
+        var theme = localStorage.getItem('elementum-theme') || 'light';
+        var lang = localStorage.getItem('elementum-language') || 'de';
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.lang = lang === 'en' ? 'en' : 'de';
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

@@ -1,0 +1,43 @@
+/* Footer außerhalb des Content-Bereichs, immer am unteren Viewport-Rand */
+.app-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 100;
+  padding: 0.65rem 2rem;
+  background-color: var(--footer-bg);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-sizing: border-box;
+  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.app-footer-left {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.app-footer-status {
+  font-size: 0.85rem;
+  color: #16a34a;
+  font-weight: 500;
+}
+
+.app-footer-last-update {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-left: 0.25rem;
+  white-space: nowrap;
+}
+
+.app-footer-time {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}

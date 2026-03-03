@@ -1,0 +1,104 @@
+.app-sidebar {
+  width: 260px;
+  min-width: 260px;
+  background-color: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  border-right: 1px solid var(--border-color);
+  min-height: 100vh;
+  box-shadow: 2px 0 8px var(--shadow);
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.sidebar-close {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  font-size: 1.15rem;
+  line-height: 1;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.sidebar-close:hover {
+  background: #eee;
+  border-color: #999;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.sidebar-logo-icon {
+  font-size: 1.25rem;
+  color: #c9a227;
+}
+
+.sidebar-logo-text {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem 0;
+  overflow-y: auto;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1.25rem;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: background-color 0.15s;
+}
+
+.sidebar-link:hover {
+  background-color: #ddd;
+}
+
+.sidebar-link.active {
+  background-color: #2563eb;
+  color: white;
+}
+
+.sidebar-link-icon {
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+/* Optional: ab 900px weniger Schatten, da mehr Platz */
+@media (min-width: 900px) {
+  .app-sidebar {
+    box-shadow: 2px 0 16px rgba(0, 0, 0, 0.06);
+  }
+}

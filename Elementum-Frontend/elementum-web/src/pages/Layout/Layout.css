@@ -1,0 +1,76 @@
+.app-layout {
+  display: flex;
+  flex-direction: row;
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+}
+
+.sidebar-container {
+  flex-shrink: 0;
+  width: 0;
+  overflow: hidden;
+  transition: width 0.25s ease-out;
+}
+
+.sidebar-container--open {
+  width: 260px;
+}
+
+.app-content-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-content {
+  flex: 1;
+  min-width: 0;
+  padding-left: 4rem;
+  padding-bottom: 3rem;
+  transition: padding-left 0.25s ease-out;
+}
+
+.app-content-wrap--menu-open .app-content {
+  padding-left: 1.5rem;
+}
+
+.app-content .main-body {
+  flex: 1;
+}
+
+/* Ein Button: Burger wenn zu, X wenn offen – gleiche Position, kein Überlappen */
+.burger-btn {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 200;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-bg);
+  box-shadow: 0 1px 4px var(--shadow);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: background 0.2s;
+}
+
+.burger-btn:hover {
+  background: var(--sidebar-bg);
+}
+
+.burger-line {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--text-primary);
+  border-radius: 1px;
+}
+
