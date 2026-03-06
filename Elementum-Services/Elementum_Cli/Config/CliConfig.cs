@@ -15,14 +15,27 @@ public static class CliConfig
     /// <summary>API base URL for HTTP calls. Set ELEMENTUM_API_BASEURL to override.</summary>
     public static string ApiBaseUrl => _baseUrl.Value;
 
+    internal static string NormalizeBaseUrl(string baseUrl)
+        => baseUrl.Trim().TrimEnd('/') + "/";
+
+    internal static string ResolveApiBaseUrl(string? fromEnv, string? fromFile)
+    {
+        if (!string.IsNullOrWhiteSpace(fromEnv))
+            return NormalizeBaseUrl(fromEnv);
+        if (!string.IsNullOrWhiteSpace(fromFile))
+            return NormalizeBaseUrl(fromFile);
+        return DefaultBaseUrl;
+    }
+
     private static string LoadBaseUrl()
     {
         var fromEnv = Environment.GetEnvironmentVariable(EnvApiBaseUrl);
         if (!string.IsNullOrWhiteSpace(fromEnv))
         {
-            return fromEnv.TrimEnd('/') + "/";
+            return NormalizeBaseUrl(fromEnv);
         }
 
+        string? fromFile = null;
         try
         {
             var baseDir = AppDomain.CurrentDomain.BaseDirectory;
@@ -31,15 +44,13 @@ public static class CliConfig
                 .AddJsonFile("appsettings.json", optional: true)
                 .AddEnvironmentVariables()
                 .Build();
-            var fromFile = config["ApiBaseUrl"];
-            if (!string.IsNullOrWhiteSpace(fromFile))
-                return fromFile.TrimEnd('/') + "/";
+            fromFile = config["ApiBaseUrl"];
         }
         catch (Exception ex)
         {
             CliLogging.GetLogger(nameof(CliConfig)).LogWarning(ex, "Failed to load ApiBaseUrl from appsettings.json, using default");
         }
 
-        return DefaultBaseUrl;
+        return ResolveApiBaseUrl(fromEnv, fromFile);
     }
 }
