@@ -2,6 +2,6 @@ namespace Elementum_Cli.Views;
 
 public interface IDetailView
 {
-    void Render();
+    Task RenderAsync();
     void HandleInput(ConsoleKeyInfo key);
 }

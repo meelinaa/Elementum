@@ -1,4 +1,6 @@
-﻿namespace Elementum_Cli.Helper;
+using Microsoft.Extensions.Logging;
+
+namespace Elementum_Cli.Helper;
 
 public class ConsoleLoader
 {
@@ -19,7 +21,19 @@ public class ConsoleLoader
             }
         });
 
-        await action();
+        try
+        {
+            await action();
+        }
+        catch (Exception ex)
+        {
+            _active = false;
+            await spinnerTask;
+            ClearLine();
+            CliLogging.GetLogger(nameof(ConsoleLoader)).LogWarning(ex, "Load operation failed");
+            CliOutputHelper.ShowError(CliOutputHelper.GenericErrorMessage);
+            return;
+        }
 
         _active = false;
         await spinnerTask;

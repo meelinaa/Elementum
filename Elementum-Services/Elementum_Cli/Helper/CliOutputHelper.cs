@@ -1,123 +1,162 @@
 using Elementum_Cli.Enums;
 using Elementum_Cli.Views;
-using static Elementum_Cli.Program;
 
-namespace Elementum_Cli.Helper
+namespace Elementum_Cli.Helper;
+
+public class CliOutputHelper
 {
-    public class CliOutputHelper
+    /// <summary>View width for headers/footer. Use <see cref="CliConstants.ViewWidth"/> for layout.</summary>
+    public static int ViewWidth => CliConstants.ViewWidth;
+
+    /// <summary>Message when no daily data is available for the selected metal.</summary>
+    public const string NoDataMessageForMetal = "No daily data available for this metal.";
+
+    /// <summary>Message when a metal list or table is empty.</summary>
+    public const string NoMetalsFoundMessage = "No metals found.";
+
+    /// <summary>Generic error message shown in the CLI when an operation fails.</summary>
+    public const string GenericErrorMessage = "An error occurred. Please try again.";
+
+    /// <summary>Writes an error message in the CLI (e.g. after a failed request).</summary>
+    public static void ShowError(string message)
     {
-        public const int ViewWidth = 72;
+        Console.WriteLine();
+        Console.WriteLine("  " + message);
+        RenderViewFooter();
+    }
 
-        public static void RenderViewHeader(string title)
+    /// <summary>Formats a decimal as currency with symbol, or "—" if null.</summary>
+    public static string FormatCurrency(decimal? value, string symbol = "$")
+        => value.HasValue ? value.Value.ToString("N2") + " " + symbol : "—";
+
+    /// <summary>Formats a decimal as percentage with optional leading + for non‑negative, or "—" if null.</summary>
+    public static string FormatPercent(decimal? value)
+        => value.HasValue ? (value.Value >= 0 ? "+" : "") + value.Value.ToString("0.##") + " %" : "—";
+
+    /// <summary>Formats a decimal as currency with leading + for non‑negative (e.g. for differences), or "—" if null.</summary>
+    public static string FormatCurrencyWithSign(decimal? value, string symbol = "$")
+        => value.HasValue ? (value.Value >= 0 ? "+" : "") + value.Value.ToString("N2") + " " + symbol : "—";
+
+    /// <summary>Writes the value in green (positive/good) or red (negative), then resets color.</summary>
+    public static void WriteColoredValue(string value, bool positiveIsGreen)
+    {
+        Console.ForegroundColor = positiveIsGreen ? ConsoleColor.Green : ConsoleColor.Red;
+        Console.Write(value);
+        Console.ResetColor();
+    }
+
+    public static void RenderViewHeader(string title)
+    {
+        Console.WriteLine();
+        Console.WriteLine("╔" + new string('═', ViewWidth - 2) + "╗");
+        Console.WriteLine("║ " + title.PadRight(ViewWidth - 4) + " ║");
+        Console.WriteLine("╠" + new string('═', ViewWidth - 2) + "╣");
+    }
+
+    public static void RenderSectionTitle(string title)
+    {
+        Console.WriteLine();
+        Console.WriteLine("  ┌" + new string('─', ViewWidth - 6) + "┐");
+        Console.WriteLine("  │ " + title.PadRight(ViewWidth - 8) + " │");
+        Console.WriteLine("  ├" + new string('─', ViewWidth - 6) + "┤");
+    }
+
+    public static void RenderViewFooter()
+    {
+        Console.WriteLine();
+        Console.WriteLine("╟" + new string('─', ViewWidth - 2) + "╢");
+        Console.WriteLine("║ [ESC/←] Back to menu".PadRight(ViewWidth - 2) + " ║");
+        Console.WriteLine("╚" + new string('═', ViewWidth - 2) + "╝");
+        Console.WriteLine();
+    }
+
+    public static void RenderMetalSelectionPrompt()
+    {
+        RenderViewHeader("SELECT METAL");
+        Console.WriteLine("  Which metal should data be displayed for?");
+        Console.WriteLine();
+        Console.WriteLine("    [1] Gold        [2] Silver      [3] Platinum ");
+        Console.WriteLine();
+        Console.WriteLine("  Press 1–4 to select. [ESC/←] Back to menu.");
+        RenderViewFooter();
+    }
+
+    public static void DrawMenuItem(int index, bool selected)
+    {
+        var app = AppContext.Current!;
+        if (!app.RowMap.ContainsKey(index))
+            return;
+
+        Console.SetCursorPosition(0, app.RowMap[index]);
+        Console.Write(new string(' ', Console.WindowWidth));
+        Console.SetCursorPosition(0, app.RowMap[index]);
+
+        if (!app.MenuItems[index].Selectable)
         {
-            Console.WriteLine();
-            Console.WriteLine("╔" + new string('═', ViewWidth - 2) + "╗");
-            Console.WriteLine("║ " + title.PadRight(ViewWidth - 4) + " ║");
-            Console.WriteLine("╠" + new string('═', ViewWidth - 2) + "╣");
+            Console.Write("   " + app.MenuItems[index].Text);
+            return;
         }
 
-        public static void RenderSectionTitle(string title)
+        if (selected)
         {
-            Console.WriteLine();
-            Console.WriteLine("  ┌" + new string('─', ViewWidth - 6) + "┐");
-            Console.WriteLine("  │ " + title.PadRight(ViewWidth - 8) + " │");
-            Console.WriteLine("  ├" + new string('─', ViewWidth - 6) + "┤");
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write(" ▶ " + app.MenuItems[index].Text);
+            Console.ResetColor();
+        }
+        else
+        {
+            Console.Write("   " + app.MenuItems[index].Text);
+        }
+    }
+
+    public static void OpenSelectedPage()
+    {
+        var app = AppContext.Current!;
+        var item = app.MenuItems[app.SelectedIndex];
+        if (item.View == null || item.Text.Contains("exit", StringComparison.OrdinalIgnoreCase))
+        {
+            app.Running = false;
+            return;
         }
 
-        public static void RenderViewFooter()
+        app.State = AppState.Detail;
+        app.CurrentDetailView = item.View;
+        if (ViewRegistry.RequiresMetalSelection(item.View!.Value))
+            app.CurrentSelectedMetal = null;
+        var view = ViewRegistry.Get(item.View.Value);
+        _ = view.RenderAsync();
+    }
+
+    public static void RenderMenu()
+    {
+        var app = AppContext.Current!;
+        Console.Clear();
+        app.RowMap.Clear();
+
+        //RenderTageswerteHeader();
+        Console.WriteLine("=================================================================================");
+        Console.WriteLine($"                         ELEMENTUM - METALS DASHBOARD");
+        Console.WriteLine("=================================================================================");
+        Console.WriteLine();
+        Console.WriteLine("                 [↑/↓] Navigate | [Enter/→] Select | [ESC] Exit");
+        Console.WriteLine();
+
+        for (int i = 0; i < app.MenuItems.Count; i++)
         {
-            Console.WriteLine();
-            Console.WriteLine("╟" + new string('─', ViewWidth - 2) + "╢");
-            Console.WriteLine("║ [ESC/←] Back to menu".PadRight(ViewWidth - 2) + " ║");
-            Console.WriteLine("╚" + new string('═', ViewWidth - 2) + "╝");
-            Console.WriteLine();
-        }
-
-        public static void RenderMetalSelectionPrompt()
-        {
-            RenderViewHeader("SELECT METAL");
-            Console.WriteLine("  Which metal should data be displayed for?");
-            Console.WriteLine();
-            Console.WriteLine("    [1] Gold        [2] Silver      [3] Platinum ");
-            Console.WriteLine();
-            Console.WriteLine("  Press 1–4 to select. [ESC/←] Back to menu.");
-            RenderViewFooter();
-        }
-
-        public static void DrawMenuItem(int index, bool selected)
-        {
-            if (!rowMap.ContainsKey(index))
-                return;
-
-            Console.SetCursorPosition(0, rowMap[index]);
-            Console.Write(new string(' ', Console.WindowWidth));
-            Console.SetCursorPosition(0, rowMap[index]);
-
-            if (!menuItems[index].Selectable)
+            if (!app.MenuItems[i].Selectable && string.IsNullOrWhiteSpace(app.MenuItems[i].Text))
             {
-                Console.Write("   " + menuItems[index].Text);
-                return;
-            }
-
-            if (selected)
-            {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.Write(" ▶ " + menuItems[index].Text);
-                Console.ResetColor();
-            }
-            else
-            {
-                Console.Write("   " + menuItems[index].Text);
-            }
-        }
-
-        public static void OpenSelectedPage()
-        {
-            var item = menuItems[selectedIndex];
-            if (item.View == null || item.Text.Contains("exit", StringComparison.OrdinalIgnoreCase))
-            {
-                running = false;
-                return;
-            }
-
-            currentState = AppState.Detail;
-            currentDetailView = item.View;
-            if (ViewRegistry.RequiresMetalSelection(item.View.Value))
-                currentSelectedMetal = null;
-            var view = ViewRegistry.Get(item.View.Value);
-            view.Render();
-        }
-
-        public static void RenderMenu()
-        {
-            Console.Clear();
-            rowMap.Clear();
-
-            //RenderTageswerteHeader();
-            Console.WriteLine("=================================================================================");
-            Console.WriteLine($"                         ELEMENTUM - METALS DASHBOARD");
-            Console.WriteLine("=================================================================================");
-            Console.WriteLine();
-            Console.WriteLine("                 [↑/↓] Navigate | [Enter/→] Select | [ESC] Exit");
-            Console.WriteLine();
-
-            for (int i = 0; i < menuItems.Count; i++)
-            {
-                if (!menuItems[i].Selectable && string.IsNullOrWhiteSpace(menuItems[i].Text))
-                {
-                    Console.WriteLine();
-                    continue;
-                }
-
-                rowMap[i] = Console.CursorTop;
-                DrawMenuItem(i, i == selectedIndex);
                 Console.WriteLine();
+                continue;
             }
 
+            app.RowMap[i] = Console.CursorTop;
+            DrawMenuItem(i, i == app.SelectedIndex);
             Console.WriteLine();
-            Console.WriteLine("---------------------------------------------------------------------------------");
-            Console.WriteLine("                        Arrow keys + Enter to navigate                             ");
-            Console.WriteLine("=================================================================================");
         }
+
+        Console.WriteLine();
+        Console.WriteLine("---------------------------------------------------------------------------------");
+        Console.WriteLine("                        Arrow keys + Enter to navigate                             ");
+        Console.WriteLine("=================================================================================");
     }
 }

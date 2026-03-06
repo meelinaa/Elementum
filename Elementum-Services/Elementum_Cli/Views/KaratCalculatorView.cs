@@ -1,64 +1,23 @@
-using System.Linq;
 using Elementum.Shared.Objects;
-using Elementum_Cli.Enums;
 using Elementum_Cli.Helper;
 using Elementum_Cli.Providers;
-using System.Text.Json;
-using static Elementum_Cli.Program;
 
 namespace Elementum_Cli.Views;
 
-public class KaratCalculatorView : IDetailView
+public class KaratCalculatorView : MetalDetailViewBase
 {
-    public void Render()
-    {
-        Console.Clear();
-        if (!currentSelectedMetal.HasValue)
-        {
-            CliOutputHelper.RenderMetalSelectionPrompt();
-            return;
-        }
+    protected override string ViewTitle => "KARAT & ALLOY";
+    protected override string LoadingMessage => "Loading karat data…";
 
-        var name = MetallHelper.GetName(currentSelectedMetal.Value);
-        var sym = MetallHelper.GetSymbol(currentSelectedMetal.Value);
+    private static string FormatEuro(decimal? value) => CliOutputHelper.FormatCurrency(value, "€");
 
-        CliOutputHelper.RenderViewHeader($"KARAT & ALLOY — {name.ToUpperInvariant()} ({sym})");
-        Console.WriteLine("  Loading karat data…");
-        CliOutputHelper.RenderViewFooter();
-
-        _ = LoadAndRenderAsync(sym, name);
-    }
-
-    private static string FormatEuro(decimal? value) => value.HasValue ? value.Value.ToString("N2") + " €" : "—";
-
-    private static async Task LoadAndRenderAsync(string sym, string name)
+    protected override async Task LoadAndRenderAsync(string sym, string name)
     {
         await ConsoleLoader.RunAsync(async () =>
         {
-            var json = await HttpCall.GetPriceHistoryTodayAsync(sym);
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-
-            PriceHistory? ph = null;
-            try
-            {
-                var list = JsonSerializer.Deserialize<List<PriceHistory>>(json, options);
-                ph = list?.FirstOrDefault();
-            }
-            catch
-            {
-                ph = JsonSerializer.Deserialize<PriceHistory>(json, options);
-            }
-
-            Console.Clear();
-            CliOutputHelper.RenderViewHeader($"KARAT & ALLOY — {name.ToUpperInvariant()} ({sym})");
-
+            PriceHistory? ph = await HttpCall.GetPriceHistoryTodayWithLogicAsync(sym, name, ViewTitle);
             if (ph == null)
-            {
-                Console.WriteLine();
-                Console.WriteLine("  No daily data available for this metal.");
-                CliOutputHelper.RenderViewFooter();
                 return;
-            }
 
             var p24 = ph.PriceGram24k;
             var p22 = ph.PriceGram22k;
@@ -80,7 +39,7 @@ public class KaratCalculatorView : IDetailView
 
             // Block 2: Alloy analysis (discount vs. 24k)
             decimal? Diff(decimal? gramPrice) => (p24.HasValue && gramPrice.HasValue) ? p24.Value - gramPrice.Value : null;
-            string DiffStr(decimal? d) => d.HasValue ? "− " + d.Value.ToString("N2") + " €" : "—";
+            string DiffStr(decimal? d) => d.HasValue ? "− " + CliOutputHelper.FormatCurrency(d.Value, "€") : "—";
             var d18 = Diff(p18);
             var d14 = Diff(p14);
             var d10 = Diff(p10);
@@ -99,32 +58,5 @@ public class KaratCalculatorView : IDetailView
 
             CliOutputHelper.RenderViewFooter();
         });
-    }
-
-    public void HandleInput(ConsoleKeyInfo key)
-    {
-        if (!currentSelectedMetal.HasValue)
-        {
-            var metall = MetallHelper.FromKey(key.KeyChar) ?? MetallHelper.FromConsoleKey(key.Key);
-            if (metall.HasValue)
-            {
-                currentSelectedMetal = metall;
-                Render();
-            }
-            else if (key.Key == ConsoleKey.Escape || key.Key == ConsoleKey.LeftArrow)
-            {
-                currentState = AppState.Menu;
-                currentDetailView = null;
-                CliOutputHelper.RenderMenu();
-            }
-            return;
-        }
-        if (key.Key == ConsoleKey.Escape || key.Key == ConsoleKey.LeftArrow)
-        {
-            currentState = AppState.Menu;
-            currentDetailView = null;
-            currentSelectedMetal = null;
-            CliOutputHelper.RenderMenu();
-        }
     }
 }

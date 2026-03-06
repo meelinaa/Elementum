@@ -5,71 +5,48 @@ using System.Text.Json;
 
 namespace Elementum_Cli.Views;
 
-public class DashboardView : IDetailView
+public class DashboardView : AsyncDetailViewBase
 {
-    public async void Render()
-    {
-        Console.Clear();
-        CliOutputHelper.RenderViewHeader("CURRENT MARKET OVERVIEW");
-        Console.WriteLine("  Loading market data…");
-        CliOutputHelper.RenderViewFooter();
-        await GetMetallList();
-    }
+    protected override string ViewTitle => "CURRENT MARKET OVERVIEW";
+    protected override string LoadingMessage => "Loading market data…";
 
-    public void HandleInput(ConsoleKeyInfo key)
-    {
-        HandleInputHelper.HandleInput(key);
-    }
-
-    public static async Task GetMetallList()
+    protected override async Task LoadAndRenderAsync()
     {
         await ConsoleLoader.RunAsync(async () =>
         {
             var json = await HttpCall.GetPriceHistoryAllTodayAsync();
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var priceHistories = JsonSerializer.Deserialize<List<PriceHistory>>(json, options);
+            var priceHistories = JsonSerializer.Deserialize<List<PriceHistory>>(json, HttpCall.DefaultJsonOptions);
 
-            const int idWidth = 4;
-            const int nameWidth = 10;
-            const int exchWidth = 10;
-            const int priceWidth = 10;
-            const int changeWidth = 14;
+            var w = CliConstants.DashboardColumnWidths;
 
             Console.Clear();
-            CliOutputHelper.RenderViewHeader("CURRENT MARKET OVERVIEW");
-
-            string topBorder = "   ┌──────┬────────────┬────────────┬────────────┬────────────────┐";
-            string header = "   │ ID   │ NAME       │ EXCHANGE   │ PRICE USD  │ CHANGES (Chp)  │";
-            string midBorder = "   ├──────┼────────────┼────────────┼────────────┼────────────────┤";
-            string bottomBorder = "   └──────┴────────────┴────────────┴────────────┴────────────────┘";
+            CliOutputHelper.RenderViewHeader(ViewTitle);
 
             Console.WriteLine();
-            Console.WriteLine(topBorder);
-            Console.WriteLine(header);
-            Console.WriteLine(midBorder);
+            Console.WriteLine(TableFormatter.BuildTopBorder(CliConstants.DashboardTablePrefix, w));
+            Console.WriteLine(TableFormatter.BuildRow(CliConstants.DashboardTablePrefix, w, new[] { "ID", "NAME", "EXCHANGE", "PRICE USD", "CHANGES (Chp)" }));
+            Console.WriteLine(TableFormatter.BuildMidBorder(CliConstants.DashboardTablePrefix, w));
 
             if (priceHistories == null || priceHistories.Count == 0)
             {
-                Console.WriteLine("   │  No metals found.".PadRight(52) + "  │");
-                Console.WriteLine(bottomBorder);
+                Console.WriteLine(TableFormatter.BuildEmptyRow(CliConstants.DashboardTablePrefix, w, CliOutputHelper.NoMetalsFoundMessage));
+                Console.WriteLine(TableFormatter.BuildBottomBorder(CliConstants.DashboardTablePrefix, w));
             }
             else
             {
                 foreach (var metal in priceHistories)
                 {
-                    string id = (metal.Metal?.Symbol ?? metal.Symbol ?? "").PadRight(idWidth);
-                    string name = (metal.Metal?.Name ?? "").PadRight(nameWidth);
-                    string exchange = (metal.Exchange ?? "").PadRight(exchWidth);
-                    string price = metal.Price.ToString("N2").PadLeft(priceWidth);
-                    string chpText = $"{(metal.Chp < 0 ? "" : "+")}{metal.Chp:0.##}%".PadLeft(changeWidth);
+                    string id = (metal.Metal?.Symbol ?? metal.Symbol ?? "").PadRight(w[0]);
+                    string name = (metal.Metal?.Name ?? "").PadRight(w[1]);
+                    string exchange = (metal.Exchange ?? "").PadRight(w[2]);
+                    string price = metal.Price.ToString("N2").PadLeft(w[3]);
+                    string chpText = CliOutputHelper.FormatPercent(metal.Chp).PadLeft(w[4]);
 
-                    Console.Write("   │ " + id + " │ " + name + " │ " + exchange + " │ " + price + " │ ");
-                    Console.ForegroundColor = metal.Chp < 0 ? ConsoleColor.Red : ConsoleColor.Green;
-                    Console.Write(chpText);
-                    Console.ResetColor();
+                    Console.Write(CliConstants.DashboardTablePrefix + "│ " + id + " │ " + name + " │ " + exchange + " │ " + price + " │ ");
+                    CliOutputHelper.WriteColoredValue(chpText, metal.Chp >= 0);
                     Console.WriteLine(" │");
                 }
-                Console.WriteLine(bottomBorder);
+                Console.WriteLine(TableFormatter.BuildBottomBorder(CliConstants.DashboardTablePrefix, w));
             }
 
             Console.WriteLine();

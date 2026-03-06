@@ -1,48 +1,52 @@
-﻿using Elementum_Cli.Enums;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using static Elementum_Cli.Program;
+using Elementum_Cli.Enums;
 
-namespace Elementum_Cli.Helper
+namespace Elementum_Cli.Helper;
+
+public class HandleInputHelper
 {
-    public class HandleInputHelper
+    public static void HandleInput(ConsoleKeyInfo key)
     {
-        public static void HandleInput(ConsoleKeyInfo key)
+        var app = AppContext.Current!;
+        if (key.Key == ConsoleKey.Escape || key.Key == ConsoleKey.LeftArrow)
         {
-            if (key.Key == ConsoleKey.Escape || key.Key == ConsoleKey.LeftArrow)
-            {
-                currentState = AppState.Menu;
-                currentDetailView = null;
-                CliOutputHelper.RenderMenu();
-            }
+            app.State = AppState.Menu;
+            app.CurrentDetailView = null;
+            CliOutputHelper.RenderMenu();
         }
+    }
 
-        public static void HandleInputWithMetals(ConsoleKeyInfo key, Action renderMethod )
+    /// <summary>
+    /// Handles input for views that require a metal selection (1–3 or D1–D3).
+    /// When a metal is selected, <paramref name="renderAsync"/> is invoked to (re-)render the view content.
+    /// Use this from your view's HandleInput and pass a method that only performs the output (e.g. () => RenderAsync()).
+    /// </summary>
+    /// <param name="key">The key pressed.</param>
+    /// <param name="renderAsync">Func that renders the current view (e.g. () => RenderAsync()). Called after metal selection; task is fire-and-forget.</param>
+    public static void HandleInputWithMetals(ConsoleKeyInfo key, Func<Task>? renderAsync)
+    {
+        var app = AppContext.Current!;
+        if (!app.CurrentSelectedMetal.HasValue)
         {
-            if (!currentSelectedMetal.HasValue)
+            var metall = MetallHelper.FromKey(key.KeyChar) ?? MetallHelper.FromConsoleKey(key.Key);
+            if (metall.HasValue)
             {
-                var metall = MetallHelper.FromKey(key.KeyChar) ?? MetallHelper.FromConsoleKey(key.Key);
-                if (metall.HasValue)
-                {
-                    currentSelectedMetal = metall;
-                    _ = renderMethod;
-                }
-                else if (key.Key == ConsoleKey.Escape || key.Key == ConsoleKey.LeftArrow)
-                {
-                    currentState = AppState.Menu;
-                    currentDetailView = null;
-                    CliOutputHelper.RenderMenu();
-                }
-                return;
+                app.CurrentSelectedMetal = metall;
+                _ = renderAsync?.Invoke();
             }
-            if (key.Key == ConsoleKey.Escape || key.Key == ConsoleKey.LeftArrow)
+            else if (key.Key == ConsoleKey.Escape || key.Key == ConsoleKey.LeftArrow)
             {
-                currentState = AppState.Menu;
-                currentDetailView = null;
-                currentSelectedMetal = null;
+                app.State = AppState.Menu;
+                app.CurrentDetailView = null;
                 CliOutputHelper.RenderMenu();
             }
+            return;
+        }
+        if (key.Key == ConsoleKey.Escape || key.Key == ConsoleKey.LeftArrow)
+        {
+            app.State = AppState.Menu;
+            app.CurrentDetailView = null;
+            app.CurrentSelectedMetal = null;
+            CliOutputHelper.RenderMenu();
         }
     }
 }

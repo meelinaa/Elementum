@@ -4,7 +4,7 @@ namespace Elementum_Cli.Views;
 
 public class InfoView : IDetailView
 {
-    public void Render()
+    public Task RenderAsync()
     {
         Console.Clear();
 
@@ -20,6 +20,7 @@ public class InfoView : IDetailView
         Console.WriteLine("  Dummy output (no HTTP call)");
 
         CliOutputHelper.RenderViewFooter();
+        return Task.CompletedTask;
     }
 
     public void HandleInput(ConsoleKeyInfo key)

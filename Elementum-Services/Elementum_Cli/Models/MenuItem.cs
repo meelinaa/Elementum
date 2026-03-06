@@ -1,20 +1,11 @@
 using Elementum_Cli.Enums;
 
-namespace Elementum_Cli.Models
-{
-    public class MenuItem
-    {
-        public string Text { get; }
-        public bool Selectable { get; }
-        public char? Key { get; }
-        public DetailView? View { get; }
+namespace Elementum_Cli.Models;
 
-        public MenuItem(string text, bool selectable, char? key = null, DetailView? view = null)
-        {
-            Text = text;
-            Selectable = selectable;
-            Key = key;
-            View = view;
-        }
-    }
+public class MenuItem(string text, bool selectable, char? key = null, DetailView? view = null)
+{
+    public string Text { get; } = text;
+    public bool Selectable { get; } = selectable;
+    public char? Key { get; } = key;
+    public DetailView? View { get; } = view;
 }

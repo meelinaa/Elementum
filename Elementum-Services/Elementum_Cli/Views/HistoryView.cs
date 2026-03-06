@@ -1,10 +1,7 @@
-using System.Linq;
 using Elementum.Shared.Objects;
 using Elementum_Cli.Enums;
 using Elementum_Cli.Helper;
 using Elementum_Cli.Providers;
-using System.Text.Json;
-using static Elementum_Cli.Program;
 
 namespace Elementum_Cli.Views;
 
@@ -13,7 +10,7 @@ public class HistoryView : IDetailView
     private const int BarChartHeight = 8;
 
     /// <summary>Number of data points per aggregation (passed to API as count).</summary>
-    private static readonly Dictionary<HistoryPeriod, int> PeriodCounts = new()
+    private static readonly Dictionary<HistoryPeriod, int> PeriodCounts = new() // These are somewhat arbitrary and can be adjusted based on how much data we want to show for each period, and also based on typical API limits for aggregated data (e.g. if API offers history/{symbol}/aggregated?aggregation=weekly&count=52, then 52 weeks = 1 year of weekly data, which seems reasonable for a historical view)
     {
         { HistoryPeriod.Daily, 31 },
         { HistoryPeriod.Weekly, 52 },
@@ -21,7 +18,7 @@ public class HistoryView : IDetailView
         { HistoryPeriod.Yearly, 10 }
     };
 
-    private static readonly Dictionary<HistoryPeriod, string> PeriodLabels = new()
+    private static readonly Dictionary<HistoryPeriod, string> PeriodLabels = new() // These are the display labels for the periods, used in the UI
     {
         { HistoryPeriod.Daily, "Daily" },
         { HistoryPeriod.Weekly, "Weekly" },
@@ -31,22 +28,23 @@ public class HistoryView : IDetailView
 
     private static HistoryPeriod? _selectedPeriod;
 
-    public void Render()
+    public Task RenderAsync()
     {
+        var app = AppContext.Current!;
         Console.Clear();
-        if (!currentSelectedMetal.HasValue)
+        if (!app.CurrentSelectedMetal.HasValue)
         {
             CliOutputHelper.RenderMetalSelectionPrompt();
-            return;
+            return Task.CompletedTask;
         }
 
-        var sym = MetallHelper.GetSymbol(currentSelectedMetal.Value);
-        var name = MetallHelper.GetName(currentSelectedMetal.Value);
+        var sym = MetallHelper.GetSymbol(app.CurrentSelectedMetal.Value);
+        var name = MetallHelper.GetName(app.CurrentSelectedMetal.Value);
 
         if (!_selectedPeriod.HasValue)
         {
             RenderPeriodSelection(sym, name);
-            return;
+            return Task.CompletedTask;
         }
 
         var period = _selectedPeriod.Value;
@@ -58,6 +56,7 @@ public class HistoryView : IDetailView
         CliOutputHelper.RenderViewFooter();
 
         _ = LoadAndRenderChartsAsync(sym, name, period, count, agg);
+        return Task.CompletedTask;
     }
 
     private static void RenderPeriodSelection(string sym, string name)
@@ -74,44 +73,14 @@ public class HistoryView : IDetailView
         CliOutputHelper.RenderViewFooter();
     }
 
+    // This method tries to fetch aggregated data from the API first, and if that fails (e.g. endpoint not implemented), it falls back to fetching full history and doing client-side aggregation.
+    // This way we can show some historical data even if the API doesn't yet support aggregated endpoints, while still benefiting from more efficient aggregated data when available.
     private static async Task LoadAndRenderChartsAsync(string sym, string name, HistoryPeriod period, int count, string aggregation)
     {
         await ConsoleLoader.RunAsync(async () =>
         {
-            List<PriceHistory>? list = null;
+            List<PriceHistory>? list = await HttpCall.GetPriceHistoryMetalWithLogicAsync(sym, aggregation, count, period);
 
-            try
-            {
-                var json = await HttpCall.GetPriceHistoryMetalAsync(sym, aggregation, count);
-                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                try
-                {
-                    list = JsonSerializer.Deserialize<List<PriceHistory>>(json, options);
-                }
-                catch
-                {
-                    var single = JsonSerializer.Deserialize<PriceHistory>(json, options);
-                    list = single != null ? new List<PriceHistory> { single } : null;
-                }
-            }
-            catch
-            {
-                // Fallback: fetch full history and aggregate client-side (until API offers aggregated)
-                try
-                {
-                    var json = await HttpCall.GetPriceHistoryMetalAsync(sym);
-                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                    list = JsonSerializer.Deserialize<List<PriceHistory>>(json, options);
-                    if (list != null && list.Count > 0)
-                        list = AggregateClientSide(list, period, count);
-                }
-                catch
-                {
-                    list = null;
-                }
-            }
-
-            Console.Clear();
             CliOutputHelper.RenderViewHeader($"HISTORY — {name.ToUpperInvariant()} ({sym}) · {PeriodLabels[period]}");
 
             if (list == null || list.Count == 0)
@@ -143,65 +112,17 @@ public class HistoryView : IDetailView
         });
     }
 
-    /// <summary>Client-side aggregation when API history/.../aggregated is not yet available.</summary>
-    private static List<PriceHistory> AggregateClientSide(List<PriceHistory> ordered, HistoryPeriod period, int targetCount)
-    {
-        ordered = ordered.OrderBy(p => p.EntryDate).ToList();
-        if (ordered.Count <= targetCount) return ordered.TakeLast(targetCount).ToList();
-
-        return period switch
-        {
-            HistoryPeriod.Daily => ordered.TakeLast(targetCount).ToList(),
-            HistoryPeriod.Weekly => TakeEveryNth(ordered, 7, targetCount),
-            HistoryPeriod.Monthly => TakeByMonth(ordered, targetCount),
-            HistoryPeriod.Yearly => TakeByYear(ordered, targetCount),
-            _ => ordered.TakeLast(targetCount).ToList()
-        };
-    }
-
-    private static List<PriceHistory> TakeEveryNth(List<PriceHistory> list, int step, int maxCount)
-    {
-        var result = new List<PriceHistory>();
-        for (int i = list.Count - 1; i >= 0 && result.Count < maxCount; i -= step)
-            result.Insert(0, list[i]);
-        return result;
-    }
-
-    private static List<PriceHistory> TakeByMonth(List<PriceHistory> list, int maxCount)
-    {
-        var byMonth = list
-            .GroupBy(p => (p.EntryDate.Year, p.EntryDate.Month))
-            .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
-            .Select(g => g.OrderByDescending(p => p.EntryDate).First())
-            .TakeLast(maxCount)
-            .ToList();
-        return byMonth;
-    }
-
-    private static List<PriceHistory> TakeByYear(List<PriceHistory> list, int maxCount)
-    {
-        var byYear = list
-            .GroupBy(p => p.EntryDate.Year)
-            .OrderBy(g => g.Key)
-            .Select(g => g.OrderByDescending(p => p.EntryDate).First())
-            .TakeLast(maxCount)
-            .ToList();
-        return byYear;
-    }
-
     private static void ColoredSparkline(string symbol, double currentPrice, double[] changes, bool doubleWidth = false)
     {
         Console.Write("  ");
         double currentChp = changes.Length > 0 ? changes[^1] : 0;
-        Console.ForegroundColor = currentChp >= 0 ? ConsoleColor.Green : ConsoleColor.Red;
         string spark = "";
         foreach (double ch in changes)
         {
             string block = ch > 0 ? "█" : ch < 0 ? "▁" : "─";
             spark += doubleWidth ? block + block : block;
         }
-        Console.WriteLine($"{symbol.PadRight(6)} │ {currentPrice:N2} $ │ {spark}");
-        Console.ResetColor();
+        CliOutputHelper.WriteColoredValue($"{symbol.PadRight(6)} │ {currentPrice:N2} $ │ {spark}\n", currentChp >= 0);
     }
 
     private static void BarChart(string symbol, double[] values)
@@ -230,21 +151,13 @@ public class HistoryView : IDetailView
 
     public void HandleInput(ConsoleKeyInfo key)
     {
-        if (!currentSelectedMetal.HasValue)
+        var app = AppContext.Current!;
+        // Delegate metal selection (and ESC back to menu) to helper; clear period when leaving
+        if (!app.CurrentSelectedMetal.HasValue)
         {
-            var metall = MetallHelper.FromKey(key.KeyChar) ?? MetallHelper.FromConsoleKey(key.Key);
-            if (metall.HasValue)
-            {
-                currentSelectedMetal = metall;
-                Render();
-            }
-            else if (key.Key == ConsoleKey.Escape || key.Key == ConsoleKey.LeftArrow)
-            {
-                currentState = AppState.Menu;
-                currentDetailView = null;
+            if (key.Key == ConsoleKey.Escape || key.Key == ConsoleKey.LeftArrow)
                 _selectedPeriod = null;
-                CliOutputHelper.RenderMenu();
-            }
+            HandleInputHelper.HandleInputWithMetals(key, () => RenderAsync());
             return;
         }
 
@@ -253,9 +166,9 @@ public class HistoryView : IDetailView
             // Period selection: 1–4
             if (key.Key == ConsoleKey.Escape || key.Key == ConsoleKey.LeftArrow)
             {
-                currentSelectedMetal = null;
+                app.CurrentSelectedMetal = null;
                 _selectedPeriod = null;
-                Render();
+                _ = RenderAsync();
                 return;
             }
             HistoryPeriod? period = (key.KeyChar, key.Key) switch
@@ -269,16 +182,16 @@ public class HistoryView : IDetailView
             if (period.HasValue)
             {
                 _selectedPeriod = period.Value;
-                Render();
+                _ = RenderAsync();
             }
             return;
         }
 
         if (key.Key == ConsoleKey.Escape || key.Key == ConsoleKey.LeftArrow)
         {
-            currentState = AppState.Menu;
-            currentDetailView = null;
-            currentSelectedMetal = null;
+            app.State = AppState.Menu;
+            app.CurrentDetailView = null;
+            app.CurrentSelectedMetal = null;
             _selectedPeriod = null;
             CliOutputHelper.RenderMenu();
         }
