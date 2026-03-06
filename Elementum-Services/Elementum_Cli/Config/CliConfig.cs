@@ -1,4 +1,6 @@
+using Elementum_Cli.Helper;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Elementum_Cli.Config;
 
@@ -33,9 +35,9 @@ public static class CliConfig
             if (!string.IsNullOrWhiteSpace(fromFile))
                 return fromFile.TrimEnd('/') + "/";
         }
-        catch
+        catch (Exception ex)
         {
-            // Fall back to default
+            CliLogging.GetLogger(nameof(CliConfig)).LogWarning(ex, "Failed to load ApiBaseUrl from appsettings.json, using default");
         }
 
         return DefaultBaseUrl;

@@ -65,19 +65,19 @@ public class CliOutputHelper
     {
         Console.WriteLine();
         Console.WriteLine("╟" + new string('─', ViewWidth - 2) + "╢");
-        Console.WriteLine("║ [ESC/←] Back to menu".PadRight(ViewWidth - 2) + " ║");
+        Console.WriteLine("║ " + CliStrings.FooterBackToMenu.PadRight(ViewWidth - 4) + " ║");
         Console.WriteLine("╚" + new string('═', ViewWidth - 2) + "╝");
         Console.WriteLine();
     }
 
     public static void RenderMetalSelectionPrompt()
     {
-        RenderViewHeader("SELECT METAL");
-        Console.WriteLine("  Which metal should data be displayed for?");
+        RenderViewHeader(CliStrings.MetalSelectionHeader);
+        Console.WriteLine("  " + CliStrings.MetalSelectionQuestion);
         Console.WriteLine();
-        Console.WriteLine("    [1] Gold        [2] Silver      [3] Platinum ");
+        Console.WriteLine(CliStrings.MetalSelectionOptions);
         Console.WriteLine();
-        Console.WriteLine("  Press 1–4 to select. [ESC/←] Back to menu.");
+        Console.WriteLine("  " + CliStrings.PressToSelectEscBack);
         RenderViewFooter();
     }
 
@@ -113,7 +113,7 @@ public class CliOutputHelper
     {
         var app = AppContext.Current!;
         var item = app.MenuItems[app.SelectedIndex];
-        if (item.View == null || item.Text.Contains("exit", StringComparison.OrdinalIgnoreCase))
+        if (item.View == null || item.Text == CliStrings.MenuItemExit)
         {
             app.Running = false;
             return;
@@ -156,7 +156,7 @@ public class CliOutputHelper
 
         Console.WriteLine();
         Console.WriteLine("---------------------------------------------------------------------------------");
-        Console.WriteLine("                        Arrow keys + Enter to navigate                             ");
+        Console.WriteLine("                        " + CliStrings.MenuFooterHint + "                             ");
         Console.WriteLine("=================================================================================");
     }
 }

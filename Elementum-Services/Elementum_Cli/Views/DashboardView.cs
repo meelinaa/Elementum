@@ -7,7 +7,7 @@ namespace Elementum_Cli.Views;
 
 public class DashboardView : AsyncDetailViewBase
 {
-    protected override string ViewTitle => "CURRENT MARKET OVERVIEW";
+    protected override string ViewTitle => CliStrings.DashboardTitle;
     protected override string LoadingMessage => "Loading market data…";
 
     protected override async Task LoadAndRenderAsync()

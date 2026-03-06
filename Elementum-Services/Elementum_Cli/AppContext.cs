@@ -27,16 +27,16 @@ public class AppContext
         MenuItems.Clear();
         MenuItems.AddRange(new List<MenuItem>
         {
-            new MenuItem("DASHBOARD         - All Metals (Price & Change %)", true, 'D', DetailView.Dashboard),
+            new MenuItem(CliStrings.MenuItemDashboard, true, 'D', DetailView.Dashboard),
             new MenuItem("", false),
-            new MenuItem("TRADING & DAILY ANALYSIS - Bid/Ask, Compare, Volatility", true, 'T', DetailView.TradingView),
-            new MenuItem("KARAT & ALLOY - Price per gram + discount vs. 24k", true, 'K', DetailView.KaratCalculator),
+            new MenuItem(CliStrings.MenuItemTrading, true, 'T', DetailView.TradingView),
+            new MenuItem(CliStrings.MenuItemKarat, true, 'K', DetailView.KaratCalculator),
             new MenuItem("", false),
-            new MenuItem("List of All Metals- (Gold, Silver, Platinum)", true, 'L', DetailView.ListMetals),
-            new MenuItem("HISTORY           - Select Entry Date", true, 'H', DetailView.History),
+            new MenuItem(CliStrings.MenuItemListMetals, true, 'L', DetailView.ListMetals),
+            new MenuItem(CliStrings.MenuItemHistory, true, 'H', DetailView.History),
             new MenuItem("", false),
-            new MenuItem("INFO              - Core Data & Creation Date", true, 'I', DetailView.Info),
-            new MenuItem("[ESC] Exit Program", true, 'X', null)
+            new MenuItem(CliStrings.MenuItemInfo, true, 'I', DetailView.Info),
+            new MenuItem(CliStrings.MenuItemExit, true, 'X', null)
         });
     }
 }

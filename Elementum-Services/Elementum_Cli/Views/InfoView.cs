@@ -8,16 +8,16 @@ public class InfoView : IDetailView
     {
         Console.Clear();
 
-        CliOutputHelper.RenderViewHeader("INFO — ELEMENTUM TERMINAL");
+        CliOutputHelper.RenderViewHeader(CliStrings.InfoHeader);
 
-        CliOutputHelper.RenderSectionTitle("Master data & creation date (CreatedAt)");
-        Console.WriteLine("  │  ELEMENTUM TERMINAL  v1.1                                    │");
-        Console.WriteLine("  │  Master data & creation date – overview.                     │");
-        Console.WriteLine("  └──────────────────────────────────────────────────────────────┘");
+        CliOutputHelper.RenderSectionTitle(CliStrings.InfoSectionTitle);
+        Console.WriteLine(CliStrings.InfoAppLine);
+        Console.WriteLine(CliStrings.InfoDescriptionLine);
+        Console.WriteLine(CliStrings.InfoBoxBottom);
         Console.WriteLine();
-        Console.WriteLine("  (Backend logic to follow)");
+        Console.WriteLine(CliStrings.InfoBackendPlaceholder);
         Console.WriteLine();
-        Console.WriteLine("  Dummy output (no HTTP call)");
+        Console.WriteLine(CliStrings.InfoDummyOutput);
 
         CliOutputHelper.RenderViewFooter();
         return Task.CompletedTask;

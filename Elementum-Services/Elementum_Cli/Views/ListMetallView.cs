@@ -20,7 +20,7 @@ public class ListMetallView : AsyncDetailViewBase
             var w = CliConstants.ListMetallColumnWidths;
 
             Console.Clear();
-            CliOutputHelper.RenderViewHeader("METAL MASTER DATA — GOLD, SILVER, PLATINUM");
+            CliOutputHelper.RenderViewHeader(CliStrings.ListMetalsHeader);
 
             Console.WriteLine();
             Console.WriteLine(TableFormatter.BuildTopBorder(CliConstants.ListMetallTablePrefix, w));
