@@ -39,6 +39,6 @@ namespace Elementum.Infrastructure.Data.Interfaces
 
         /// <summary>Returns price history for a metal (by symbol) within a date range (inclusive).</summary>
         Task<IEnumerable<PriceHistory>> GetPriceHistoryByMetalSymbolAndDateRange(string symbol, DateOnly firstDate, DateOnly lastDate, CancellationToken ct);
-        Task<IEnumerable<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string ancodedAgg, int count, CancellationToken ct);
+        Task<IEnumerable<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct);
     }
 }

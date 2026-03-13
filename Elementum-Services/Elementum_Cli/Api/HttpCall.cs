@@ -36,18 +36,9 @@ public class HttpCall
     }
 
     /// <summary>Calls GET history/{symbol}/latest/trading and returns <see cref="TradingPriceDto"/> for TradingView.</summary>
-    public static async Task<TradingPriceDto?> GetPriceHistoryTradingLatestAsync(string metalSymbol)
+    public static async Task<string> GetPriceHistoryTradingLatestAsync(string metalSymbol)
     {
-        try
-        {
-            var json = await SendRequestAsync<string>($"history/{metalSymbol}/latest/trading");
-            return JsonSerializer.Deserialize<TradingPriceDto>(json, DefaultJsonOptions);
-        }
-        catch (Exception ex)
-        {
-            _log.LogWarning(ex, "Failed to load trading data for {Symbol}", metalSymbol);
-            return null;
-        }
+        return await SendRequestAsync<string>($"history/{metalSymbol}/latest/trading");
     }
 
     /// <summary>Calls GET history/{symbol}/latest/karat and returns <see cref="KaratPricesDto"/> for KaratCalculatorView.</summary>
@@ -82,7 +73,7 @@ public class HttpCall
     public static async Task<string> GetPriceHistoryMetalAsync(string metalSymbol, string aggregation, int count)
     {
         var aggregationSegment = aggregation.Trim().ToLowerInvariant();
-        return await SendRequestAsync<string>($"history/{metalSymbol}/aggregated={aggregationSegment}&{count}");
+        return await SendRequestAsync<string>($"history/{metalSymbol}/aggregated/{aggregationSegment}/{count}");
     }
 
     private static async Task<T> SendRequestAsync<T>(string endpoint)

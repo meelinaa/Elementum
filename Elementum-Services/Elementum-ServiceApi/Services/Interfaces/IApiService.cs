@@ -1,5 +1,4 @@
 using Elementum.Shared.DTOs;
-using Elementum.Shared.Objects;
 
 namespace Elementum_ServiceApi.Services.Interfaces
 {
@@ -14,25 +13,14 @@ namespace Elementum_ServiceApi.Services.Interfaces
         /// <returns>List of all metals as DTOs.</returns>
         Task<IEnumerable<MetalsDto>> GetAllMetals(CancellationToken cancellationToken);
 
-        /// <summary>Returns a single metal by symbol as <see cref="MetalsDto"/>.</summary>
-        /// <param name="symbol">The metal symbol (e.g. XAU, XAG).</param>
-        /// <param name="cancellationToken">Cancellation token for the async operation.</param>
-        /// <returns>The metal DTO if found; otherwise <c>null</c>.</returns>
-        Task<MetalsDto?> GetMetalBySymbol(string symbol, CancellationToken cancellationToken);
-
-        /// <summary>Returns all price history entries from the database.</summary>
-        /// <param name="cancellationToken">Cancellation token for the async operation.</param>
-        /// <returns>List of all price history records.</returns>
-        Task<IEnumerable<PriceHistory>> GetPriceHistoryAll(CancellationToken cancellationToken);
-
         /// <summary>Returns the latest price history entry per metal as <see cref="PriceHistoryDto"/> (for dashboard).</summary>
         Task<IEnumerable<PriceHistoryDto>> GetPriceHistoryAllLatest(CancellationToken cancellationToken);
 
         /// <summary>Returns price history for a specific metal by symbol as <see cref="PriceHistoryDto"/>.</summary>
         Task<IEnumerable<PriceHistoryDto>> GetPriceHistoryByMetalSymbol(string symbol, CancellationToken cancellationToken);
 
-        /// <summary>Returns the most recent price history entry for a metal by symbol.</summary>
-        Task<PriceHistory> GetPriceHistoryByMetalSymbolLatest(string symbol, CancellationToken cancellationToken);
+        /// <summary>Returns the most recent price history entry for a metal by symbol as <see cref="PriceHistoryDto"/>, or <c>null</c> if not found.</summary>
+        Task<PriceHistoryDto?> GetPriceHistoryByMetalSymbolLatest(string symbol, CancellationToken cancellationToken);
 
         /// <summary>Returns the latest price for a metal as <see cref="TradingPriceDto"/> (for TradingView: bid/ask, high/low, timestamps).</summary>
         /// <param name="symbol">The metal symbol (e.g. XAU, XAG).</param>
@@ -45,9 +33,6 @@ namespace Elementum_ServiceApi.Services.Interfaces
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>The karat DTO or <c>null</c> if not found.</returns>
         Task<KaratPricesDto?> GetPriceHistoryKaratLatest(string symbol, CancellationToken cancellationToken);
-
-        /// <summary>Returns all price history within a date range as <see cref="PriceHistoryDto"/>.</summary>
-        Task<IEnumerable<PriceHistoryDto>> GetPriceHistoryAllByDateRange(DateOnly firstDate, DateOnly lastDate, CancellationToken cancellationToken);
 
         /// <summary>Returns price history for a metal in date range as <see cref="PriceHistoryDto"/>.</summary>
         Task<IEnumerable<PriceHistoryDto>> GetPriceHistoryByMetalSymbolAndDateRange(string symbol, DateOnly firstDate, DateOnly lastDate, CancellationToken cancellationToken);

@@ -34,32 +34,15 @@ public class ApiServiceTests
     }
 
     [Fact]
-    public async Task GetMetalBySymbol_DelegatesToDbContext_AndReturnsDto()
+    public async Task GetPriceHistoryByMetalSymbolLatest_ReturnsNull_WhenNoResult()
     {
-        var metal = new Metals { Id = 1, Symbol = "XAG", Name = "Silver" };
-        _dbMock.Setup(db => db.GetMetalBySymbol("XAG", It.IsAny<CancellationToken>()))
-               .ReturnsAsync(metal);
-
-        var result = await _sut.GetMetalBySymbol("XAG", CancellationToken.None);
-
-        Assert.NotNull(result);
-        Assert.Equal(1, result.Id);
-        Assert.Equal("XAG", result.Symbol);
-        Assert.Equal("Silver", result.Name);
-        _dbMock.Verify(db => db.GetMetalBySymbol("XAG", It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task GetPriceHistoryByMetalSymbolLatest_Throws_WhenNoResult()
-    {
-        // Arrange
         _dbMock.Setup(db => db.GetPriceHistoryByMetalSymbolLatest("XAU", It.IsAny<CancellationToken>()))
                .ReturnsAsync((PriceHistory?)null);
 
-        // Act / Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _sut.GetPriceHistoryByMetalSymbolLatest("XAU", CancellationToken.None));
+        var result = await _sut.GetPriceHistoryByMetalSymbolLatest("XAU", CancellationToken.None);
 
-        Assert.Contains("XAU", ex.Message);
+        Assert.Null(result);
+        _dbMock.Verify(db => db.GetPriceHistoryByMetalSymbolLatest("XAU", It.IsAny<CancellationToken>()), Times.Once);
     }
+
 }

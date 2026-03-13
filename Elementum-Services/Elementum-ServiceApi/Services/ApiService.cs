@@ -26,20 +26,9 @@ namespace Elementum_ServiceApi.Services
             return list.Select(m => m.ToDto());
         }
 
-        public async Task<MetalsDto?> GetMetalBySymbol(string symbol, CancellationToken cancellationToken)
-        {
-            var metal = await _db.GetMetalBySymbol(symbol, cancellationToken);
-            return metal?.ToDto();
-        }
-
         #endregion Metals
 
         #region PriceHistory
-
-        public async Task<IEnumerable<PriceHistory>> GetPriceHistoryAll(CancellationToken cancellationToken)
-        {
-            return await _db.GetPriceHistoryAll(cancellationToken);
-        }
 
         public async Task<IEnumerable<PriceHistoryDto>> GetPriceHistoryAllLatest(CancellationToken cancellationToken)
         {
@@ -52,12 +41,10 @@ namespace Elementum_ServiceApi.Services
             return list.Select(ph => ph.ToPriceHistoryDto());
         }
 
-        public async Task<PriceHistory> GetPriceHistoryByMetalSymbolLatest(string symbol, CancellationToken cancellationToken)
+        public async Task<PriceHistoryDto?> GetPriceHistoryByMetalSymbolLatest(string symbol, CancellationToken cancellationToken)
         {
             var result = await _db.GetPriceHistoryByMetalSymbolLatest(symbol, cancellationToken);
-            if (result == null)
-                throw new InvalidOperationException($"No price history found for symbol '{symbol}'.");
-            return result;
+            return result?.ToPriceHistoryDto();
         }
 
         public async Task<TradingPriceDto?> GetPriceHistoryTradingLatest(string symbol, CancellationToken cancellationToken)
@@ -70,12 +57,6 @@ namespace Elementum_ServiceApi.Services
         {
             var entity = await _db.GetPriceHistoryByMetalSymbolLatest(symbol, cancellationToken);
             return entity?.ToKaratPricesDto();
-        }
-
-        public async Task<IEnumerable<PriceHistoryDto>> GetPriceHistoryAllByDateRange(DateOnly firstDate, DateOnly lastDate, CancellationToken cancellationToken)
-        {
-            var list = await _db.GetPriceHistoryAllByDateRange(firstDate, lastDate, cancellationToken);
-            return list.Select(ph => ph.ToPriceHistoryDto());
         }
 
         public async Task<IEnumerable<PriceHistoryDto>> GetPriceHistoryByMetalSymbolAndDateRange(string symbol, DateOnly firstDate, DateOnly lastDate, CancellationToken cancellationToken)
