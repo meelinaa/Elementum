@@ -1,4 +1,4 @@
-using Elementum.Shared.Objects;
+using Elementum.Shared.DTOs;
 using Elementum_Cli.Enums;
 
 namespace Elementum_Cli.Helper;
@@ -32,7 +32,7 @@ public static class HistoryRenderer
     }
 
     /// <summary>Renders the full charts view: header, sparkline, bar chart, entries summary, footer.</summary>
-    public static void RenderCharts(string sym, string name, string periodLabel, IReadOnlyList<PriceHistory> slice)
+    public static void RenderCharts(string sym, string name, string periodLabel, IReadOnlyList<PriceHistoryDto> slice)
     {
         CliOutputHelper.RenderViewHeader($"{CliStrings.HistoryHeaderPrefix}{name.ToUpperInvariant()} ({sym}) · {periodLabel}");
 

@@ -1,3 +1,4 @@
+using Elementum.Shared.DTOs;
 using Elementum.Shared.Objects;
 
 namespace Elementum_ServiceApi.Services.Interfaces
@@ -8,53 +9,50 @@ namespace Elementum_ServiceApi.Services.Interfaces
     /// </summary>
     public interface IApiService
     {
-        /// <summary>Returns all metals from the database.</summary>
+        /// <summary>Returns all metals as <see cref="MetalsDto"/> (Id, Symbol, Name).</summary>
         /// <param name="cancellationToken">Cancellation token for the async operation.</param>
-        /// <returns>List of all metals.</returns>
-        Task<IEnumerable<Metals>> GetAllMetals(CancellationToken cancellationToken);
+        /// <returns>List of all metals as DTOs.</returns>
+        Task<IEnumerable<MetalsDto>> GetAllMetals(CancellationToken cancellationToken);
 
-        /// <summary>Returns a single metal by its symbol (e.g. XAU, XAG).</summary>
-        /// <param name="symbol">The metal symbol.</param>
+        /// <summary>Returns a single metal by symbol as <see cref="MetalsDto"/>.</summary>
+        /// <param name="symbol">The metal symbol (e.g. XAU, XAG).</param>
         /// <param name="cancellationToken">Cancellation token for the async operation.</param>
-        /// <returns>The metal if found; otherwise <c>null</c>.</returns>
-        Task<Metals?> GetMetalBySymbol(string symbol, CancellationToken cancellationToken);
+        /// <returns>The metal DTO if found; otherwise <c>null</c>.</returns>
+        Task<MetalsDto?> GetMetalBySymbol(string symbol, CancellationToken cancellationToken);
 
         /// <summary>Returns all price history entries from the database.</summary>
         /// <param name="cancellationToken">Cancellation token for the async operation.</param>
         /// <returns>List of all price history records.</returns>
         Task<IEnumerable<PriceHistory>> GetPriceHistoryAll(CancellationToken cancellationToken);
 
-        /// <summary>Returns the latest price history entry per metal (for dashboard/current prices).</summary>
-        /// <param name="cancellationToken">Cancellation token for the async operation.</param>
-        /// <returns>One latest entry per metal.</returns>
-        Task<IEnumerable<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken cancellationToken);
+        /// <summary>Returns the latest price history entry per metal as <see cref="PriceHistoryDto"/> (for dashboard).</summary>
+        Task<IEnumerable<PriceHistoryDto>> GetPriceHistoryAllLatest(CancellationToken cancellationToken);
 
-        /// <summary>Returns price history for a specific metal by its symbol.</summary>
-        /// <param name="symbol">The metal symbol (e.g. XAU, XAG).</param>
-        /// <param name="cancellationToken">Cancellation token for the async operation.</param>
-        /// <returns>Price history for the given metal.</returns>
-        Task<IEnumerable<PriceHistory>> GetPriceHistoryByMetalSymbol(string symbol, CancellationToken cancellationToken);
+        /// <summary>Returns price history for a specific metal by symbol as <see cref="PriceHistoryDto"/>.</summary>
+        Task<IEnumerable<PriceHistoryDto>> GetPriceHistoryByMetalSymbol(string symbol, CancellationToken cancellationToken);
 
         /// <summary>Returns the most recent price history entry for a metal by symbol.</summary>
-        /// <param name="symbol">The metal symbol.</param>
-        /// <param name="cancellationToken">Cancellation token for the async operation.</param>
-        /// <returns>The latest price history entry for the metal.</returns>
         Task<PriceHistory> GetPriceHistoryByMetalSymbolLatest(string symbol, CancellationToken cancellationToken);
 
-        /// <summary>Returns all price history within a date range (inclusive).</summary>
-        /// <param name="firstDate">Start date of the range.</param>
-        /// <param name="lastDate">End date of the range.</param>
-        /// <param name="cancellationToken">Cancellation token for the async operation.</param>
-        /// <returns>Price history entries within the date range.</returns>
-        Task<IEnumerable<PriceHistory>> GetPriceHistoryAllByDateRange(DateOnly firstDate, DateOnly lastDate, CancellationToken cancellationToken);
-
-        /// <summary>Returns price history for a metal (by symbol) within a date range (inclusive).</summary>
+        /// <summary>Returns the latest price for a metal as <see cref="TradingPriceDto"/> (for TradingView: bid/ask, high/low, timestamps).</summary>
         /// <param name="symbol">The metal symbol (e.g. XAU, XAG).</param>
-        /// <param name="firstDate">Start date of the range.</param>
-        /// <param name="lastDate">End date of the range.</param>
-        /// <param name="cancellationToken">Cancellation token for the async operation.</param>
-        /// <returns>Price history for the metal within the date range.</returns>
-        Task<IEnumerable<PriceHistory>> GetPriceHistoryByMetalSymbolAndDateRange(string symbol, DateOnly firstDate, DateOnly lastDate, CancellationToken cancellationToken);
-        Task<IEnumerable<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct);
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The trading DTO or <c>null</c> if not found.</returns>
+        Task<TradingPriceDto?> GetPriceHistoryTradingLatest(string symbol, CancellationToken cancellationToken);
+
+        /// <summary>Returns the latest price for a metal as <see cref="KaratPricesDto"/> (for KaratCalculatorView: price per gram 24k–10k).</summary>
+        /// <param name="symbol">The metal symbol (e.g. XAU, XAG).</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The karat DTO or <c>null</c> if not found.</returns>
+        Task<KaratPricesDto?> GetPriceHistoryKaratLatest(string symbol, CancellationToken cancellationToken);
+
+        /// <summary>Returns all price history within a date range as <see cref="PriceHistoryDto"/>.</summary>
+        Task<IEnumerable<PriceHistoryDto>> GetPriceHistoryAllByDateRange(DateOnly firstDate, DateOnly lastDate, CancellationToken cancellationToken);
+
+        /// <summary>Returns price history for a metal in date range as <see cref="PriceHistoryDto"/>.</summary>
+        Task<IEnumerable<PriceHistoryDto>> GetPriceHistoryByMetalSymbolAndDateRange(string symbol, DateOnly firstDate, DateOnly lastDate, CancellationToken cancellationToken);
+
+        /// <summary>Returns aggregated price history for a metal as <see cref="PriceHistoryDto"/>.</summary>
+        Task<IEnumerable<PriceHistoryDto>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct);
     }
 }

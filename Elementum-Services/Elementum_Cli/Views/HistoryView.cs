@@ -1,4 +1,4 @@
-using Elementum.Shared.Objects;
+using Elementum.Shared.DTOs;
 using Elementum_Cli.Enums;
 using Elementum_Cli.Helper;
 using Elementum_Cli.Providers;
@@ -61,7 +61,7 @@ public class HistoryView : IDetailView
     {
         await ConsoleLoader.RunAsync(async () =>
         {
-            List<PriceHistory>? list = await HttpCall.GetPriceHistoryMetalWithLogicAsync(sym, aggregation, count, period);
+            List<PriceHistoryDto>? list = await HttpCall.GetPriceHistoryMetalWithLogicAsync(sym, aggregation, count, period);
             var periodLabel = PeriodLabels[period];
 
             CliOutputHelper.RenderViewHeader($"{CliStrings.HistoryHeaderPrefix}{name.ToUpperInvariant()} ({sym}) · {periodLabel}");
@@ -74,7 +74,7 @@ public class HistoryView : IDetailView
             }
 
             // API already returns at most count entries (aggregated); order by date for chart display.
-            var ordered = list.OrderBy(p => p.EntryDate).ToList();
+            var ordered = list!.OrderBy(p => p.EntryDate).ToList();
             HistoryRenderer.RenderCharts(sym, name, periodLabel, ordered);
         });
     }

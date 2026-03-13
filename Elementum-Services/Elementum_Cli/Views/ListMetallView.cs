@@ -1,4 +1,4 @@
-using Elementum.Shared.Objects;
+using Elementum.Shared.DTOs;
 using Elementum_Cli.Helper;
 using Elementum_Cli.Providers;
 using System.Text.Json;
@@ -15,7 +15,7 @@ public class ListMetallView : AsyncDetailViewBase
         await ConsoleLoader.RunAsync(async () =>
         {
             var json = await HttpCall.GetMetalListAsync();
-            var metals = JsonSerializer.Deserialize<List<Metals>>(json, HttpCall.DefaultJsonOptions);
+            var metals = JsonSerializer.Deserialize<List<MetalsDto>>(json, HttpCall.DefaultJsonOptions);
 
             var w = CliConstants.ListMetallColumnWidths;
 
@@ -39,8 +39,8 @@ public class ListMetallView : AsyncDetailViewBase
                     Console.WriteLine(TableFormatter.BuildRow(CliConstants.ListMetallTablePrefix, w, new[]
                     {
                         metal.Id.ToString(),
-                        metal.Symbol ?? "",
-                        metal.Name ?? ""
+                        metal.Symbol,
+                        metal.Name
                     }));
                 }
                 Console.WriteLine(TableFormatter.BuildBottomBorder(CliConstants.ListMetallTablePrefix, w));

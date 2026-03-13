@@ -1,4 +1,5 @@
 using Elementum.Infrastructure.Data.Interfaces;
+using Elementum.Shared.DTOs;
 using Elementum.Shared.Objects;
 using Polly;
 
@@ -38,7 +39,7 @@ public sealed class ResilientElementumDbContext : IElementumDbContext
     public Task<IEnumerable<PriceHistory>> GetPriceHistoryAll(CancellationToken ct) =>
         ExecuteAsync(ct => _inner.GetPriceHistoryAll(ct), ct);
 
-    public Task<IEnumerable<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken ct) =>
+    public Task<IEnumerable<PriceHistoryDto>> GetPriceHistoryAllLatest(CancellationToken ct) =>
         ExecuteAsync(ct => _inner.GetPriceHistoryAllLatest(ct), ct);
 
     public Task<IEnumerable<PriceHistory>> GetPriceHistoryByMetalSymbol(string symbol, CancellationToken ct) =>

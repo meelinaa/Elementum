@@ -1,4 +1,4 @@
-using Elementum.Shared.Objects;
+using Elementum.Shared.DTOs;
 using Elementum_Cli.Helper;
 using Elementum_Cli.Providers;
 
@@ -15,17 +15,25 @@ public class KaratCalculatorView : MetalDetailViewBase
     {
         await ConsoleLoader.RunAsync(async () =>
         {
-            PriceHistory? ph = await HttpCall.GetPriceHistoryTodayWithLogicAsync(sym, name, ViewTitle);
-            if (ph == null)
-                return;
+            Console.Clear();
+            CliOutputHelper.RenderViewHeader($"{ViewTitle} — {name.ToUpperInvariant()} ({sym})");
 
-            var p24 = ph.PriceGram24k;
-            var p22 = ph.PriceGram22k;
-            var p21 = ph.PriceGram21k;
-            var p18 = ph.PriceGram18k;
-            var p16 = ph.PriceGram16k;
-            var p14 = ph.PriceGram14k;
-            var p10 = ph.PriceGram10k;
+            var dto = await HttpCall.GetPriceHistoryKaratLatestAsync(sym);
+            if (dto == null)
+            {
+                Console.WriteLine();
+                Console.WriteLine("  " + CliOutputHelper.NoDataMessageForMetal);
+                CliOutputHelper.RenderViewFooter();
+                return;
+            }
+
+            var p24 = dto.PriceGram24k;
+            var p22 = dto.PriceGram22k;
+            var p21 = dto.PriceGram21k;
+            var p18 = dto.PriceGram18k;
+            var p16 = dto.PriceGram16k;
+            var p14 = dto.PriceGram14k;
+            var p10 = dto.PriceGram10k;
 
             // Block 1: Price per gram (24k–10k)
             CliOutputHelper.RenderSectionTitle("Price per gram (EUR) — 24k to 10k");
@@ -54,7 +62,7 @@ public class KaratCalculatorView : MetalDetailViewBase
             Console.WriteLine("  └─────────────┴────────────────┴───────────────────────────────────┘");
 
             Console.WriteLine();
-            Console.WriteLine($"  Last update (EntryDate): {ph.EntryDate:yyyy-MM-dd}");
+            Console.WriteLine($"  Last update (EntryDate): {dto.EntryDate:yyyy-MM-dd}");
 
             CliOutputHelper.RenderViewFooter();
         });

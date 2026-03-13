@@ -1,4 +1,4 @@
-using Elementum.Shared.Objects;
+using Elementum.Shared.DTOs;
 using Elementum_Cli.Config;
 using Elementum_Cli.Enums;
 using Elementum_Cli.Helper;
@@ -32,6 +32,36 @@ public class HttpCall
     public static async Task<string> GetPriceHistoryTodayAsync(string metalSymbol)
     {
         return await SendRequestAsync<string>($"history/{metalSymbol}/latest");
+    }
+
+    /// <summary>Calls GET history/{symbol}/latest/trading and returns <see cref="TradingPriceDto"/> for TradingView.</summary>
+    public static async Task<TradingPriceDto?> GetPriceHistoryTradingLatestAsync(string metalSymbol)
+    {
+        try
+        {
+            var json = await SendRequestAsync<string>($"history/{metalSymbol}/latest/trading");
+            return JsonSerializer.Deserialize<TradingPriceDto>(json, DefaultJsonOptions);
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Failed to load trading data for {Symbol}", metalSymbol);
+            return null;
+        }
+    }
+
+    /// <summary>Calls GET history/{symbol}/latest/karat and returns <see cref="KaratPricesDto"/> for KaratCalculatorView.</summary>
+    public static async Task<KaratPricesDto?> GetPriceHistoryKaratLatestAsync(string metalSymbol)
+    {
+        try
+        {
+            var json = await SendRequestAsync<string>($"history/{metalSymbol}/latest/karat");
+            return JsonSerializer.Deserialize<KaratPricesDto>(json, DefaultJsonOptions);
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Failed to load karat data for {Symbol}", metalSymbol);
+            return null;
+        }
     }
 
     public static async Task<string> GetPriceHistoryMetalAsync(string metalSymbol)
@@ -82,14 +112,15 @@ public class HttpCall
         }
     }
 
-    public static async Task<PriceHistory?> GetPriceHistoryTodayWithLogicAsync(string sym, string name, string viewHeader)
+    /// <summary>Legacy: fetches history/{symbol}/latest and deserializes as TradingPriceDto (list or single). Prefer <see cref="GetPriceHistoryTradingLatestAsync"/> for TradingView.</summary>
+    public static async Task<TradingPriceDto?> GetPriceHistoryTodayWithLogicAsync(string sym, string name, string viewHeader)
     {
         var json = await HttpCall.GetPriceHistoryTodayAsync(sym);
 
-        PriceHistory? ph = null;
+        TradingPriceDto? ph = null;
         try
         {
-            var list = JsonSerializer.Deserialize<List<PriceHistory>>(json, DefaultJsonOptions);
+            var list = JsonSerializer.Deserialize<List<TradingPriceDto>>(json, DefaultJsonOptions);
             ph = list?.FirstOrDefault();
         }
         catch (Exception ex)
@@ -97,7 +128,7 @@ public class HttpCall
             _log.LogDebug(ex, "Deserialize as list failed, trying single object for {Sym}", sym);
             try
             {
-                ph = JsonSerializer.Deserialize<PriceHistory>(json, DefaultJsonOptions);
+                ph = JsonSerializer.Deserialize<TradingPriceDto>(json, DefaultJsonOptions);
             }
             catch (Exception ex2)
             {
@@ -118,21 +149,21 @@ public class HttpCall
         return ph;
     }
 
-    public static async Task<List<PriceHistory>?> GetPriceHistoryMetalWithLogicAsync(string sym, string aggregation, int count, HistoryPeriod period)
+    public static async Task<List<PriceHistoryDto>?> GetPriceHistoryMetalWithLogicAsync(string sym, string aggregation, int count, HistoryPeriod period)
     {
-        List<PriceHistory>? list = null;
+        List<PriceHistoryDto>? list = null;
         try
         {
             var json = await HttpCall.GetPriceHistoryMetalAsync(sym, aggregation, count);
             try
             {
-                list = JsonSerializer.Deserialize<List<PriceHistory>>(json, DefaultJsonOptions);
+                list = JsonSerializer.Deserialize<List<PriceHistoryDto>>(json, DefaultJsonOptions);
             }
             catch (Exception ex)
             {
                 _log.LogDebug(ex, "Deserialize as list failed for {Sym} aggregated, trying single", sym);
-                var single = JsonSerializer.Deserialize<PriceHistory>(json, DefaultJsonOptions);
-                list = single != null ? new List<PriceHistory> { single } : null;
+                var single = JsonSerializer.Deserialize<PriceHistoryDto>(json, DefaultJsonOptions);
+                list = single != null ? new List<PriceHistoryDto> { single } : null;
             }
         }
         catch (Exception ex)
@@ -141,7 +172,7 @@ public class HttpCall
             try
             {
                 var json = await HttpCall.GetPriceHistoryMetalAsync(sym);
-                list = JsonSerializer.Deserialize<List<PriceHistory>>(json, DefaultJsonOptions);
+                list = JsonSerializer.Deserialize<List<PriceHistoryDto>>(json, DefaultJsonOptions);
                 if (list != null && list.Count > 0)
                     list = AggregateClientSide(list, period, count);
             }
@@ -155,11 +186,9 @@ public class HttpCall
         Console.Clear();
 
         return list;
-
     }
 
-    /// <summary>Client-side aggregation when API history/.../aggregated is not yet available.</summary>
-    private static List<PriceHistory> AggregateClientSide(List<PriceHistory> ordered, HistoryPeriod period, int targetCount)
+    private static List<PriceHistoryDto> AggregateClientSide(List<PriceHistoryDto> ordered, HistoryPeriod period, int targetCount)
     {
         ordered = ordered.OrderBy(p => p.EntryDate).ToList();
         if (ordered.Count <= targetCount) return ordered.TakeLast(targetCount).ToList();
@@ -174,15 +203,15 @@ public class HttpCall
         };
     }
 
-    private static List<PriceHistory> TakeEveryNth(List<PriceHistory> list, int step, int maxCount)
+    private static List<PriceHistoryDto> TakeEveryNth(List<PriceHistoryDto> list, int step, int maxCount)
     {
-        var result = new List<PriceHistory>();
+        var result = new List<PriceHistoryDto>();
         for (int i = list.Count - 1; i >= 0 && result.Count < maxCount; i -= step)
             result.Insert(0, list[i]);
         return result;
     }
 
-    private static List<PriceHistory> TakeByMonth(List<PriceHistory> list, int maxCount)
+    private static List<PriceHistoryDto> TakeByMonth(List<PriceHistoryDto> list, int maxCount)
     {
         var byMonth = list
             .GroupBy(p => (p.EntryDate.Year, p.EntryDate.Month))
@@ -193,7 +222,7 @@ public class HttpCall
         return byMonth;
     }
 
-    private static List<PriceHistory> TakeByYear(List<PriceHistory> list, int maxCount)
+    private static List<PriceHistoryDto> TakeByYear(List<PriceHistoryDto> list, int maxCount)
     {
         var byYear = list
             .GroupBy(p => p.EntryDate.Year)

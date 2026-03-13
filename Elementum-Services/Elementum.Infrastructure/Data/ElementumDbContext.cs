@@ -1,7 +1,10 @@
 using System.Globalization;
 using Elementum.Infrastructure.Data.Interfaces;
+using Elementum.Shared.DTOs;
+using Elementum.Shared.Mapping;
 using Elementum.Shared.Objects;
 using Microsoft.EntityFrameworkCore;
+
 
 namespace Elementum.Infrastructure.Data;
 
@@ -72,15 +75,19 @@ public class ElementumDbContext : DbContext, IElementumDbContext
             .ToListAsync(ct);
     }
 
-    public async Task<IEnumerable<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken ct)
+    /// <summary>Latest price history entry per metal. Groups in memory so Include(Metal) is preserved for mapping.</summary>
+    public async Task<IEnumerable<PriceHistoryDto>> GetPriceHistoryAllLatest(CancellationToken ct)
     {
-        return await PriceHistory
+        var all = await PriceHistory
             .Include(x => x.Metal)
-            .GroupBy(x => x.MetalId)
-            .Select(group => group
-                .OrderByDescending(x => x.EntryDate)
-                .First())
             .ToListAsync(ct);
+
+        var latestPerMetal = all
+            .GroupBy(x => x.MetalId)
+            .Select(g => g.OrderByDescending(x => x.EntryDate).First())
+            .ToList();
+
+        return latestPerMetal.Select(PriceHistoryMapping.ToPriceHistoryDto);
     }
 
     public async Task<IEnumerable<PriceHistory>> GetPriceHistoryByMetalSymbol(string symbol, CancellationToken ct)

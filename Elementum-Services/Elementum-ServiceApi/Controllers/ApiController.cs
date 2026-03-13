@@ -1,3 +1,4 @@
+using Elementum.Shared.DTOs;
 using Elementum.Shared.Objects;
 using Elementum_ServiceApi.Models;
 using Elementum_ServiceApi.Services.Interfaces;
@@ -17,16 +18,16 @@ namespace Elementum_ServiceApi.Controllers
             _apiService = apiService;
         }
 
-        /// <summary>GET /api/metals — all metals. Returns JSON array.</summary>
+        /// <summary>GET /api/v1/metals/all — all metals as <see cref="MetalsDto"/> (Id, Symbol, Name).</summary>
         [HttpGet("metals/all")]
-        public async Task<IEnumerable<Metals>> GetAllMetals(CancellationToken cancellationToken)
+        public async Task<IEnumerable<MetalsDto>> GetAllMetals(CancellationToken cancellationToken)
         {
             return await _apiService.GetAllMetals(cancellationToken);
         }
 
-        /// <summary>GET /api/metals/{symbol} — single metal by symbol. Returns 404 if not found.</summary>
+        /// <summary>GET /api/v1/metals/{symbol} — single metal by symbol as <see cref="MetalsDto"/>. Returns 404 if not found.</summary>
         [HttpGet("metals/{symbol}")]
-        public async Task<ActionResult<Metals>> GetMetalBySymbol([FromRoute] SymbolRequest symbolRequest, CancellationToken cancellationToken)
+        public async Task<ActionResult<MetalsDto>> GetMetalBySymbol([FromRoute] SymbolRequest symbolRequest, CancellationToken cancellationToken)
         {
             if (!ModelState.IsValid)
                 return ValidationProblem(ModelState);
@@ -54,16 +55,17 @@ namespace Elementum_ServiceApi.Controllers
             return await _apiService.GetPriceHistoryAll(cancellationToken);
         }
 
+        /// <summary>GET /api/v1/history/all/latest — latest per metal as <see cref="PriceHistoryDto"/> for Dashboard.</summary>
         [HttpGet("history/all/latest")]
-        public async Task<IEnumerable<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken cancellationToken)
+        public async Task<IEnumerable<PriceHistoryDto>> GetPriceHistoryAllLatest(CancellationToken cancellationToken)
         {
             return await _apiService.GetPriceHistoryAllLatest(cancellationToken);
         }
 
-        /// <summary>GET /api/history/{symbol} — price history for one metal. Returns JSON array.</summary>
+        /// <summary>GET /api/v1/history/{symbol} — price history for one metal as <see cref="PriceHistoryDto"/> array.</summary>
         [HttpGet("history/{symbol}")]
         [RequestTimeout("DataCruncher")]
-        public async Task<ActionResult<IEnumerable<PriceHistory>>> GetPriceHistoryByMetalSymbol([FromRoute] SymbolRequest symbolRequest, CancellationToken cancellationToken)
+        public async Task<ActionResult<IEnumerable<PriceHistoryDto>>> GetPriceHistoryByMetalSymbol([FromRoute] SymbolRequest symbolRequest, CancellationToken cancellationToken)
         {
             if (!ModelState.IsValid)
                 return ValidationProblem(ModelState);
@@ -72,7 +74,7 @@ namespace Elementum_ServiceApi.Controllers
             return Ok(historyData);
         }
 
-        /// <summary>GET /api/history/{symbol} — price history for one metal. Returns JSON array.</summary>
+        /// <summary>GET /api/history/{symbol}/latest — latest price history for one metal.</summary>
         [HttpGet("history/{symbol}/latest")]
         public async Task<ActionResult<IEnumerable<PriceHistory>>> GetPriceHistoryByMetalSymbolLatest([FromRoute] SymbolRequest symbolRequest, CancellationToken cancellationToken)
         {
@@ -83,10 +85,51 @@ namespace Elementum_ServiceApi.Controllers
             return Ok(historyData);
         }
 
-        /// <summary>
-        /// GET /api/v1/history/all/{firstDate}/{lastDate} — history in date range.
-        /// Returns JSON array. Dates: yyyy-MM-dd. Uses request validation via <see cref="DateRangeRequest"/>.
-        /// </summary>
+        /// <summary>GET /api/v1/history/{symbol}/latest/trading — latest price as <see cref="TradingPriceDto"/> for TradingView (bid/ask, high/low, timestamps).</summary>
+        [HttpGet("history/{symbol}/latest/trading")]
+        public async Task<ActionResult<TradingPriceDto>> GetPriceHistoryTradingLatest([FromRoute] SymbolRequest symbolRequest, CancellationToken cancellationToken)
+        {
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            var dto = await _apiService.GetPriceHistoryTradingLatest(symbolRequest.Symbol.Trim(), cancellationToken);
+            if (dto == null)
+            {
+                return NotFound(new ProblemDetails
+                {
+                    Title = "Not Found",
+                    Status = StatusCodes.Status404NotFound,
+                    Detail = $"No price history found for symbol '{symbolRequest.Symbol}'.",
+                    Instance = $"{Request.Method} {Request.Path}"
+                });
+            }
+
+            return Ok(dto);
+        }
+
+        /// <summary>GET /api/v1/history/{symbol}/latest/karat — latest price as <see cref="KaratPricesDto"/> for KaratCalculatorView (price per gram 24k–10k).</summary>
+        [HttpGet("history/{symbol}/latest/karat")]
+        public async Task<ActionResult<KaratPricesDto>> GetPriceHistoryKaratLatest([FromRoute] SymbolRequest symbolRequest, CancellationToken cancellationToken)
+        {
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            var dto = await _apiService.GetPriceHistoryKaratLatest(symbolRequest.Symbol.Trim(), cancellationToken);
+            if (dto == null)
+            {
+                return NotFound(new ProblemDetails
+                {
+                    Title = "Not Found",
+                    Status = StatusCodes.Status404NotFound,
+                    Detail = $"No price history found for symbol '{symbolRequest.Symbol}'.",
+                    Instance = $"{Request.Method} {Request.Path}"
+                });
+            }
+
+            return Ok(dto);
+        }
+
+        /// <summary>GET /api/v1/history/all/{firstDate}/{lastDate} — history in date range as <see cref="PriceHistoryDto"/> array.</summary>
         [HttpGet("history/all/{firstDate}/{lastDate}")]
         [RequestTimeout("DataCruncher")]
         public async Task<IActionResult> GetPriceHistoryAllByDateRange([FromRoute] DateRangeRequest request, CancellationToken ct)
@@ -100,7 +143,7 @@ namespace Elementum_ServiceApi.Controllers
             return Ok(historyData);
         }
 
-        /// <summary>GET /api/v1/history/{symbol}/{firstDate}/{lastDate} — history for one metal in date range. Uses <see cref="SymbolRequest"/> and <see cref="DateRangeRequest"/>.</summary>
+        /// <summary>GET /api/v1/history/{symbol}/{firstDate}/{lastDate} — history for one metal in date range as <see cref="PriceHistoryDto"/> array.</summary>
         [HttpGet("history/{symbol}/{firstDate}/{lastDate}")]
         [RequestTimeout("DataCruncher")]
         public async Task<IActionResult> GetPriceHistoryByMetalSymbolAndDateRange([FromRoute] SymbolRequest symbolRequest, [FromRoute] DateRangeRequest dateRangeRequest, CancellationToken ct)
@@ -114,7 +157,7 @@ namespace Elementum_ServiceApi.Controllers
             return Ok(historyData);
         }
 
-        /// <summary>GET /api/v1/history/{symbol}/aggregated/{aggregation}/{count} — price history by period (e.g. history/XAU/aggregated/monthly/12). Aggregation returns one value per period (average of days in that period).</summary>
+        /// <summary>GET /api/v1/history/{symbol}/aggregated=... — aggregated price history as <see cref="PriceHistoryDto"/> array.</summary>
         [HttpGet("history/{symbol}/aggregated={aggregation}&{count}")]
         [RequestTimeout("DataCruncher")]
         public async Task<IActionResult> GetPriceHistoryMetalData([FromRoute] SymbolRequest symbolRequest, [FromRoute] AggregationRequest aggregationRequest, CancellationToken ct)

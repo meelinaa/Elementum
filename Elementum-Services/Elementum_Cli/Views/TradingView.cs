@@ -1,4 +1,4 @@
-using Elementum.Shared.Objects;
+using Elementum.Shared.DTOs;
 using Elementum_Cli.Helper;
 using Elementum_Cli.Providers;
 
@@ -9,13 +9,21 @@ public class TradingView : MetalDetailViewBase
     protected override string ViewTitle => "TRADING & DAILY ANALYSIS";
     protected override string LoadingMessage => "Loading daily data…";
 
-    protected override async Task LoadAndRenderAsync(string sym, string name) // todo: consider caching this data for the session to allow faster re-rendering when user goes back and forth between metals
+    protected override async Task LoadAndRenderAsync(string sym, string name)
     {
         await ConsoleLoader.RunAsync(async () =>
         {
-            PriceHistory? ph = await HttpCall.GetPriceHistoryTodayWithLogicAsync(sym, name, ViewTitle);
+            Console.Clear();
+            CliOutputHelper.RenderViewHeader($"{ViewTitle} — {name.ToUpperInvariant()} ({sym})");
+
+            var ph = await HttpCall.GetPriceHistoryTradingLatestAsync(sym);
             if (ph == null)
+            {
+                Console.WriteLine();
+                Console.WriteLine("  " + CliOutputHelper.NoDataMessageForMetal);
+                CliOutputHelper.RenderViewFooter();
                 return;
+            }
 
             var exchange = ph.Exchange ?? "—";
             var currency = ph.Currency ?? "USD";

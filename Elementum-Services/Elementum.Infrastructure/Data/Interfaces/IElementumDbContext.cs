@@ -1,3 +1,4 @@
+using Elementum.Shared.DTOs;
 using Elementum.Shared.Objects;
 using Microsoft.EntityFrameworkCore;
 
@@ -28,7 +29,7 @@ namespace Elementum.Infrastructure.Data.Interfaces
         Task<IEnumerable<PriceHistory>> GetPriceHistoryAll(CancellationToken ct);
 
         /// <summary>Returns the latest price history entry per metal (grouped by symbol).</summary>
-        Task<IEnumerable<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken ct);
+        Task<IEnumerable<PriceHistoryDto>> GetPriceHistoryAllLatest(CancellationToken ct);
 
         /// <summary>Returns price history for a specific metal by its symbol.</summary>
         Task<IEnumerable<PriceHistory>> GetPriceHistoryByMetalSymbol(string symbol, CancellationToken ct);

@@ -1,7 +1,7 @@
 using Elementum.Shared.DTOs;
 using Elementum.Shared.Objects;
 
-namespace Elementum_ServiceApi.Mapping;
+namespace Elementum.Shared.Mapping;
 
 /// <summary>
 /// Maps entity types to API DTOs so responses expose only the required fields.
@@ -33,7 +33,7 @@ public static class PriceHistoryMapping
             EntryDate = entity.EntryDate,
             Price = entity.Price,
             Chp = entity.Chp,
-            Metal = entity.Metal != null ? entity.Metal.ToDto() : null
+            Metal = entity.Metal?.ToDto()
         };
     }
 
