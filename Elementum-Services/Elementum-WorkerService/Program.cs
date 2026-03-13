@@ -14,6 +14,7 @@ using Polly;
 using Polly.Extensions.Http;
 using Serilog;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 
 // Load .env from current or parent directory (optional; in production use real env vars)
 try
@@ -26,6 +27,10 @@ try
 catch (FileNotFoundException) { /* .env optional when using real env vars */ }
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Listen on a different port than the API (e.g. 5094) to avoid conflict with API on 5000. Override via Urls in appsettings or ASPNETCORE_URLS.
+var workerUrls = builder.Configuration["Urls"] ?? "http://localhost:5094";
+builder.WebHost.UseUrls(workerUrls);
 
 // Structured logging with Serilog
 builder.Logging.ClearProviders();
@@ -51,7 +56,7 @@ static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy() =>
 builder.Services.AddHttpClient("GoldApi", (sp, client) =>
 {
     var options = sp.GetRequiredService<IOptions<MetalsApiOptions>>().Value;
-    client.BaseAddress = new Uri("https://www.goldapi.io/");
+    client.BaseAddress = new Uri(string.IsNullOrWhiteSpace(options.BaseAddress) ? "https://www.goldapi.io/" : options.BaseAddress.TrimEnd('/') + "/");
     client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
     if (!string.IsNullOrEmpty(options.ApiKey))
         client.DefaultRequestHeaders.Add("x-access-token", options.ApiKey);
@@ -72,14 +77,16 @@ builder.Services.AddHostedService<Worker>();
 
 builder.Host.UseWindowsService();
 
-// Bind options from env / appsettings (keys: METALS_API_KEY, METALS_API_BASE_URL, etc.)
+// Bind options from appsettings (MetalsApi section) and env (METALS_API_KEY, METALS_API_BASE_URL, etc.)
 builder.Services.Configure<MetalsApiOptions>(options =>
 {
     var c = builder.Configuration;
-    options.ApiKey = c["METALS_API_KEY"] ?? string.Empty;
-    options.BaseUrl = (c["METALS_API_BASE_URL"] ?? string.Empty).Trim();
-    options.StatusUrl = c["METALS_API_STATUS"] ?? string.Empty;
-    options.RequestStatsUrl = c["METALS_API_REQUEST_STATS"] ?? string.Empty;
+    var section = c.GetSection(MetalsApiOptions.SectionName);
+    section.Bind(options);
+    options.ApiKey = c["METALS_API_KEY"] ?? options.ApiKey;
+    options.BaseUrl = string.IsNullOrWhiteSpace(c["METALS_API_BASE_URL"]) ? options.BaseUrl : c["METALS_API_BASE_URL"]!.Trim();
+    options.StatusUrl = c["METALS_API_STATUS"] ?? options.StatusUrl;
+    options.RequestStatsUrl = c["METALS_API_REQUEST_STATS"] ?? options.RequestStatsUrl;
 });
 
 var app = builder.Build();

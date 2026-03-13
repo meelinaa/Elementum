@@ -36,14 +36,15 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddProblemDetails(); // Provides standardized error responses for exceptions and non-successful HTTP status codes.
 
-// CORS configuration to allow requests from the frontend.
+// CORS configuration: allowed origins from appsettings (e.g. Cors:AllowedOrigins).
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["http://localhost:3000"];
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:3000") // TODO: needs to be changed to the actual frontend URL in production
-              .AllowAnyMethod()       
-              .AllowAnyHeader();                   
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyMethod()
+              .AllowAnyHeader();
     });
 });
 
