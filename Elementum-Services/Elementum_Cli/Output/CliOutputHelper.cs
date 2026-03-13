@@ -67,6 +67,7 @@ public class CliOutputHelper
         Console.WriteLine();
         Console.WriteLine("╟" + new string('─', ViewWidth - 2) + "╢");
         Console.WriteLine("║ " + CliStrings.FooterBackToMenu.PadRight(ViewWidth - 4) + " ║");
+        Console.WriteLine("║ " + CliStrings.FooterReloadHint.PadRight(ViewWidth - 4) + " ║");
         Console.WriteLine("╚" + new string('═', ViewWidth - 2) + "╝");
         Console.WriteLine();
     }

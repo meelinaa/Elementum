@@ -97,7 +97,7 @@ public class TradingView : MetalDetailViewBase
             var sourceStr = !string.IsNullOrEmpty(items.Exchange) ? $"{items.Exchange}:{items.Symbol}{items.Currency}" : (items.Symbol ?? sym);
             CliOutputHelper.RenderSectionTitle("Data integrity & timestamps");
             Console.WriteLine($"  │  Metal ID:      {items.Id,-45}    │");
-            Console.WriteLine($"  │  EntryDate:     {items.EntryDate:d}                                      │");
+            Console.WriteLine($"  │  EntryDate:     {items.EntryDate:d}                                       │");
             Console.WriteLine($"  │  Open time:     {openTimeStr,-45}    │");
             Console.WriteLine($"  │  Ref time:      {refTimeStr,-45}    │");
             Console.WriteLine($"  │  Source:        {sourceStr,-45}    │");

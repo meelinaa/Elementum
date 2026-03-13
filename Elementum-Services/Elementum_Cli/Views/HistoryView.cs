@@ -53,6 +53,7 @@ public class HistoryView : IDetailView
         var count = PeriodCounts[period];
         var agg = period.ToString().ToLowerInvariant();
 
+
         CliOutputHelper.RenderViewHeader($"{CliStrings.HistoryHeaderPrefix}{name.ToUpperInvariant()} ({sym}) · {PeriodLabels[period]}");
         Console.WriteLine($"  Loading {PeriodLabels[period].ToLower()} ({count} values)…");
         CliOutputHelper.RenderViewFooter();
@@ -67,8 +68,7 @@ public class HistoryView : IDetailView
         {
             List<PriceHistoryDto>? list = await HttpCall.GetPriceHistoryMetalWithLogicAsync(sym, aggregation, count, period);
             var periodLabel = PeriodLabels[period];
-
-            CliOutputHelper.RenderViewHeader($"{CliStrings.HistoryHeaderPrefix}{name.ToUpperInvariant()} ({sym}) · {periodLabel}");
+            Console.Clear();
 
             if (list == null || list.Count == 0)
             {

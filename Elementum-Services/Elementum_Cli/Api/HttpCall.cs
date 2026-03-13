@@ -1,8 +1,10 @@
+using System.Collections.Concurrent;
 using Elementum.Shared.DTOs;
 using Elementum_Cli.Config;
 using Elementum_Cli.Enums;
 using Elementum_Cli.Logging;
 using Elementum_Cli.Output;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
@@ -14,6 +16,9 @@ public class HttpCall
 
     /// <summary>Shared options for JSON (de)serialization. Use this everywhere to avoid repeated creation and ensure consistent behavior.</summary>
     public static readonly JsonSerializerOptions DefaultJsonOptions = new() { PropertyNameCaseInsensitive = true };
+
+    private static readonly IMemoryCache _cache = new MemoryCache(new MemoryCacheOptions());
+    private static readonly ConcurrentDictionary<string, byte> _cacheKeys = new();
 
     private static readonly Lazy<HttpClient> _httpClient = new(() => new HttpClient
     {
@@ -80,6 +85,13 @@ public class HttpCall
     {
         try
         {
+            if (_cache.TryGetValue(endpoint, out string? cachedJson) && cachedJson != null)
+            {
+                if (typeof(T) == typeof(string))
+                    return (T)(object)cachedJson;
+                return JsonSerializer.Deserialize<T>(cachedJson, DefaultJsonOptions)!;
+            }
+
             var response = await _httpClient.Value.GetAsync(endpoint);
 
             if (!response.IsSuccessStatusCode)
@@ -89,6 +101,9 @@ public class HttpCall
             }
 
             var json = await response.Content.ReadAsStringAsync();
+
+            _cacheKeys.TryAdd(endpoint, 0);
+            _cache.Set(endpoint, json, new MemoryCacheEntryOptions());
 
             if (typeof(T) == typeof(string))
                 return (T)(object)json;
@@ -100,6 +115,14 @@ public class HttpCall
             _log.LogWarning(ex, "Request failed: {Endpoint}", endpoint);
             throw;
         }
+    }
+
+    /// <summary>Clears all cached API responses (e.g. when implementing a manual "refresh" in views).</summary>
+    public static void ClearCache()
+    {
+        foreach (var key in _cacheKeys.Keys)
+            _cache.Remove(key);
+        _cacheKeys.Clear();
     }
 
     /// <summary>Legacy: fetches history/{symbol}/latest and deserializes as TradingPriceDto (list or single). Prefer <see cref="GetPriceHistoryTradingLatestAsync"/> for TradingView.</summary>

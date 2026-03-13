@@ -1,3 +1,4 @@
+using Elementum_Cli.Api;
 using Elementum_Cli.Enums;
 using Elementum_Cli.Views;
 using static Elementum_Cli.Output.CliOutputHelper;
@@ -44,6 +45,12 @@ public class CliNavigation
         else if (app.State == AppState.Detail && app.CurrentDetailView.HasValue)
         {
             var view = ViewRegistry.Get(app.CurrentDetailView.Value);
+            if (key.Key == ConsoleKey.R)
+            {
+                HttpCall.ClearCache();
+                _ = view.RenderAsync();
+                return;
+            }
             view.HandleInput(key);
         }
     }

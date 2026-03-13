@@ -5,6 +5,7 @@ public static class CliStrings
 {
     // --- Footer & navigation ---
     public const string FooterBackToMenu = "[ESC/←] Back to menu";
+    public const string FooterReloadHint = "[R] Reload data";
     public const string PressToSelectEscBack = "Press 1–4 to select. [ESC/←] Back to menu.";
     public const string PressToSelectHistoryEscBack = "Press 1–4 to select. [ESC] Back to metal selection.";
 
