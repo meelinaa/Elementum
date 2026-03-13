@@ -5,5 +5,4 @@ public enum MetalTypes
     Gold,
     Silver,
     Platinum,
-    //Palladium
 }

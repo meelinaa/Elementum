@@ -10,7 +10,6 @@ public static class MetalTypesExtensions
         MetalTypes.Gold => "XAU",
         MetalTypes.Silver => "XAG",
         MetalTypes.Platinum => "XPT",
-        //MetalTypes.Palladium => "XPD",
         _ => metal.ToString()
     };
 }

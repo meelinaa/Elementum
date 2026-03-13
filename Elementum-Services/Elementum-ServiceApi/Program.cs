@@ -114,17 +114,18 @@ app.UseExceptionHandler(exceptionHandlerApp =>
     });
 });
 
+    app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()); // delete after testing, currently allows all CORS requests for ease of development with the frontend. In production, the specific policy "FrontendPolicy" is used to restrict access to the frontend URL.
 // For development.
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage(); // Provides detailed error pages for exceptions in development.
     app.MapOpenApi();
-    app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()); // Allow all CORS requests in development for ease of testing with the frontend.
+    //app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()); // Allow all CORS requests in development for ease of testing with the frontend.
 }
 else // In production
 {
     app.UseHttpsRedirection();
-    app.UseCors("FrontendPolicy"); // Use the defined CORS policy in production to restrict access to the frontend URL.
+    //app.UseCors("FrontendPolicy"); // Use the defined CORS policy in production to restrict access to the frontend URL.
 }
 
 app.UseAuthorization();
