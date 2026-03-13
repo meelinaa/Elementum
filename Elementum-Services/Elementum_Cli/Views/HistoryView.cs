@@ -73,9 +73,9 @@ public class HistoryView : IDetailView
                 return;
             }
 
+            // API already returns at most count entries (aggregated); order by date for chart display.
             var ordered = list.OrderBy(p => p.EntryDate).ToList();
-            var slice = ordered.TakeLast(count).ToList();
-            HistoryRenderer.RenderCharts(sym, name, periodLabel, slice);
+            HistoryRenderer.RenderCharts(sym, name, periodLabel, ordered);
         });
     }
 

@@ -55,5 +55,6 @@ namespace Elementum_ServiceApi.Services.Interfaces
         /// <param name="cancellationToken">Cancellation token for the async operation.</param>
         /// <returns>Price history for the metal within the date range.</returns>
         Task<IEnumerable<PriceHistory>> GetPriceHistoryByMetalSymbolAndDateRange(string symbol, DateOnly firstDate, DateOnly lastDate, CancellationToken cancellationToken);
+        Task<IEnumerable<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct);
     }
 }

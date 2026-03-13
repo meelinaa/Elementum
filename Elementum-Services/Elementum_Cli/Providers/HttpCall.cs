@@ -48,13 +48,12 @@ public class HttpCall
 
     /// <summary>
     /// History with aggregation (daily/weekly/monthly/yearly).
-    /// API suggestion: GET history/{symbol}/aggregated?aggregation={daily|weekly|monthly|yearly}&amp;count={n}
-    /// Returns exactly count values, displayed as chart in the CLI.
+    /// GET history/{symbol}/aggregated/{aggregation}/{count} (e.g. history/XAU/aggregated/monthly/12).
     /// </summary>
     public static async Task<string> GetPriceHistoryMetalAsync(string metalSymbol, string aggregation, int count)
     {
-        var encodedAgg = Uri.EscapeDataString(aggregation);
-        return await SendRequestAsync<string>($"history/{metalSymbol}/aggregated?aggregation={encodedAgg}&count={count}");
+        var aggregationSegment = aggregation.Trim().ToLowerInvariant();
+        return await SendRequestAsync<string>($"history/{metalSymbol}/aggregated={aggregationSegment}&{count}");
     }
 
     private static async Task<T> SendRequestAsync<T>(string endpoint)

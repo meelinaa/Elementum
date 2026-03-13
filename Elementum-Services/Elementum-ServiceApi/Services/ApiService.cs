@@ -65,6 +65,11 @@ namespace Elementum_ServiceApi.Services
             return await _db.GetPriceHistoryByMetalSymbolAndDateRange(symbol, firstDate, lastDate, cancellationToken);
         }
 
+        public async Task<IEnumerable<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct)
+        {
+            return await _db.GetPriceHistoryMetalData(metalSymbol, aggregation, count, ct);
+        }
+
         #endregion PriceHistory
     }
 }

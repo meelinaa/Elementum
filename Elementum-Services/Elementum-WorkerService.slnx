@@ -1,10 +1,14 @@
 <Solution>
   <Project Path="Elementum-ServiceApi/Elementum_ServiceApi.csproj" Id="e2b99fa3-97a0-414d-9cf5-bf0b3bfa4d9c" />
   <Project Path="Elementum-WorkerService/Elementum_WorkerService.csproj" />
-  <Project Path="Elementum.Cli.Tests/Elementum.Cli.Tests.csproj" Id="8c9e7a17-4e09-4d45-ae6b-c2de12c74e21" />
+  <Project Path="Elementum.Cli.Tests/Elementum.Cli.Tests.csproj" Id="8c9e7a17-4e09-4d45-ae6b-c2de12c74e21">
+    <Build Solution="Debug|*" Project="false" />
+  </Project>
   <Project Path="Elementum.Infrastructure/Elementum.Infrastructure.csproj" />
   <Project Path="Elementum.ServiceApi.Tests/Elementum.ServiceApi.Tests.csproj" Id="e78d5f60-694a-4c9b-8723-18790f997bc8" />
   <Project Path="Elementum.Shared/Elementum.Shared.csproj" />
   <Project Path="Elementum.WorkerService.Tests/Elementum.WorkerService.Tests.csproj" />
-  <Project Path="Elementum_Cli/Elementum_Cli.csproj" Id="d5fb0ddf-6e5d-4bd6-b9ad-f3e2e965c4b3" />
+  <Project Path="Elementum_Cli/Elementum_Cli.csproj" Id="d5fb0ddf-6e5d-4bd6-b9ad-f3e2e965c4b3">
+    <Build Solution="Debug|*" Project="false" />
+  </Project>
 </Solution>
