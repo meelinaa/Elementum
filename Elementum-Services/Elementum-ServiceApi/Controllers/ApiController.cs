@@ -113,5 +113,17 @@ namespace Elementum_ServiceApi.Controllers
             var historyData = await _apiService.GetPriceHistoryByMetalSymbolAndDateRange(symbolRequest.Symbol.Trim(), start, end, ct);
             return Ok(historyData);
         }
+
+        /// <summary>GET /api/v1/history/{symbol}/aggregated/{aggregation}/{count} — price history by period (e.g. history/XAU/aggregated/monthly/12). Aggregation returns one value per period (average of days in that period).</summary>
+        [HttpGet("history/{symbol}/aggregated={aggregation}&{count}")]
+        [RequestTimeout("DataCruncher")]
+        public async Task<IActionResult> GetPriceHistoryMetalData([FromRoute] SymbolRequest symbolRequest, [FromRoute] AggregationRequest aggregationRequest, CancellationToken ct)
+        {
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            var historyData = await _apiService.GetPriceHistoryMetalData(symbolRequest.Symbol.Trim(), aggregationRequest.Aggregation.Trim(), aggregationRequest.Count, ct);
+            return Ok(historyData);
+        }
     }
 }

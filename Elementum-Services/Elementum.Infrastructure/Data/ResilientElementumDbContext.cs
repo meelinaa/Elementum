@@ -53,4 +53,7 @@ public sealed class ResilientElementumDbContext : IElementumDbContext
     /// <summary>Runs the delegate under the retry policy so transient DB failures are retried automatically.</summary>
     private Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> action, CancellationToken ct) =>
         _policy.ExecuteAsync(action, ct);
+
+    public Task<IEnumerable<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct) =>
+        ExecuteAsync(ct => _inner.GetPriceHistoryMetalData(metalSymbol, aggregation, count, ct), ct);
 }
