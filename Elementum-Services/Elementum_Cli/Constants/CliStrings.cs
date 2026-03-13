@@ -1,4 +1,4 @@
-namespace Elementum_Cli.Helper;
+namespace Elementum_Cli.Constants;
 
 /// <summary>Central place for CLI UI strings. Simplifies changes and future localization.</summary>
 public static class CliStrings

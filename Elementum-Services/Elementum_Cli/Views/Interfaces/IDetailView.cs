@@ -1,4 +1,4 @@
-namespace Elementum_Cli.Views;
+namespace Elementum_Cli.Views.Interfaces;
 
 public interface IDetailView
 {

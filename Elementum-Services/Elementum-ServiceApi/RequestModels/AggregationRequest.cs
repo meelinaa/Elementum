@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Elementum_ServiceApi.Models;
+namespace Elementum_ServiceApi.RequestModels;
 
 /// <summary>
 /// Route parameters for aggregated price history: GET history/{symbol}/aggregated/{aggregation}/{count} (e.g. history/XAU/aggregated/monthly/12).

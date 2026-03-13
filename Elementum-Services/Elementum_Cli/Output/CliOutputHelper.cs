@@ -1,7 +1,8 @@
+using Elementum_Cli.Constants;
 using Elementum_Cli.Enums;
 using Elementum_Cli.Views;
 
-namespace Elementum_Cli.Helper;
+namespace Elementum_Cli.Output;
 
 public class CliOutputHelper
 {

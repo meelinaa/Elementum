@@ -1,4 +1,4 @@
-namespace Elementum.Infrastructure.Data;
+namespace Elementum.Infrastructure.Data.Resilience;
 
 /// <summary>
 /// Options for database resilience (retry on transient failures). Used by API and Worker when registering the DbContext with retry.

@@ -3,7 +3,7 @@ using Elementum.Shared.DTOs;
 using Elementum.Shared.Objects;
 using Polly;
 
-namespace Elementum.Infrastructure.Data;
+namespace Elementum.Infrastructure.Data.Resilience;
 
 /// <summary>
 /// Decorator that implements <see cref="IElementumDbContext"/> and wraps every call in a Polly retry policy.

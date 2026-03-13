@@ -1,5 +1,5 @@
 using Elementum_Cli.Enums;
-using Elementum_Cli.Helper;
+using Elementum_Cli.Constants;
 using Elementum_Cli.Models;
 
 namespace Elementum_Cli;
@@ -27,16 +27,16 @@ public class AppContext
         MenuItems.Clear();
         MenuItems.AddRange(new List<MenuItem>
         {
-            new MenuItem(CliStrings.MenuItemDashboard, true, 'D', DetailView.Dashboard),
-            new MenuItem("", false),
-            new MenuItem(CliStrings.MenuItemTrading, true, 'T', DetailView.TradingView),
-            new MenuItem(CliStrings.MenuItemKarat, true, 'K', DetailView.KaratCalculator),
-            new MenuItem("", false),
-            new MenuItem(CliStrings.MenuItemListMetals, true, 'L', DetailView.ListMetals),
-            new MenuItem(CliStrings.MenuItemHistory, true, 'H', DetailView.History),
-            new MenuItem("", false),
-            new MenuItem(CliStrings.MenuItemInfo, true, 'I', DetailView.Info),
-            new MenuItem(CliStrings.MenuItemExit, true, 'X', null)
+            new(CliStrings.MenuItemDashboard, true, 'D', DetailView.Dashboard),
+            new("", false),
+            new(CliStrings.MenuItemTrading, true, 'T', DetailView.TradingView),
+            new(CliStrings.MenuItemKarat, true, 'K', DetailView.KaratCalculator),
+            new("", false),
+            new(CliStrings.MenuItemListMetals, true, 'L', DetailView.ListMetals),
+            new(CliStrings.MenuItemHistory, true, 'H', DetailView.History),
+            new("", false),
+            new(CliStrings.MenuItemInfo, true, 'I', DetailView.Info),
+            new(CliStrings.MenuItemExit, true, 'X', null)
         });
     }
 }

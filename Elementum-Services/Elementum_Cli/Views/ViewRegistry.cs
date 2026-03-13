@@ -1,12 +1,13 @@
 using Elementum_Cli.Enums;
+using Elementum_Cli.Views.Interfaces;
 
 namespace Elementum_Cli.Views;
 
 /// <summary>Factory and cache for detail views. One instance per <see cref="DetailView"/> for the process lifetime.</summary>
 public static class ViewRegistry
 {
-    private static readonly Dictionary<DetailView, IDetailView> _cache = new();
-    private static readonly object _lock = new();
+    private static readonly Dictionary<DetailView, IDetailView> _cache = [];
+    private static readonly Lock _lock = new();
 
     public static IDetailView Get(DetailView view)
     {

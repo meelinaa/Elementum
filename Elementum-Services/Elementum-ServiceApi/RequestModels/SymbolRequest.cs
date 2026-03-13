@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Elementum_ServiceApi.Models
+namespace Elementum_ServiceApi.RequestModels
 {
     public class SymbolRequest
     {

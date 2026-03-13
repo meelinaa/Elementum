@@ -1,6 +1,7 @@
 using Elementum_Cli.Enums;
+using Elementum_Cli.Output;
 
-namespace Elementum_Cli.Helper;
+namespace Elementum_Cli.Input;
 
 public class HandleInputHelper
 {

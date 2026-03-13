@@ -1,6 +1,6 @@
 using Elementum.Shared.DTOs;
 using Elementum.Shared.Objects;
-using Elementum_ServiceApi.Models;
+using Elementum_ServiceApi.RequestModels;
 using Elementum_ServiceApi.Services.Interfaces;
 using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.Mvc;
@@ -9,11 +9,11 @@ namespace Elementum_ServiceApi.Controllers
 {
     [ApiController]
     [Route("api/v1")]
-    public class FrontendService : ControllerBase
+    public class ApiController : ControllerBase
     {
         private readonly IApiService _apiService;
 
-        public FrontendService(IApiService apiService)
+        public ApiController(IApiService apiService)
         {
             _apiService = apiService;
         }

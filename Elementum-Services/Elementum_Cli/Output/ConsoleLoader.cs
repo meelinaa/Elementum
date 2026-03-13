@@ -1,10 +1,11 @@
+using Elementum_Cli.Logging;
 using Microsoft.Extensions.Logging;
 
-namespace Elementum_Cli.Helper;
+namespace Elementum_Cli.Output;
 
 public class ConsoleLoader
 {
-    private static readonly char[] _sequence = { '|', '/', '-', '\\' };
+    private static readonly char[] _sequence = ['|', '/', '-', '\\'];
     private static bool _active;
     private static int _counter;
 

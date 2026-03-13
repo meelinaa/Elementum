@@ -12,14 +12,9 @@ namespace Elementum.Infrastructure.Data;
 /// EF Core DbContext for Elementum. Maps to the existing MySQL schema with tables <c>metals</c> and <c>price_history</c>.
 /// Used by the Worker (ingestion) and the ServiceApi (read API).
 /// </summary>
-public class ElementumDbContext : DbContext, IElementumDbContext
+/// <remarks>Initializes the context with the given options (e.g. connection string, provider).</remarks>
+public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : DbContext(options), IElementumDbContext
 {
-    /// <summary>Initializes the context with the given options (e.g. connection string, provider).</summary>
-    public ElementumDbContext(DbContextOptions<ElementumDbContext> options)
-        : base(options)
-    {
-    }
-
     #region SET
 
     /// <summary>DbSet for the <c>metals</c> table.</summary>
@@ -127,7 +122,7 @@ public class ElementumDbContext : DbContext, IElementumDbContext
     {
         var metal = await GetMetalBySymbol(metalSymbol, ct);
         if (metal == null)
-            return Array.Empty<PriceHistory>();
+            return [];
 
         var period = aggregation.Trim().ToLowerInvariant() switch
         {
@@ -170,7 +165,7 @@ public class ElementumDbContext : DbContext, IElementumDbContext
             .ToListAsync(ct);
 
         if (raw.Count == 0)
-            return Array.Empty<PriceHistory>();
+            return [];
 
         List<PriceHistory> result;
         if (period == 1)
@@ -290,9 +285,5 @@ public class ElementumDbContext : DbContext, IElementumDbContext
             e.Property(x => x.PriceGram10k).HasColumnName("price_gram_10k");
         });
     }
-
-   
-
-
     #endregion CREATING
 }

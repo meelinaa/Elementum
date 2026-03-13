@@ -1,20 +1,21 @@
 using Elementum.Shared.DTOs;
 using Elementum_Cli.Config;
 using Elementum_Cli.Enums;
-using Elementum_Cli.Helper;
+using Elementum_Cli.Logging;
+using Elementum_Cli.Output;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
-namespace Elementum_Cli.Providers;
+namespace Elementum_Cli.Api;
 
 public class HttpCall
 {
     private static readonly ILogger _log = CliLogging.GetLogger(nameof(HttpCall));
 
     /// <summary>Shared options for JSON (de)serialization. Use this everywhere to avoid repeated creation and ensure consistent behavior.</summary>
-    public static readonly JsonSerializerOptions DefaultJsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    public static readonly JsonSerializerOptions DefaultJsonOptions = new() { PropertyNameCaseInsensitive = true };
 
-    private static readonly Lazy<HttpClient> _httpClient = new Lazy<HttpClient>(() => new HttpClient
+    private static readonly Lazy<HttpClient> _httpClient = new(() => new HttpClient
     {
         BaseAddress = new Uri(CliConfig.ApiBaseUrl)
     });
@@ -73,8 +74,6 @@ public class HttpCall
     {
         return await SendRequestAsync<string>($"history/{metalSymbol}/{firstDate}/{lastDate}");
     }
-
-    // TODO: API suggestion: GET history/{symbol}/latest?count={n} ? returns the latest n entries for the metal, as JSON array. Use this for the "latest history" view.
 
     /// <summary>
     /// History with aggregation (daily/weekly/monthly/yearly).
@@ -154,7 +153,7 @@ public class HttpCall
         List<PriceHistoryDto>? list = null;
         try
         {
-            var json = await HttpCall.GetPriceHistoryMetalAsync(sym, aggregation, count);
+            var json = await GetPriceHistoryMetalAsync(sym, aggregation, count);
             try
             {
                 list = JsonSerializer.Deserialize<List<PriceHistoryDto>>(json, DefaultJsonOptions);
@@ -163,7 +162,7 @@ public class HttpCall
             {
                 _log.LogDebug(ex, "Deserialize as list failed for {Sym} aggregated, trying single", sym);
                 var single = JsonSerializer.Deserialize<PriceHistoryDto>(json, DefaultJsonOptions);
-                list = single != null ? new List<PriceHistoryDto> { single } : null;
+                list = single != null ? [single] : null;
             }
         }
         catch (Exception ex)
@@ -171,7 +170,7 @@ public class HttpCall
             _log.LogInformation(ex, "Aggregated history failed for {Sym}, falling back to full history", sym);
             try
             {
-                var json = await HttpCall.GetPriceHistoryMetalAsync(sym);
+                var json = await GetPriceHistoryMetalAsync(sym);
                 list = JsonSerializer.Deserialize<List<PriceHistoryDto>>(json, DefaultJsonOptions);
                 if (list != null && list.Count > 0)
                     list = AggregateClientSide(list, period, count);

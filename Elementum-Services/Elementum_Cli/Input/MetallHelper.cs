@@ -1,6 +1,6 @@
 using Elementum_Cli.Enums;
 
-namespace Elementum_Cli.Helper;
+namespace Elementum_Cli.Input;
 
 public static class MetallHelper
 {

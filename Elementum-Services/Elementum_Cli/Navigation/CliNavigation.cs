@@ -1,8 +1,8 @@
 using Elementum_Cli.Enums;
 using Elementum_Cli.Views;
-using static Elementum_Cli.Helper.CliOutputHelper;
+using static Elementum_Cli.Output.CliOutputHelper;
 
-namespace Elementum_Cli.Helper;
+namespace Elementum_Cli.Navigation;
 
 public class CliNavigation
 {

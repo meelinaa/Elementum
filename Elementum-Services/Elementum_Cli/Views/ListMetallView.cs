@@ -1,6 +1,8 @@
 using Elementum.Shared.DTOs;
-using Elementum_Cli.Helper;
-using Elementum_Cli.Providers;
+using Elementum_Cli.Api;
+using Elementum_Cli.Constants;
+using Elementum_Cli.Output;
+using Elementum_Cli.Views.Interfaces;
 using System.Text.Json;
 
 namespace Elementum_Cli.Views;
@@ -24,7 +26,7 @@ public class ListMetallView : AsyncDetailViewBase
 
             Console.WriteLine();
             Console.WriteLine(TableFormatter.BuildTopBorder(CliConstants.ListMetallTablePrefix, w));
-            Console.WriteLine(TableFormatter.BuildRow(CliConstants.ListMetallTablePrefix, w, new[] { "ID", "SYMBOL", "NAME" }));
+            Console.WriteLine(TableFormatter.BuildRow(CliConstants.ListMetallTablePrefix, w, ["ID", "SYMBOL", "NAME"]));
             Console.WriteLine(TableFormatter.BuildMidBorder(CliConstants.ListMetallTablePrefix, w));
 
             if (metals == null || metals.Count == 0)

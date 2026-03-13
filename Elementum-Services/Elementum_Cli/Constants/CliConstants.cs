@@ -1,4 +1,4 @@
-namespace Elementum_Cli.Helper;
+namespace Elementum_Cli.Constants;
 
 /// <summary>
 /// Central place for CLI layout and table constants. Improves maintainability and consistency.

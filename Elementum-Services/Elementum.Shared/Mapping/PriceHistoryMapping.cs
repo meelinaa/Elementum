@@ -10,8 +10,9 @@ public static class PriceHistoryMapping
 {
     public static MetalsDto ToDto(this Metals entity)
     {
-        if (entity == null) throw new ArgumentNullException(nameof(entity));
-        return new MetalsDto
+        return entity == null
+            ? throw new ArgumentNullException(nameof(entity))
+            : new MetalsDto
         {
             Id = entity.Id,
             Symbol = entity.Symbol ?? string.Empty,
@@ -21,8 +22,9 @@ public static class PriceHistoryMapping
 
     public static PriceHistoryDto ToPriceHistoryDto(this PriceHistory entity)
     {
-        if (entity == null) throw new ArgumentNullException(nameof(entity));
-        return new PriceHistoryDto
+        return entity == null
+            ? throw new ArgumentNullException(nameof(entity))
+            : new PriceHistoryDto
         {
             Id = entity.Id,
             MetalId = entity.MetalId,
@@ -37,24 +39,11 @@ public static class PriceHistoryMapping
         };
     }
 
-    public static PriceSummaryDto ToPriceSummaryDto(this PriceHistory entity)
-    {
-        if (entity == null) throw new ArgumentNullException(nameof(entity));
-        return new PriceSummaryDto
-        {
-            Symbol = entity.Metal?.Symbol ?? entity.Symbol ?? string.Empty,
-            Name = entity.Metal?.Name ?? string.Empty,
-            Exchange = entity.Exchange,
-            Price = entity.Price,
-            Chp = entity.Chp,
-            EntryDate = entity.EntryDate
-        };
-    }
-
     public static KaratPricesDto ToKaratPricesDto(this PriceHistory entity)
     {
-        if (entity == null) throw new ArgumentNullException(nameof(entity));
-        return new KaratPricesDto
+        return entity == null
+            ? throw new ArgumentNullException(nameof(entity))
+            : new KaratPricesDto
         {
             Symbol = entity.Metal?.Symbol ?? entity.Symbol ?? string.Empty,
             MetalName = entity.Metal?.Name ?? string.Empty,
@@ -73,8 +62,9 @@ public static class PriceHistoryMapping
 
     public static TradingPriceDto ToTradingPriceDto(this PriceHistory entity)
     {
-        if (entity == null) throw new ArgumentNullException(nameof(entity));
-        return new TradingPriceDto
+        return entity == null
+            ? throw new ArgumentNullException(nameof(entity))
+            : new TradingPriceDto
         {
             Id = entity.Id,
             Symbol = entity.Metal?.Symbol ?? entity.Symbol ?? string.Empty,

@@ -1,4 +1,5 @@
 using Elementum.Infrastructure.Data.Interfaces;
+using Elementum.Infrastructure.Data.Resilience;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;

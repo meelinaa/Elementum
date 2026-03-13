@@ -1,7 +1,8 @@
 using Elementum.Shared.DTOs;
-using Elementum_Cli.Enums;
+using Elementum_Cli.Constants;
+using Elementum_Cli.Output;
 
-namespace Elementum_Cli.Helper;
+namespace Elementum_Cli.Rendering;
 
 /// <summary>Renders the History view: period selection screen, sparkline, and bar chart. Extracted for readability and testability.</summary>
 public static class HistoryRenderer
@@ -58,7 +59,7 @@ public static class HistoryRenderer
         Console.Write("  ");
         double currentChp = changes.Length > 0 ? changes[^1] : 0;
         var spark = BuildSparkline(changes, doubleWidth);
-        CliOutputHelper.WriteColoredValue($"{symbol.PadRight(6)} │ {currentPrice:N2} $ │ {spark}\n", currentChp >= 0);
+        CliOutputHelper.WriteColoredValue($"{symbol,-6} │ {currentPrice:N2} $ │ {spark}\n", currentChp >= 0);
     }
 
     /// <summary>Builds the sparkline character sequence (for testing without console).</summary>
@@ -81,7 +82,7 @@ public static class HistoryRenderer
         double maxVal = values.Max();
         if (maxVal <= 0) maxVal = 1;
 
-        Console.WriteLine($"  {symbol.PadRight(6)} {CliStrings.HistoryPriceDevelopmentLabel}");
+        Console.WriteLine($"  {symbol,-6} {CliStrings.HistoryPriceDevelopmentLabel}");
         Console.WriteLine();
 
         for (int row = BarChartHeight; row >= 0; row--)

@@ -1,6 +1,5 @@
-using Elementum.Shared.DTOs;
-using Elementum_Cli.Helper;
-using Elementum_Cli.Providers;
+using Elementum_Cli.Api;
+using Elementum_Cli.Output;
 
 namespace Elementum_Cli.Views;
 

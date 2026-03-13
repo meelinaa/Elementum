@@ -1,4 +1,6 @@
-using Elementum_Cli.Helper;
+using Elementum_Cli.Input;
+using Elementum_Cli.Output;
+using Elementum_Cli.Views.Interfaces;
 
 namespace Elementum_Cli.Views;
 

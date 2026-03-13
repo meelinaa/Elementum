@@ -1,6 +1,7 @@
-using Elementum_Cli.Helper;
+using Elementum_Cli.Input;
+using Elementum_Cli.Output;
 
-namespace Elementum_Cli.Views;
+namespace Elementum_Cli.Views.Interfaces;
 
 /// <summary>
 /// Base class for detail views that load and display data without metal selection (e.g. Dashboard, List of Metals).
