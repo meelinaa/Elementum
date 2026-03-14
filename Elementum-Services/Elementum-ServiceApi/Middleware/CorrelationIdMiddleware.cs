@@ -14,11 +14,13 @@ public class CorrelationIdMiddleware
 
     private readonly RequestDelegate _next;
 
+    /// <summary>Creates the middleware with the next delegate in the pipeline.</summary>
     public CorrelationIdMiddleware(RequestDelegate next)
     {
         _next = next;
     }
 
+    /// <summary>Resolves or generates the correlation ID, adds it to context and response header, and enriches Serilog for the request scope.</summary>
     public async Task InvokeAsync(HttpContext context)
     {
         var correlationId = context.Request.Headers[CorrelationIdHeaderName].FirstOrDefault()

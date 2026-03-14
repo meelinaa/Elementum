@@ -12,6 +12,7 @@ public class DatabaseCheckService : IDatabaseCheckService
     private readonly ILogger<DatabaseCheckService> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
 
+    /// <summary>Injects logger and scope factory to resolve a scoped <see cref="ElementumDbContext"/> per check.</summary>
     public DatabaseCheckService(ILogger<DatabaseCheckService> logger, IServiceScopeFactory scopeFactory)
     {
         _logger = logger;

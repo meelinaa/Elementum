@@ -17,6 +17,7 @@ public class MetalsApiClient : IMetalsApiClient
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly MetalsApiOptions _options;
 
+    /// <summary>DTO for GoldAPI status endpoint response (e.g. {"result": true}).</summary>
     public record ApiStatusResponse(bool Result);
 
     /// <summary>

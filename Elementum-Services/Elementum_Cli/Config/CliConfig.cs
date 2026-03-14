@@ -1,4 +1,4 @@
-using Elementum_Cli.Helper;
+using Elementum_Cli.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -10,14 +10,16 @@ public static class CliConfig
     private const string DefaultBaseUrl = "http://localhost:5000/api/v1/";
     private const string EnvApiBaseUrl = "ELEMENTUM_API_BASEURL";
 
-    private static readonly Lazy<string> _baseUrl = new Lazy<string>(LoadBaseUrl);
+    private static readonly Lazy<string> _baseUrl = new(LoadBaseUrl);
 
     /// <summary>API base URL for HTTP calls. Set ELEMENTUM_API_BASEURL to override.</summary>
     public static string ApiBaseUrl => _baseUrl.Value;
 
+    /// <summary>Trims the URL and ensures it ends with a single trailing slash.</summary>
     internal static string NormalizeBaseUrl(string baseUrl)
         => baseUrl.Trim().TrimEnd('/') + "/";
 
+    /// <summary>Returns the API base URL: env overrides file, file overrides default.</summary>
     internal static string ResolveApiBaseUrl(string? fromEnv, string? fromFile)
     {
         if (!string.IsNullOrWhiteSpace(fromEnv))

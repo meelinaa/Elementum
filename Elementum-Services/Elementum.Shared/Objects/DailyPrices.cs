@@ -2,6 +2,9 @@ using System.Text.Json.Serialization;
 
 namespace Elementum.Shared.Objects
 {
+    /// <summary>
+    /// DTO for deserializing daily price responses from the external metals API (e.g. GoldAPI). Property names match API JSON (snake_case via <see cref="JsonPropertyNameAttribute"/>).
+    /// </summary>
     public class DailyPrices
     {
         [JsonPropertyName("id")]

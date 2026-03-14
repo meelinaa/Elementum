@@ -5,6 +5,7 @@ namespace Elementum.Shared.Enums;
 /// </summary>
 public static class MetalTypesExtensions
 {
+    /// <summary>Returns the API symbol for the metal (e.g. XAU for Gold, XAG for Silver, XPT for Platinum).</summary>
     public static string ToApiSymbol(this MetalTypes metal) => metal switch
     {
         MetalTypes.Gold => "XAU",

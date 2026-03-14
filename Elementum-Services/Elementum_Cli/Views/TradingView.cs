@@ -1,33 +1,52 @@
-using Elementum.Shared.Objects;
-using Elementum_Cli.Helper;
-using Elementum_Cli.Providers;
+using Elementum.Shared.DTOs;
+using Elementum_Cli.Api;
+using Elementum_Cli.Output;
+using System.Text.Json;
 
 namespace Elementum_Cli.Views;
 
+/// <summary>
+/// Displays trading data for one metal: bid/ask, spread, high/low, open, comparison vs previous close, volatility, timestamps.
+/// Data from GET history/{symbol}/latest/trading.
+/// </summary>
 public class TradingView : MetalDetailViewBase
 {
+    /// <inheritdoc />
     protected override string ViewTitle => "TRADING & DAILY ANALYSIS";
+
+    /// <inheritdoc />
     protected override string LoadingMessage => "Loading daily data…";
 
-    protected override async Task LoadAndRenderAsync(string sym, string name) // todo: consider caching this data for the session to allow faster re-rendering when user goes back and forth between metals
+    /// <inheritdoc />
+    protected override async Task LoadAndRenderAsync(string sym, string name)
     {
         await ConsoleLoader.RunAsync(async () =>
         {
-            PriceHistory? ph = await HttpCall.GetPriceHistoryTodayWithLogicAsync(sym, name, ViewTitle);
-            if (ph == null)
-                return;
+            Console.Clear();
+            CliOutputHelper.RenderViewHeader($"{ViewTitle} — {name.ToUpperInvariant()} ({sym})");
 
-            var exchange = ph.Exchange ?? "—";
-            var currency = ph.Currency ?? "USD";
-            var dateStr = ph.EntryDate.ToString("yyyy-MM-dd");
-            var bidStr = CliOutputHelper.FormatCurrency(ph.Bid, "$");
-            var askStr = CliOutputHelper.FormatCurrency(ph.Ask, "$");
-            var spread = (ph.Ask.HasValue && ph.Bid.HasValue) ? CliOutputHelper.FormatCurrency(ph.Ask.Value - ph.Bid.Value, "$") : "—";
-            var highStr = CliOutputHelper.FormatCurrency(ph.HighPrice, "$");
-            var lowStr = CliOutputHelper.FormatCurrency(ph.LowPrice, "$");
-            var openStr = CliOutputHelper.FormatCurrency(ph.OpenPrice, "$");
-            var chStr = CliOutputHelper.FormatCurrency(ph.Ch, "$");
-            var chpStr = CliOutputHelper.FormatPercent(ph.Chp);
+            var json = await HttpCall.GetPriceHistoryTradingLatestAsync(sym);
+            var items = JsonSerializer.Deserialize<TradingPriceDto>(json, HttpCall.DefaultJsonOptions);
+
+            if (items == null)
+            {
+                Console.WriteLine();
+                Console.WriteLine("  " + CliOutputHelper.NoDataMessageForMetal);
+                CliOutputHelper.RenderViewFooter();
+                return;
+            }
+
+            var exchange = items.Exchange ?? "—";
+            var currency = items.Currency ?? "USD";
+            var dateStr = items.EntryDate.ToString("yyyy-MM-dd");
+            var bidStr = CliOutputHelper.FormatCurrency(items.Bid, "$");
+            var askStr = CliOutputHelper.FormatCurrency(items.Ask, "$");
+            var spread = (items.Ask.HasValue && items.Bid.HasValue) ? CliOutputHelper.FormatCurrency(items.Ask.Value - items.Bid.Value, "$") : "—";
+            var highStr = CliOutputHelper.FormatCurrency(items.HighPrice, "$");
+            var lowStr = CliOutputHelper.FormatCurrency(items.LowPrice, "$");
+            var openStr = CliOutputHelper.FormatCurrency(items.OpenPrice, "$");
+            var chStr = CliOutputHelper.FormatCurrency(items.Ch, "$");
+            var chpStr = CliOutputHelper.FormatPercent(items.Chp);
 
             // Block 1: Trading data
             CliOutputHelper.RenderSectionTitle("Trading data — Bid/Ask, Spread, High/Low");
@@ -37,20 +56,20 @@ public class TradingView : MetalDetailViewBase
             Console.WriteLine($"  │  HIGH:            {highStr,-12} │  LOW:            {lowStr,-10}     │");
             Console.WriteLine($"  │  OPEN:            {openStr,-12} │  SPREAD:         {spread,-10}     │");
             Console.Write($"  │  CH/CHP:          ");
-            CliOutputHelper.WriteColoredValue($"{chStr,-6}", (ph.Chp ?? 0) >= 0);
+            CliOutputHelper.WriteColoredValue($"{chStr,-6}", (items.Chp ?? 0) >= 0);
             Console.Write(" / ");
-            CliOutputHelper.WriteColoredValue($"{chpStr,-35}", (ph.Chp ?? 0) >= 0);
+            CliOutputHelper.WriteColoredValue($"{chpStr,-35}", (items.Chp ?? 0) >= 0);
             Console.Write("  │\n");
             Console.WriteLine("  └──────────────────────────────────────────────────────────────────┘");
 
             // Block 2: Comparison Today vs. Previous Close
-            var priceStr = CliOutputHelper.FormatCurrency(ph.Price, "$");
-            var prevCloseStr = CliOutputHelper.FormatCurrency(ph.PrevClosePrice, "$");
-            var openPriceStr = CliOutputHelper.FormatCurrency(ph.OpenPrice, "$");
-            decimal? diff = ph.PrevClosePrice.HasValue ? ph.Price - ph.PrevClosePrice.Value : null;
+            var priceStr = CliOutputHelper.FormatCurrency(items.Price, "$");
+            var prevCloseStr = CliOutputHelper.FormatCurrency(items.PrevClosePrice, "$");
+            var openPriceStr = CliOutputHelper.FormatCurrency(items.OpenPrice, "$");
+            decimal? diff = items.PrevClosePrice.HasValue ? items.Price - items.PrevClosePrice.Value : null;
             var diffStr = CliOutputHelper.FormatCurrencyWithSign(diff, "$");
-            var diffArrow = (ph.Chp ?? 0) >= 0 ? "▲" : "▼";
-            var status = (ph.Chp ?? 0) >= 0 ? "BULLISH ▲" : "BEARISH ▼";
+            var diffArrow = (items.Chp ?? 0) >= 0 ? "▲" : "▼";
+            var status = (items.Chp ?? 0) >= 0 ? "BULLISH ▲" : "BEARISH ▼";
 
             CliOutputHelper.RenderSectionTitle("Comparison — Today vs. Previous Close");
             Console.WriteLine("  │   CURRENT     │    OPEN       │    PREV CLOSE   │    DIFFERENCE  │");
@@ -65,9 +84,9 @@ public class TradingView : MetalDetailViewBase
             Console.WriteLine();
 
             // Block 3: Volatility
-            var prevClose = ph.PrevClosePrice ?? ph.Price;
-            var range = (ph.HighPrice.HasValue && ph.LowPrice.HasValue)
-                ? (ph.HighPrice.Value - ph.LowPrice.Value)
+            var prevClose = items.PrevClosePrice ?? items.Price;
+            var range = (items.HighPrice.HasValue && items.LowPrice.HasValue)
+                ? (items.HighPrice.Value - items.LowPrice.Value)
                 : (decimal?)null;
             var rangeStr = CliOutputHelper.FormatCurrency(range, "$");
             var rangePct = (prevClose > 0 && range.HasValue)
@@ -80,15 +99,16 @@ public class TradingView : MetalDetailViewBase
             Console.WriteLine($"  │  RANGE:        {rangeStr,-12}   PERCENT:      {rangePctStr,-20} │");
             Console.WriteLine("  └──────────────────────────────────────────────────────────────────┘");
 
-            // Block 4: Data integrity & timestamps (formerly TimestampView)
-            var openTimeStr = ph.OpenTime.HasValue ? DateTimeOffset.FromUnixTimeMilliseconds(ph.OpenTime.Value).UtcDateTime.ToString("yyyy-MM-dd HH:mm") + " UTC" : "—";
-            var refTimeStr = ph.ReferenceTimestamp.HasValue ? DateTimeOffset.FromUnixTimeMilliseconds(ph.ReferenceTimestamp.Value).UtcDateTime.ToString("yyyy-MM-dd HH:mm") + " UTC" : "—";
+            // Block 4: Data integrity & timestamps (API sends Unix timestamps in seconds, not milliseconds)
+            var openTimeStr = items.OpenTime.HasValue ? DateTimeOffset.FromUnixTimeSeconds(items.OpenTime.Value).UtcDateTime.ToString("yyyy-MM-dd HH:mm") + " UTC" : "—";
+            var refTimeStr = items.ReferenceTimestamp.HasValue ? DateTimeOffset.FromUnixTimeSeconds(items.ReferenceTimestamp.Value).UtcDateTime.ToString("yyyy-MM-dd HH:mm") + " UTC" : "—";
+            var sourceStr = !string.IsNullOrEmpty(items.Exchange) ? $"{items.Exchange}:{items.Symbol}{items.Currency}" : (items.Symbol ?? sym);
             CliOutputHelper.RenderSectionTitle("Data integrity & timestamps");
-            Console.WriteLine($"  │  Metal ID:      {ph.Id,-45}    │");
-            Console.WriteLine($"  │  EntryDate:     {ph.EntryDate,-45}    │");
+            Console.WriteLine($"  │  Metal ID:      {items.Id,-45}    │");
+            Console.WriteLine($"  │  EntryDate:     {items.EntryDate:d}                                       │");
             Console.WriteLine($"  │  Open time:     {openTimeStr,-45}    │");
             Console.WriteLine($"  │  Ref time:      {refTimeStr,-45}    │");
-            Console.WriteLine($"  │  Source:        {ph.Symbol ?? sym,-45}    │");
+            Console.WriteLine($"  │  Source:        {sourceStr,-45}    │");
             Console.WriteLine("  └──────────────────────────────────────────────────────────────────┘");
 
             CliOutputHelper.RenderViewFooter();

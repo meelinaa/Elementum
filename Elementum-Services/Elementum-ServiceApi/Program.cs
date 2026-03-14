@@ -36,14 +36,15 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddProblemDetails(); // Provides standardized error responses for exceptions and non-successful HTTP status codes.
 
-// CORS configuration to allow requests from the frontend.
+// CORS configuration: allowed origins from appsettings (e.g. Cors:AllowedOrigins).
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["http://localhost:3000"];
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:3000") // TODO: needs to be changed to the actual frontend URL in production
-              .AllowAnyMethod()       
-              .AllowAnyHeader();                   
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyMethod()
+              .AllowAnyHeader();
     });
 });
 
@@ -114,18 +115,17 @@ app.UseExceptionHandler(exceptionHandlerApp =>
     });
 });
 
-    app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()); // delete after testing, currently allows all CORS requests for ease of development with the frontend. In production, the specific policy "FrontendPolicy" is used to restrict access to the frontend URL.
 // For development.
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage(); // Provides detailed error pages for exceptions in development.
     app.MapOpenApi();
-    //app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()); // Allow all CORS requests in development for ease of testing with the frontend.
+    app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()); // Allow all CORS requests in development for ease of testing with the frontend.
 }
 else // In production
 {
     app.UseHttpsRedirection();
-    //app.UseCors("FrontendPolicy"); // Use the defined CORS policy in production to restrict access to the frontend URL.
+    app.UseCors("FrontendPolicy"); // Use the defined CORS policy in production to restrict access to the frontend URL.
 }
 
 app.UseAuthorization();

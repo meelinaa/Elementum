@@ -1,4 +1,6 @@
-using Elementum_Cli.Helper;
+using Elementum_Cli.Input;
+using Elementum_Cli.Output;
+using Elementum_Cli.Views.Interfaces;
 
 namespace Elementum_Cli.Views;
 
@@ -14,6 +16,7 @@ public abstract class MetalDetailViewBase : IDetailView
     /// <summary>Message shown while data is loading, e.g. "Loading daily data…".</summary>
     protected abstract string LoadingMessage { get; }
 
+    /// <inheritdoc />
     public async Task RenderAsync()
     {
         var app = AppContext.Current!;
@@ -37,6 +40,7 @@ public abstract class MetalDetailViewBase : IDetailView
     /// <summary>Load data and render the view content for the given metal. Called after the common header/loading/footer.</summary>
     protected abstract Task LoadAndRenderAsync(string sym, string name);
 
+    /// <inheritdoc />
     public virtual void HandleInput(ConsoleKeyInfo key)
     {
         HandleInputHelper.HandleInputWithMetals(key, () => RenderAsync());
