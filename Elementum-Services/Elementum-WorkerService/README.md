@@ -1,11 +1,62 @@
-﻿# Create Service
-sc.exe create "Elementum-WorkerService" binpath= "C:\Users\Melina\source\repos\Elementum\Elementum-Services\Elementum-WorkerService\bin\Release\net10.0\publish\win-x64\Elementum_WorkerService.exe" start= auto
+# Elementum Worker as a Windows Service
 
-# Start Service
+The worker can be installed as a Windows service and will then run automatically in the background (e.g. daily at 23:00 for metals ingestion).
+
+## Prerequisites
+
+- .NET (net10.0) on the machine, or use a self-contained publish (see below).
+- **All `sc.exe` commands must be run from an elevated Command Prompt or PowerShell** (right-click → “Run as administrator”).
+
+## 1. Publish the project
+
+From the solution root (or project folder) run:
+
+```powershell
+dotnet publish Elementum-WorkerService\Elementum_WorkerService.csproj -c Release -r win-x64 --self-contained true -o Elementum-WorkerService\bin\Release\net10.0\publish\win-x64
+```
+
+Alternatively, without `-r win-x64` (framework-dependent; requires .NET runtime installed):
+
+```powershell
+dotnet publish Elementum-WorkerService\Elementum_WorkerService.csproj -c Release -o Elementum-WorkerService\bin\publish
+```
+
+The EXE will be at `Elementum-WorkerService\bin\publish\Elementum_WorkerService.exe` (or under the self-contained path above).
+
+## 2. Install the service (one-time)
+
+Run **as Administrator**. `binpath=` must be the **full path to the EXE** (use quotes if the path contains spaces).
+
+Self-contained (win-x64):
+
+```cmd
+sc.exe create "Elementum-WorkerService" binpath= "C:\Users\..\Elementum_WorkerService.exe" start= auto
+```
+
+Optional description:
+
+```cmd
+sc.exe description "Elementum-WorkerService" "Fetches daily metal prices from GoldAPI and saves them to the Elementum database."
+```
+
+## 3. Start / stop the service
+
+```cmd
 sc.exe start "Elementum-WorkerService"
-
-# Stop Service
 sc.exe stop "Elementum-WorkerService"
+```
 
-# Delete Service
+## 4. Remove the service (uninstall)
+
+Stop the service first, then delete it:
+
+```cmd
+sc.exe stop "Elementum-WorkerService"
 sc.exe delete "Elementum-WorkerService"
+```
+
+## Notes
+
+- **start= auto** makes the service start automatically when Windows starts.
+- Configuration (connection string, API key) is read from `appsettings.json` and `.env` in the **same folder as the EXE** (the publish output). Adjust those files in that folder for the service, or use environment variables.
+- Logs may appear in Windows Event Viewer under “Application and Services Logs” (if configured), or only in the console when run manually; for proper service logging, consider configuring Serilog to write to a file.

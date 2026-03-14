@@ -7,11 +7,19 @@ using System.Text.Json;
 
 namespace Elementum_Cli.Views;
 
+/// <summary>
+/// Displays the current market overview: latest price per metal in a table (ID, Name, Exchange, Price USD, Chp).
+/// Data from GET history/all/latest.
+/// </summary>
 public class DashboardView : AsyncDetailViewBase
 {
+    /// <inheritdoc />
     protected override string ViewTitle => CliStrings.DashboardTitle;
+
+    /// <inheritdoc />
     protected override string LoadingMessage => "Loading market data…";
 
+    /// <inheritdoc />
     protected override async Task LoadAndRenderAsync()
     {
         await ConsoleLoader.RunAsync(async () =>

@@ -8,6 +8,7 @@ namespace Elementum.Shared.Mapping;
 /// </summary>
 public static class PriceHistoryMapping
 {
+    /// <summary>Maps a <see cref="Metals"/> entity to <see cref="MetalsDto"/>.</summary>
     public static MetalsDto ToDto(this Metals entity)
     {
         return entity == null
@@ -20,6 +21,7 @@ public static class PriceHistoryMapping
         };
     }
 
+    /// <summary>Maps a <see cref="PriceHistory"/> entity to <see cref="PriceHistoryDto"/> (core price and metal info).</summary>
     public static PriceHistoryDto ToPriceHistoryDto(this PriceHistory entity)
     {
         return entity == null
@@ -39,6 +41,7 @@ public static class PriceHistoryMapping
         };
     }
 
+    /// <summary>Maps a <see cref="PriceHistory"/> entity to <see cref="KaratPricesDto"/> (price per gram by purity).</summary>
     public static KaratPricesDto ToKaratPricesDto(this PriceHistory entity)
     {
         return entity == null
@@ -60,6 +63,7 @@ public static class PriceHistoryMapping
         };
     }
 
+    /// <summary>Maps a <see cref="PriceHistory"/> entity to <see cref="TradingPriceDto"/> (bid/ask, OHLC, timestamps).</summary>
     public static TradingPriceDto ToTradingPriceDto(this PriceHistory entity)
     {
         return entity == null

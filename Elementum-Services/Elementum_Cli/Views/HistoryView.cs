@@ -9,6 +9,10 @@ using Elementum_Cli.Api;
 
 namespace Elementum_Cli.Views;
 
+/// <summary>
+/// Two-step view: first select metal, then select period (Daily/Weekly/Monthly/Yearly). Renders sparkline and bar chart from aggregated history.
+/// Data from GET history/{symbol}/aggregated/{aggregation}/{count}.
+/// </summary>
 public class HistoryView : IDetailView
 {
     /// <summary>Number of data points per aggregation (passed to API as count).</summary>
@@ -30,6 +34,7 @@ public class HistoryView : IDetailView
 
     private static HistoryPeriod? _selectedPeriod;
 
+    /// <inheritdoc />
     public Task RenderAsync()
     {
         var app = AppContext.Current!;
@@ -62,6 +67,7 @@ public class HistoryView : IDetailView
         return Task.CompletedTask;
     }
 
+    /// <summary>Fetches aggregated history and renders sparkline, bar chart, and summary via <see cref="HistoryRenderer"/>.</summary>
     private static async Task LoadAndRenderChartsAsync(string sym, string name, HistoryPeriod period, int count, string aggregation)
     {
         await ConsoleLoader.RunAsync(async () =>
@@ -83,6 +89,7 @@ public class HistoryView : IDetailView
         });
     }
 
+    /// <inheritdoc />
     public void HandleInput(ConsoleKeyInfo key)
     {
         var app = AppContext.Current!;

@@ -14,6 +14,7 @@ public class Worker : BackgroundService
     private readonly TimeSpan _runTime = new(23, 0, 0);
     private bool _isFirstRun = true;
 
+    /// <summary>Injects logger, scope factory (for resolving scoped job), and host environment (for dev vs prod behaviour).</summary>
     public Worker(ILogger<Worker> logger, IServiceScopeFactory scopeFactory, IHostEnvironment env)
     {
         _logger = logger;
@@ -21,6 +22,7 @@ public class Worker : BackgroundService
         _env = env;
     }
 
+    /// <summary>Runs the ingestion loop: in Development runs once immediately, then waits until daily run time (23:00); in Production waits until first 23:00 then runs daily.</summary>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)

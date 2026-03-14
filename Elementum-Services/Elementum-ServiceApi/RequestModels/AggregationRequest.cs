@@ -15,6 +15,7 @@ public class AggregationRequest : IValidatableObject
     [Range(0, 500, ErrorMessage = "Count must be between 0 and 500.")]
     public int Count { get; set; }
 
+    /// <summary>Validates that Aggregation is one of: daily, weekly, monthly, yearly.</summary>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         var validIntervals = new[] { "daily", "weekly", "monthly", "yearly" };

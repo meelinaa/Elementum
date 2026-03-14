@@ -12,5 +12,6 @@ public static class CliLogging
             builder.SetMinimumLevel(LogLevel.Information);
         }));
 
+    /// <summary>Returns a logger for the given category (e.g. type name).</summary>
     public static ILogger GetLogger(string category) => _factory.Value.CreateLogger(category);
 }

@@ -1,5 +1,8 @@
 namespace Elementum.Shared.Objects;
 
+/// <summary>
+/// Entity for the <c>metals</c> table (Gold, Silver, Platinum). Used by EF Core and mapped to <see cref="DTOs.MetalsDto"/> for API responses.
+/// </summary>
 public class Metals
 {
     public int Id { get; set; }

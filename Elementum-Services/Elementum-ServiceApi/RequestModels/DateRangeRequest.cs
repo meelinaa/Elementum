@@ -16,6 +16,7 @@ public class DateRangeRequest : IValidatableObject
     [RegularExpression(@"^\d{4}-\d{2}-\d{2}$", ErrorMessage = "LastDate must be in format yyyy-MM-dd.")]
     public string LastDate { get; set; } = string.Empty;
 
+    /// <summary>Validates that FirstDate and LastDate are parseable and that start is not after end.</summary>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (string.IsNullOrWhiteSpace(FirstDate) || string.IsNullOrWhiteSpace(LastDate))

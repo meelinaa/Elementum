@@ -13,6 +13,7 @@ public sealed class GoldApiHealthCheck : IHealthCheck
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly MetalsApiOptions _options;
 
+    /// <summary>Injects HTTP client factory and GoldAPI options (for status URL and API key check).</summary>
     public GoldApiHealthCheck(IHttpClientFactory httpClientFactory, IOptions<MetalsApiOptions> options)
     {
         _httpClientFactory = httpClientFactory;

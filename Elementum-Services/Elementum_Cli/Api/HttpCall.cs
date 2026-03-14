@@ -10,6 +10,10 @@ using System.Text.Json;
 
 namespace Elementum_Cli.Api;
 
+/// <summary>
+/// Central HTTP client for the CLI. Calls the Elementum API (metals, price history, trading, karat, aggregated).
+/// Responses are cached in memory per endpoint; use <see cref="ClearCache"/> to force a reload (e.g. [R] key).
+/// </summary>
 public class HttpCall
 {
     private static readonly ILogger _log = CliLogging.GetLogger(nameof(HttpCall));
@@ -25,16 +29,19 @@ public class HttpCall
         BaseAddress = new Uri(CliConfig.ApiBaseUrl)
     });
 
+    /// <summary>GET metals/all — returns JSON array of all metals (Id, Symbol, Name).</summary>
     public static async Task<string> GetMetalListAsync()
     {
         return await SendRequestAsync<string>("metals/all");
     }
 
+    /// <summary>GET history/all/latest — returns JSON array of latest price per metal (for Dashboard).</summary>
     public static async Task<string> GetPriceHistoryAllTodayAsync()
     {
         return await SendRequestAsync<string>("history/all/latest");
     }
 
+    /// <summary>GET history/{symbol}/latest — returns JSON for the latest price of one metal.</summary>
     public static async Task<string> GetPriceHistoryTodayAsync(string metalSymbol)
     {
         return await SendRequestAsync<string>($"history/{metalSymbol}/latest");
@@ -61,12 +68,14 @@ public class HttpCall
         }
     }
 
+    /// <summary>GET history/{symbol} — returns JSON array of all price history for one metal.</summary>
     public static async Task<string> GetPriceHistoryMetalAsync(string metalSymbol)
     {
         return await SendRequestAsync<string>($"history/{metalSymbol}");
     }
 
-    public static async Task<string> GetPriceHistoryMetalAsync(string metalSymbol, string firstDate, string lastDate) // use this date format: yyyy-MM-dd
+    /// <summary>GET history/{symbol}/{firstDate}/{lastDate} — returns JSON array for date range. Dates in yyyy-MM-dd.</summary>
+    public static async Task<string> GetPriceHistoryMetalAsync(string metalSymbol, string firstDate, string lastDate)
     {
         return await SendRequestAsync<string>($"history/{metalSymbol}/{firstDate}/{lastDate}");
     }
@@ -81,6 +90,7 @@ public class HttpCall
         return await SendRequestAsync<string>($"history/{metalSymbol}/aggregated/{aggregationSegment}/{count}");
     }
 
+    /// <summary>Sends GET to the given endpoint; returns cached JSON if present, otherwise fetches and caches. Deserializes to T when T is not string.</summary>
     private static async Task<T> SendRequestAsync<T>(string endpoint)
     {
         try
@@ -162,6 +172,7 @@ public class HttpCall
         return ph;
     }
 
+    /// <summary>Fetches aggregated history (GET history/{symbol}/aggregated/{aggregation}/{count}); on failure falls back to full history and aggregates client-side. Returns deserialized list or null.</summary>
     public static async Task<List<PriceHistoryDto>?> GetPriceHistoryMetalWithLogicAsync(string sym, string aggregation, int count, HistoryPeriod period)
     {
         List<PriceHistoryDto>? list = null;
@@ -201,6 +212,7 @@ public class HttpCall
         return list;
     }
 
+    /// <summary>Reduces the list to at most targetCount entries: by period (daily take last N, weekly/monthly/yearly by grouping).</summary>
     private static List<PriceHistoryDto> AggregateClientSide(List<PriceHistoryDto> ordered, HistoryPeriod period, int targetCount)
     {
         ordered = ordered.OrderBy(p => p.EntryDate).ToList();
@@ -216,6 +228,7 @@ public class HttpCall
         };
     }
 
+    /// <summary>Takes every nth element from the end of the list, up to maxCount entries (chronological order).</summary>
     private static List<PriceHistoryDto> TakeEveryNth(List<PriceHistoryDto> list, int step, int maxCount)
     {
         var result = new List<PriceHistoryDto>();
@@ -224,6 +237,7 @@ public class HttpCall
         return result;
     }
 
+    /// <summary>Groups by year/month, keeps last entry per month, returns last maxCount months.</summary>
     private static List<PriceHistoryDto> TakeByMonth(List<PriceHistoryDto> list, int maxCount)
     {
         var byMonth = list
@@ -235,6 +249,7 @@ public class HttpCall
         return byMonth;
     }
 
+    /// <summary>Groups by year, keeps last entry per year, returns last maxCount years.</summary>
     private static List<PriceHistoryDto> TakeByYear(List<PriceHistoryDto> list, int maxCount)
     {
         var byYear = list

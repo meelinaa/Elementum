@@ -5,8 +5,12 @@ using static Elementum_Cli.Output.CliOutputHelper;
 
 namespace Elementum_Cli.Navigation;
 
+/// <summary>
+/// Handles keyboard input for the CLI: menu navigation (↑/↓/Enter/ESC) and delegation to the current detail view. [R] clears cache and re-renders.
+/// </summary>
 public class CliNavigation
 {
+    /// <summary>Reads one key and either updates menu selection, opens a page, exits, or forwards to the current view (including [R] reload).</summary>
     public static void HandleInput()
     {
         var app = AppContext.Current!;
@@ -55,6 +59,7 @@ public class CliNavigation
         }
     }
 
+    /// <summary>Moves the menu selection up (wraps to bottom if at top); skips non-selectable items.</summary>
     public static void MoveUp()
     {
         var app = AppContext.Current!;
@@ -67,6 +72,7 @@ public class CliNavigation
         while (!app.MenuItems[app.SelectedIndex].Selectable);
     }
 
+    /// <summary>Moves the menu selection down (wraps to top if at bottom); skips non-selectable items.</summary>
     public static void MoveDown()
     {
         var app = AppContext.Current!;
@@ -79,6 +85,7 @@ public class CliNavigation
         while (!app.MenuItems[app.SelectedIndex].Selectable);
     }
 
+    /// <summary>Ensures SelectedIndex points to a selectable menu item (e.g. after startup).</summary>
     public static void EnsureValidStartIndex()
     {
         var app = AppContext.Current!;

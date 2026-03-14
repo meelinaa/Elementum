@@ -4,8 +4,12 @@ using System.Text;
 
 namespace Elementum_Cli;
 
+/// <summary>
+/// Entry point for the Elementum CLI. Sets up console encoding, creates <see cref="AppContext"/>, and runs the main input loop.
+/// </summary>
 public class Program
 {
+    /// <summary>Initializes the CLI, renders the menu, and processes keyboard input until the user exits.</summary>
     public static void Main()
     {
         Console.OutputEncoding = Encoding.UTF8;

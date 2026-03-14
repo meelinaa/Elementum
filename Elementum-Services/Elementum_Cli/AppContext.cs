@@ -13,12 +13,25 @@ public class AppContext
     /// <summary>Current context for this run. Set in <see cref="Program.Main"/>.</summary>
     public static AppContext? Current { get; set; }
 
+    /// <summary>Current UI state (Menu or Detail).</summary>
     public AppState State { get; set; } = AppState.Menu;
+
+    /// <summary>Which detail view is shown when State is Detail.</summary>
     public DetailView? CurrentDetailView { get; set; }
+
+    /// <summary>Selected metal for views that require one (Trading, Karat, History).</summary>
     public Metall? CurrentSelectedMetal { get; set; }
+
+    /// <summary>When false, the main loop exits and the app closes.</summary>
     public bool Running { get; set; } = true;
+
+    /// <summary>Index of the selected menu item.</summary>
     public int SelectedIndex { get; set; }
+
+    /// <summary>Maps menu item index to console row for redrawing the selection.</summary>
     public Dictionary<int, int> RowMap { get; } = new();
+
+    /// <summary>List of menu entries (title, selectable, key, view).</summary>
     public List<MenuItem> MenuItems { get; } = new();
 
     /// <summary>Initializes the default menu items. Call once after construction.</summary>

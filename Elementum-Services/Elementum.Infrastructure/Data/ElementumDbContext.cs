@@ -27,6 +27,7 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
 
     #region GET
 
+    /// <summary>Returns true if at least one row in price_history has EntryDate equal to today (UTC).</summary>
     public async Task<bool> IsDataAlreadyIngestedToday(CancellationToken ct)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -35,16 +36,19 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
 
     #region Metals
 
+    /// <summary>Returns all metals from the metals table.</summary>
     public async Task<IEnumerable<Metals>> GetMetalsAll(CancellationToken ct)
     {
         return await Metals.ToListAsync(ct);
     }
 
+    /// <summary>Returns a metal by primary key, or null if not found.</summary>
     public async Task<Metals?> GetMetalById(int id, CancellationToken ct)
     {
         return await Metals.FirstOrDefaultAsync(x => x.Id == id, ct);
     }
 
+    /// <summary>Returns a metal by symbol (e.g. XAU, XAG), or null if not found.</summary>
     public async Task<Metals?> GetMetalBySymbol(string symbol, CancellationToken ct)
     {
         return await Metals.FirstOrDefaultAsync(x => x.Symbol == symbol, ct);
@@ -54,6 +58,7 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
 
     #region PriceHistory
 
+    /// <summary>Returns the most recent price history row for the given metal symbol (by EntryDate desc).</summary>
     public async Task<PriceHistory?> GetPriceHistoryByMetalSymbolLatest(string symbol, CancellationToken ct)
     {
         return await PriceHistory
@@ -63,6 +68,7 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
             .FirstOrDefaultAsync(ct);
     }
 
+    /// <summary>Returns all price history rows with Metal included.</summary>
     public async Task<IEnumerable<PriceHistory>> GetPriceHistoryAll(CancellationToken ct)
     {
         return await PriceHistory
@@ -85,6 +91,7 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
         return latestPerMetal.Select(PriceHistoryMapping.ToPriceHistoryDto);
     }
 
+    /// <summary>Returns all price history rows for the given metal symbol.</summary>
     public async Task<IEnumerable<PriceHistory>> GetPriceHistoryByMetalSymbol(string symbol, CancellationToken ct)
     {
         return await PriceHistory
@@ -93,6 +100,7 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
             .ToListAsync(ct);
     }
 
+    /// <summary>Returns all price history rows within the date range (inclusive).</summary>
     public async Task<IEnumerable<PriceHistory>> GetPriceHistoryAllByDateRange(DateOnly firstDate, DateOnly lastDate, CancellationToken ct)
     {
         return await PriceHistory
@@ -102,6 +110,7 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
             .ToListAsync(ct);
     }
 
+    /// <summary>Returns price history for the given metal symbol within the date range (inclusive).</summary>
     public async Task<IEnumerable<PriceHistory>> GetPriceHistoryByMetalSymbolAndDateRange(string symbol, DateOnly firstDate, DateOnly lastDate, CancellationToken ct)
     {
         return await PriceHistory

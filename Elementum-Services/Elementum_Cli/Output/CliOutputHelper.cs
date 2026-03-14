@@ -4,6 +4,9 @@ using Elementum_Cli.Views;
 
 namespace Elementum_Cli.Output;
 
+/// <summary>
+/// Shared console output: view headers/footers, section titles, tables, menu rendering, formatting (currency, percent, colors).
+/// </summary>
 public class CliOutputHelper
 {
     /// <summary>View width for headers/footer. Use <see cref="CliConstants.ViewWidth"/> for layout.</summary>
@@ -46,6 +49,7 @@ public class CliOutputHelper
         Console.ResetColor();
     }
 
+    /// <summary>Draws the view header: double-line box with title (e.g. "HISTORY — GOLD (XAU)").</summary>
     public static void RenderViewHeader(string title)
     {
         Console.WriteLine();
@@ -54,6 +58,7 @@ public class CliOutputHelper
         Console.WriteLine("╠" + new string('═', ViewWidth - 2) + "╣");
     }
 
+    /// <summary>Draws a section title box (single-line, e.g. "Sparkline — Daily (Chp)").</summary>
     public static void RenderSectionTitle(string title)
     {
         Console.WriteLine();
@@ -62,6 +67,7 @@ public class CliOutputHelper
         Console.WriteLine("  ├" + new string('─', ViewWidth - 6) + "┤");
     }
 
+    /// <summary>Draws the view footer: back-to-menu and [R] reload hint.</summary>
     public static void RenderViewFooter()
     {
         Console.WriteLine();
@@ -72,6 +78,7 @@ public class CliOutputHelper
         Console.WriteLine();
     }
 
+    /// <summary>Renders the metal selection screen (header, question, options 1–3, footer).</summary>
     public static void RenderMetalSelectionPrompt()
     {
         RenderViewHeader(CliStrings.MetalSelectionHeader);
@@ -83,6 +90,7 @@ public class CliOutputHelper
         RenderViewFooter();
     }
 
+    /// <summary>Redraws a single menu item at the stored row; highlights with arrow when selected.</summary>
     public static void DrawMenuItem(int index, bool selected)
     {
         var app = AppContext.Current!;
@@ -111,6 +119,7 @@ public class CliOutputHelper
         }
     }
 
+    /// <summary>Opens the currently selected menu item (sets state, view, and calls RenderAsync). Exits if item is Exit.</summary>
     public static void OpenSelectedPage()
     {
         var app = AppContext.Current!;
@@ -129,6 +138,7 @@ public class CliOutputHelper
         _ = view.RenderAsync();
     }
 
+    /// <summary>Clears the console and draws the main menu (title, hint, all menu items with selection).</summary>
     public static void RenderMenu()
     {
         var app = AppContext.Current!;

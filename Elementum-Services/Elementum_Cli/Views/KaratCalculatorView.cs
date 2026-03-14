@@ -3,13 +3,22 @@ using Elementum_Cli.Output;
 
 namespace Elementum_Cli.Views;
 
+/// <summary>
+/// Displays price per gram by purity (24k–10k) and alloy discount vs 24k for one metal.
+/// Data from GET history/{symbol}/latest/karat.
+/// </summary>
 public class KaratCalculatorView : MetalDetailViewBase
 {
+    /// <inheritdoc />
     protected override string ViewTitle => "KARAT & ALLOY";
+
+    /// <inheritdoc />
     protected override string LoadingMessage => "Loading karat data…";
 
+    /// <summary>Formats a decimal as currency with € symbol, or "—" if null.</summary>
     private static string FormatEuro(decimal? value) => CliOutputHelper.FormatCurrency(value, "€");
 
+    /// <inheritdoc />
     protected override async Task LoadAndRenderAsync(string sym, string name)
     {
         await ConsoleLoader.RunAsync(async () =>

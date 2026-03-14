@@ -15,9 +15,11 @@ public static class CliConfig
     /// <summary>API base URL for HTTP calls. Set ELEMENTUM_API_BASEURL to override.</summary>
     public static string ApiBaseUrl => _baseUrl.Value;
 
+    /// <summary>Trims the URL and ensures it ends with a single trailing slash.</summary>
     internal static string NormalizeBaseUrl(string baseUrl)
         => baseUrl.Trim().TrimEnd('/') + "/";
 
+    /// <summary>Returns the API base URL: env overrides file, file overrides default.</summary>
     internal static string ResolveApiBaseUrl(string? fromEnv, string? fromFile)
     {
         if (!string.IsNullOrWhiteSpace(fromEnv))

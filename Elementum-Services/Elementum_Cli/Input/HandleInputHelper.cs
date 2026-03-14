@@ -3,8 +3,12 @@ using Elementum_Cli.Output;
 
 namespace Elementum_Cli.Input;
 
+/// <summary>
+/// Handles common key actions for detail views: ESC/← back to menu, and (with metals) 1–3 for metal selection.
+/// </summary>
 public class HandleInputHelper
 {
+    /// <summary>Handles ESC/←: returns to main menu and renders it. Other keys are ignored.</summary>
     public static void HandleInput(ConsoleKeyInfo key)
     {
         var app = AppContext.Current!;

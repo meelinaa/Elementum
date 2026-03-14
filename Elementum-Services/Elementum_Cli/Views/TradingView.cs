@@ -5,11 +5,19 @@ using System.Text.Json;
 
 namespace Elementum_Cli.Views;
 
+/// <summary>
+/// Displays trading data for one metal: bid/ask, spread, high/low, open, comparison vs previous close, volatility, timestamps.
+/// Data from GET history/{symbol}/latest/trading.
+/// </summary>
 public class TradingView : MetalDetailViewBase
 {
+    /// <inheritdoc />
     protected override string ViewTitle => "TRADING & DAILY ANALYSIS";
+
+    /// <inheritdoc />
     protected override string LoadingMessage => "Loading daily data…";
 
+    /// <inheritdoc />
     protected override async Task LoadAndRenderAsync(string sym, string name)
     {
         await ConsoleLoader.RunAsync(async () =>

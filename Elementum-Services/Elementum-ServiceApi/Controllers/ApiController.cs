@@ -6,12 +6,17 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Elementum_ServiceApi.Controllers
 {
+    /// <summary>
+    /// REST API controller for Elementum: metals list and price history (latest, by symbol, by date range, aggregated, trading/karat views).
+    /// All responses use DTOs; base route is <c>api/v1</c>.
+    /// </summary>
     [ApiController]
     [Route("api/v1")]
     public class ApiController : ControllerBase
     {
         private readonly IApiService _apiService;
 
+        /// <summary>Injects the application service for metals and price history.</summary>
         public ApiController(IApiService apiService)
         {
             _apiService = apiService;

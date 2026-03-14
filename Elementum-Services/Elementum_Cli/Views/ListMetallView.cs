@@ -7,11 +7,18 @@ using System.Text.Json;
 
 namespace Elementum_Cli.Views;
 
+/// <summary>
+/// Displays the list of all metals (Id, Symbol, Name) in a table. Data from GET metals/all.
+/// </summary>
 public class ListMetallView : AsyncDetailViewBase
 {
+    /// <inheritdoc />
     protected override string ViewTitle => "METAL MASTER DATA";
+
+    /// <inheritdoc />
     protected override string LoadingMessage => "Loading metal list…";
 
+    /// <inheritdoc />
     protected override async Task LoadAndRenderAsync()
     {
         await ConsoleLoader.RunAsync(async () =>

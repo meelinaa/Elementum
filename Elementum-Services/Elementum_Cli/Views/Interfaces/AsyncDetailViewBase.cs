@@ -15,6 +15,7 @@ public abstract class AsyncDetailViewBase : IDetailView
     /// <summary>Message shown while data is loading, e.g. "Loading market data…".</summary>
     protected abstract string LoadingMessage { get; }
 
+    /// <inheritdoc />
     public async Task RenderAsync()
     {
         Console.Clear();
@@ -28,6 +29,7 @@ public abstract class AsyncDetailViewBase : IDetailView
     /// <summary>Load data and render the view content. Called after the common header/loading/footer.</summary>
     protected abstract Task LoadAndRenderAsync();
 
+    /// <inheritdoc />
     public virtual void HandleInput(ConsoleKeyInfo key)
     {
         HandleInputHelper.HandleInput(key);

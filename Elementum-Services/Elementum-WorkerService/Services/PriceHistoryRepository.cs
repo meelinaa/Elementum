@@ -14,6 +14,7 @@ public class PriceHistoryRepository : IPriceHistoryRepository
     private readonly ILogger<PriceHistoryRepository> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
 
+    /// <summary>Injects logger and scope factory to resolve a scoped <see cref="ElementumDbContext"/> per save.</summary>
     public PriceHistoryRepository(ILogger<PriceHistoryRepository> logger, IServiceScopeFactory scopeFactory)
     {
         _logger = logger;
