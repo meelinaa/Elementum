@@ -3,7 +3,10 @@ namespace Elementum_WorkerService.Options;
 /// <summary>
 /// Configuration for the GoldAPI (goldapi.io): API key and optional base/status URLs. Bound from config (e.g. METALS_API_KEY in .env).
 /// </summary>
-public class MetalsApiOptions
+/// <remarks>
+/// Uses <c>set</c> accessors so <see cref="Microsoft.Extensions.Options.IOptions{TOptions}"/> and <c>Configure&lt;T&gt;</c> can mutate after binding.
+/// </remarks>
+public record MetalsApiOptions
 {
     public const string SectionName = "MetalsApi";
 

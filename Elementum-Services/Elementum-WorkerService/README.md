@@ -1,6 +1,6 @@
 # Elementum Worker as a Windows Service
 
-The worker can be installed as a Windows service and will then run automatically in the background (e.g. daily at 23:00 for metals ingestion).
+The worker can be installed as a Windows service and will then run automatically in the background. The daily ingestion time is configured under **`Worker:DailyRunTime`** in `appsettings.json` (default `23:00:00` local time).
 
 ## Prerequisites
 
@@ -58,5 +58,5 @@ sc.exe delete "Elementum-WorkerService"
 ## Notes
 
 - **start= auto** makes the service start automatically when Windows starts.
-- Configuration (connection string, API key) is read from `appsettings.json` and `.env` in the **same folder as the EXE** (the publish output). Adjust those files in that folder for the service, or use environment variables.
+- Configuration (connection string, API key, **`Worker:DailyRunTime`**) is read from `appsettings.json` and `.env` in the **same folder as the EXE** (the publish output). You can override the schedule with the environment variable **`Worker__DailyRunTime`** (e.g. `02:30:00`).
 - Logs may appear in Windows Event Viewer under “Application and Services Logs” (if configured), or only in the console when run manually; for proper service logging, consider configuring Serilog to write to a file.

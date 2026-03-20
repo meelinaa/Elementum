@@ -1,9 +1,11 @@
 using Elementum_WorkerService.Jobs;
+using Elementum_WorkerService.Options;
+using Microsoft.Extensions.Options;
 
 namespace Elementum_WorkerService;
 
 /// <summary>
-/// Hosted background service that runs the metals ingestion job on a daily schedule (default 23:00).
+/// Hosted background service that runs the metals ingestion job once per day at <see cref="WorkerScheduleOptions.DailyRunTime"/> (local time).
 /// In development, the first run is executed immediately; subsequent runs wait until the next scheduled time.
 /// </summary>
 public class Worker : BackgroundService
@@ -11,18 +13,23 @@ public class Worker : BackgroundService
     private readonly ILogger<Worker> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IHostEnvironment _env;
-    private readonly TimeSpan _runTime = new(23, 0, 0);
+    private readonly TimeSpan _runTime;
     private bool _isFirstRun = true;
 
-    /// <summary>Injects logger, scope factory (for resolving scoped job), and host environment (for dev vs prod behaviour).</summary>
-    public Worker(ILogger<Worker> logger, IServiceScopeFactory scopeFactory, IHostEnvironment env)
+    /// <summary>Injects logger, scope factory, host environment, and schedule from configuration.</summary>
+    public Worker(
+        ILogger<Worker> logger,
+        IServiceScopeFactory scopeFactory,
+        IHostEnvironment env,
+        IOptions<WorkerScheduleOptions> scheduleOptions)
     {
         _logger = logger;
         _scopeFactory = scopeFactory;
         _env = env;
+        _runTime = scheduleOptions.Value.DailyRunTime;
     }
 
-    /// <summary>Runs the ingestion loop: in Development runs once immediately, then waits until daily run time (23:00); in Production waits until first 23:00 then runs daily.</summary>
+    /// <summary>Runs the ingestion loop: in Development runs once immediately, then waits until the configured daily time.</summary>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
@@ -40,7 +47,7 @@ public class Worker : BackgroundService
                 nextRun = nextRun.AddDays(1);
 
             var delay = nextRun - now;
-            _logger.LogInformation("Next regular run: {NextRun}", nextRun);
+            _logger.LogInformation("Next regular run: {NextRun} (DailyRunTime={DailyRunTime})", nextRun, _runTime);
             await Task.Delay(delay, stoppingToken);
 
             if (stoppingToken.IsCancellationRequested)

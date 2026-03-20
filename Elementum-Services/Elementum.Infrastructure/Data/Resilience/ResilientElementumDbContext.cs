@@ -10,6 +10,9 @@ namespace Elementum.Infrastructure.Data.Resilience;
 /// When a transient MySQL error occurs (e.g. connection lost, deadlock), the operation is retried according to <see cref="ElementumDbContextResilienceOptions"/>.
 /// Registered in DI only when AddElementumDbContext is called with <c>configureResilience</c> (API today; Worker can use the same later).
 /// </summary>
+/// <remarks>
+/// <see cref="IQueryable{T}"/> members are forwarded without wrapping; execution occurs when the caller runs e.g. <c>ToListAsync</c> on the returned query.
+/// </remarks>
 public sealed class ResilientElementumDbContext : IElementumDbContext
 {
     private readonly IElementumDbContext _inner;
@@ -23,50 +26,48 @@ public sealed class ResilientElementumDbContext : IElementumDbContext
     }
 
     /// <inheritdoc />
-    public Task<IEnumerable<Metals>> GetMetalsAll(CancellationToken ct) =>
-        ExecuteAsync(ct => _inner.GetMetalsAll(ct), ct);
+    public IQueryable<Metals> QueryMetals() => _inner.QueryMetals();
+
+    /// <inheritdoc />
+    public IQueryable<PriceHistory> QueryPriceHistoryAll() => _inner.QueryPriceHistoryAll();
+
+    /// <inheritdoc />
+    public IQueryable<PriceHistory> QueryPriceHistoryByMetalSymbol(string symbol) =>
+        _inner.QueryPriceHistoryByMetalSymbol(symbol);
+
+    /// <inheritdoc />
+    public IQueryable<PriceHistory> QueryPriceHistoryAllByDateRange(DateOnly firstDate, DateOnly lastDate) =>
+        _inner.QueryPriceHistoryAllByDateRange(firstDate, lastDate);
+
+    /// <inheritdoc />
+    public IQueryable<PriceHistory> QueryPriceHistoryByMetalSymbolAndDateRange(string symbol, DateOnly firstDate, DateOnly lastDate) =>
+        _inner.QueryPriceHistoryByMetalSymbolAndDateRange(symbol, firstDate, lastDate);
 
     /// <inheritdoc />
     public Task<Metals?> GetMetalById(int id, CancellationToken ct) =>
-        ExecuteAsync(ct => _inner.GetMetalById(id, ct), ct);
+        ExecuteAsync(innerCt => _inner.GetMetalById(id, innerCt), ct);
 
     /// <inheritdoc />
     public Task<Metals?> GetMetalBySymbol(string symbol, CancellationToken ct) =>
-        ExecuteAsync(ct => _inner.GetMetalBySymbol(symbol, ct), ct);
+        ExecuteAsync(innerCt => _inner.GetMetalBySymbol(symbol, innerCt), ct);
 
     /// <inheritdoc />
     public Task<bool> IsDataAlreadyIngestedToday(CancellationToken ct) =>
-        ExecuteAsync(ct => _inner.IsDataAlreadyIngestedToday(ct), ct);
+        ExecuteAsync(innerCt => _inner.IsDataAlreadyIngestedToday(innerCt), ct);
 
     /// <inheritdoc />
     public Task<PriceHistory?> GetPriceHistoryByMetalSymbolLatest(string symbol, CancellationToken ct) =>
-        ExecuteAsync(ct => _inner.GetPriceHistoryByMetalSymbolLatest(symbol, ct), ct);
-
-    /// <inheritdoc />
-    public Task<IEnumerable<PriceHistory>> GetPriceHistoryAll(CancellationToken ct) =>
-        ExecuteAsync(ct => _inner.GetPriceHistoryAll(ct), ct);
+        ExecuteAsync(innerCt => _inner.GetPriceHistoryByMetalSymbolLatest(symbol, innerCt), ct);
 
     /// <inheritdoc />
     public Task<IEnumerable<PriceHistoryDto>> GetPriceHistoryAllLatest(CancellationToken ct) =>
-        ExecuteAsync(ct => _inner.GetPriceHistoryAllLatest(ct), ct);
+        ExecuteAsync(innerCt => _inner.GetPriceHistoryAllLatest(innerCt), ct);
 
     /// <inheritdoc />
-    public Task<IEnumerable<PriceHistory>> GetPriceHistoryByMetalSymbol(string symbol, CancellationToken ct) =>
-        ExecuteAsync(ct => _inner.GetPriceHistoryByMetalSymbol(symbol, ct), ct);
-
-    /// <inheritdoc />
-    public Task<IEnumerable<PriceHistory>> GetPriceHistoryAllByDateRange(DateOnly firstDate, DateOnly lastDate, CancellationToken ct) =>
-        ExecuteAsync(ct => _inner.GetPriceHistoryAllByDateRange(firstDate, lastDate, ct), ct);
-
-    /// <inheritdoc />
-    public Task<IEnumerable<PriceHistory>> GetPriceHistoryByMetalSymbolAndDateRange(string symbol, DateOnly firstDate, DateOnly lastDate, CancellationToken ct) =>
-        ExecuteAsync(ct => _inner.GetPriceHistoryByMetalSymbolAndDateRange(symbol, firstDate, lastDate, ct), ct);
+    public Task<IEnumerable<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct) =>
+        ExecuteAsync(innerCt => _inner.GetPriceHistoryMetalData(metalSymbol, aggregation, count, innerCt), ct);
 
     /// <summary>Runs the delegate under the retry policy so transient DB failures are retried automatically.</summary>
     private Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> action, CancellationToken ct) =>
         _policy.ExecuteAsync(action, ct);
-
-    /// <inheritdoc />
-    public Task<IEnumerable<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct) =>
-        ExecuteAsync(ct => _inner.GetPriceHistoryMetalData(metalSymbol, aggregation, count, ct), ct);
 }

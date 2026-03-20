@@ -36,11 +36,8 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
 
     #region Metals
 
-    /// <summary>Returns all metals from the metals table.</summary>
-    public async Task<IEnumerable<Metals>> GetMetalsAll(CancellationToken ct)
-    {
-        return await Metals.ToListAsync(ct);
-    }
+    /// <inheritdoc />
+    public IQueryable<Metals> QueryMetals() => Metals;
 
     /// <summary>Returns a metal by primary key, or null if not found.</summary>
     public async Task<Metals?> GetMetalById(int id, CancellationToken ct)
@@ -68,13 +65,9 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
             .FirstOrDefaultAsync(ct);
     }
 
-    /// <summary>Returns all price history rows with Metal included.</summary>
-    public async Task<IEnumerable<PriceHistory>> GetPriceHistoryAll(CancellationToken ct)
-    {
-        return await PriceHistory
-            .Include(x => x.Metal)
-            .ToListAsync(ct);
-    }
+    /// <inheritdoc />
+    public IQueryable<PriceHistory> QueryPriceHistoryAll() =>
+        PriceHistory.Include(x => x.Metal);
 
     /// <summary>Latest price history entry per metal. Groups in memory so Include(Metal) is preserved for mapping.</summary>
     public async Task<IEnumerable<PriceHistoryDto>> GetPriceHistoryAllLatest(CancellationToken ct)
@@ -91,36 +84,26 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
         return latestPerMetal.Select(PriceHistoryMapping.ToPriceHistoryDto);
     }
 
-    /// <summary>Returns all price history rows for the given metal symbol.</summary>
-    public async Task<IEnumerable<PriceHistory>> GetPriceHistoryByMetalSymbol(string symbol, CancellationToken ct)
-    {
-        return await PriceHistory
+    /// <inheritdoc />
+    public IQueryable<PriceHistory> QueryPriceHistoryByMetalSymbol(string symbol) =>
+        PriceHistory
             .Include(x => x.Metal)
-            .Where(x => x.Metal != null && x.Metal.Symbol == symbol)
-            .ToListAsync(ct);
-    }
+            .Where(x => x.Metal != null && x.Metal.Symbol == symbol);
 
-    /// <summary>Returns all price history rows within the date range (inclusive).</summary>
-    public async Task<IEnumerable<PriceHistory>> GetPriceHistoryAllByDateRange(DateOnly firstDate, DateOnly lastDate, CancellationToken ct)
-    {
-        return await PriceHistory
+    /// <inheritdoc />
+    public IQueryable<PriceHistory> QueryPriceHistoryAllByDateRange(DateOnly firstDate, DateOnly lastDate) =>
+        PriceHistory
             .Include(x => x.Metal)
-            .Where(x => x.EntryDate >= firstDate &&
-                        x.EntryDate <= lastDate)
-            .ToListAsync(ct);
-    }
+            .Where(x => x.EntryDate >= firstDate && x.EntryDate <= lastDate);
 
-    /// <summary>Returns price history for the given metal symbol within the date range (inclusive).</summary>
-    public async Task<IEnumerable<PriceHistory>> GetPriceHistoryByMetalSymbolAndDateRange(string symbol, DateOnly firstDate, DateOnly lastDate, CancellationToken ct)
-    {
-        return await PriceHistory
+    /// <inheritdoc />
+    public IQueryable<PriceHistory> QueryPriceHistoryByMetalSymbolAndDateRange(string symbol, DateOnly firstDate, DateOnly lastDate) =>
+        PriceHistory
             .Include(x => x.Metal)
             .Where(x => x.Metal != null &&
                         x.Metal.Symbol == symbol &&
                         x.EntryDate >= firstDate &&
-                        x.EntryDate <= lastDate)
-            .ToListAsync(ct);
-    }
+                        x.EntryDate <= lastDate);
 
     /// <summary>
     /// Returns price history for a metal: either last N daily points (count) or aggregated by period (weekly/monthly/yearly)

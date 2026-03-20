@@ -1,5 +1,6 @@
 using Elementum.Shared.DTOs;
 using Elementum_Cli.Api;
+using Elementum_Cli.Constants;
 using Elementum_Cli.Output;
 using System.Text.Json;
 
@@ -38,7 +39,7 @@ public class TradingView : MetalDetailViewBase
 
             var exchange = items.Exchange ?? "—";
             var currency = items.Currency ?? "USD";
-            var dateStr = items.EntryDate.ToString("yyyy-MM-dd");
+            var dateStr = items.EntryDate.ToString(CliConstants.DisplayDateFormat);
             var bidStr = CliOutputHelper.FormatCurrency(items.Bid, "$");
             var askStr = CliOutputHelper.FormatCurrency(items.Ask, "$");
             var spread = (items.Ask.HasValue && items.Bid.HasValue) ? CliOutputHelper.FormatCurrency(items.Ask.Value - items.Bid.Value, "$") : "—";
@@ -55,11 +56,11 @@ public class TradingView : MetalDetailViewBase
             Console.WriteLine($"  │  BID (Sell):      {bidStr,-12} │  ASK (Buy):      {askStr,-10}     │");
             Console.WriteLine($"  │  HIGH:            {highStr,-12} │  LOW:            {lowStr,-10}     │");
             Console.WriteLine($"  │  OPEN:            {openStr,-12} │  SPREAD:         {spread,-10}     │");
-            Console.Write($"  │  CH/CHP:          ");
-            CliOutputHelper.WriteColoredValue($"{chStr,-6}", (items.Chp ?? 0) >= 0);
-            Console.Write(" / ");
-            CliOutputHelper.WriteColoredValue($"{chpStr,-35}", (items.Chp ?? 0) >= 0);
-            Console.Write("  │\n");
+            Console.Write("  │  CH:              ");
+            CliOutputHelper.WriteColoredValue($"{chStr,-12}", (items.Ch ?? 0) >= 0);
+            Console.Write(" │  CHP:            ");
+            CliOutputHelper.WriteColoredValue($"{chpStr,-10}", (items.Chp ?? 0) >= 0);
+            Console.WriteLine("     │");
             Console.WriteLine("  └──────────────────────────────────────────────────────────────────┘");
 
             // Block 2: Comparison Today vs. Previous Close
@@ -100,18 +101,17 @@ public class TradingView : MetalDetailViewBase
             Console.WriteLine("  └──────────────────────────────────────────────────────────────────┘");
 
             // Block 4: Data integrity & timestamps (API sends Unix timestamps in seconds, not milliseconds)
-            var openTimeStr = items.OpenTime.HasValue ? DateTimeOffset.FromUnixTimeSeconds(items.OpenTime.Value).UtcDateTime.ToString("yyyy-MM-dd HH:mm") + " UTC" : "—";
-            var refTimeStr = items.ReferenceTimestamp.HasValue ? DateTimeOffset.FromUnixTimeSeconds(items.ReferenceTimestamp.Value).UtcDateTime.ToString("yyyy-MM-dd HH:mm") + " UTC" : "—";
+            var openTimeStr = items.OpenTime.HasValue ? DateTimeOffset.FromUnixTimeSeconds(items.OpenTime.Value).UtcDateTime.ToString(CliConstants.DisplayDateTimeUtcFormat) + " UTC" : "—";
+            var refTimeStr = items.ReferenceTimestamp.HasValue ? DateTimeOffset.FromUnixTimeSeconds(items.ReferenceTimestamp.Value).UtcDateTime.ToString(CliConstants.DisplayDateTimeUtcFormat) + " UTC" : "—";
             var sourceStr = !string.IsNullOrEmpty(items.Exchange) ? $"{items.Exchange}:{items.Symbol}{items.Currency}" : (items.Symbol ?? sym);
             CliOutputHelper.RenderSectionTitle("Data integrity & timestamps");
             Console.WriteLine($"  │  Metal ID:      {items.Id,-45}    │");
-            Console.WriteLine($"  │  EntryDate:     {items.EntryDate:d}                                       │");
             Console.WriteLine($"  │  Open time:     {openTimeStr,-45}    │");
             Console.WriteLine($"  │  Ref time:      {refTimeStr,-45}    │");
             Console.WriteLine($"  │  Source:        {sourceStr,-45}    │");
             Console.WriteLine("  └──────────────────────────────────────────────────────────────────┘");
 
-            CliOutputHelper.RenderViewFooter();
+            CliOutputHelper.RenderViewFooter(items.EntryDate);
         });
     }
 }

@@ -58,5 +58,27 @@ services:
       mysql:
         condition: service_healthy
 
+  # ---------------------------------------------------------------------------
+  # Elementum-WorkerService (Background worker)
+  # ---------------------------------------------------------------------------
+  worker:
+    build:
+      context: ../Elementum-Services
+      dockerfile: Elementum-WorkerService/Dockerfile
+    container_name: elementum-worker
+    restart: unless-stopped
+    ports:
+      - "${WORKER_PORT:-5094}:5094"
+    env_file:
+      - ../Elementum-Services/Elementum-WorkerService/.env
+    environment:
+      # Worker listens on this port (Program.cs uses configuration key "Urls")
+      Urls: "http://+:${WORKER_PORT:-5094}"
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Server=mysql;Port=3306;Database=${MYSQL_DATABASE};User=${MYSQL_USER};Password=${MYSQL_PASSWORD};"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
 volumes:
   mysql_data:

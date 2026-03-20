@@ -6,14 +6,14 @@ namespace Elementum_ServiceApi.RequestModels;
 /// Route parameters for aggregated price history: GET history/{symbol}/aggregated/{aggregation}/{count} (e.g. history/XAU/aggregated/monthly/12).
 /// Count is variable: caller passes how many entries to return (e.g. 31 daily, 52 weekly, 12 monthly, 10 yearly).
 /// </summary>
-public class AggregationRequest : IValidatableObject
+public record AggregationRequest : IValidatableObject
 {
     [Required(ErrorMessage = "Aggregation is required.")]
-    public string Aggregation { get; set; } = string.Empty;
+    public string Aggregation { get; init; } = string.Empty;
 
     /// <summary>Maximum number of data points to return (e.g. 31 daily, 52 weekly, 12 monthly, 10 yearly).</summary>
     [Range(0, 500, ErrorMessage = "Count must be between 0 and 500.")]
-    public int Count { get; set; }
+    public int Count { get; init; }
 
     /// <summary>Validates that Aggregation is one of: daily, weekly, monthly, yearly.</summary>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

@@ -1,13 +1,19 @@
+using System.Globalization;
+using System.Text;
 using Elementum.Shared.DTOs;
 using Elementum_Cli.Constants;
 using Elementum_Cli.Output;
+using System.Linq;
 
 namespace Elementum_Cli.Rendering;
 
-/// <summary>Renders the History view: period selection screen, sparkline, and bar chart. Extracted for readability and testability.</summary>
+/// <summary>Renders the History view: period selection screen, Chp sparkline, and USD bar chart. Extracted for readability and testability.</summary>
 public static class HistoryRenderer
 {
     private const int BarChartHeight = 8;
+
+    /// <summary>Width for right-aligned Y-axis tick labels (price).</summary>
+    private const int YAxisLabelWidth = 10;
 
     /// <summary>Renders the period selection screen (Daily/Weekly/Monthly/Yearly).</summary>
     public static void RenderPeriodSelection(string sym, string name)
@@ -50,16 +56,16 @@ public static class HistoryRenderer
         Console.WriteLine();
         Console.WriteLine(string.Format(CliStrings.HistoryEntriesSummary, slice.Count, periodLabel.ToLowerInvariant(), slice[0].EntryDate, slice[^1].EntryDate));
 
-        CliOutputHelper.RenderViewFooter();
+        var lastUpdate = slice.Max(p => p.EntryDate);
+        CliOutputHelper.RenderViewFooter(lastUpdate);
     }
 
-    /// <summary>Draws a colored sparkline (Chp) with current price.</summary>
-    public static void RenderSparkline(string symbol, double currentPrice, double[] changes, bool doubleWidth = false)
+    /// <summary>Draws the Chp sparkline (no extra legend lines; plain text to avoid terminal colour glitches).</summary>
+    public static void RenderSparkline(string symbol, double currentPrice, double[] changes, bool doubleWidth)
     {
-        Console.Write("  ");
-        double currentChp = changes.Length > 0 ? changes[^1] : 0;
         var spark = BuildSparkline(changes, doubleWidth);
-        CliOutputHelper.WriteColoredValue($"{symbol,-6} │ {currentPrice:N2} $ │ {spark}\n", currentChp >= 0);
+        Console.WriteLine();
+        Console.WriteLine($"  {symbol,-6} │ {currentPrice:N2} $ │ {spark}");
     }
 
     /// <summary>Builds the sparkline character sequence (for testing without console).</summary>
@@ -74,28 +80,52 @@ public static class HistoryRenderer
         return spark;
     }
 
-    /// <summary>Draws a simple ASCII bar chart for price values.</summary>
+    /// <summary>Draws a bar chart with Y-axis price ticks (USD); no extra legend lines.</summary>
     public static void RenderBarChart(string symbol, double[] values)
     {
         if (values.Length == 0) return;
 
+        double minVal = values.Min();
         double maxVal = values.Max();
-        if (maxVal <= 0) maxVal = 1;
+        double range = maxVal - minVal;
+        if (range < 1e-9)
+        {
+            double pad = Math.Abs(maxVal) * 0.002 + 0.01;
+            minVal -= pad;
+            maxVal += pad;
+            range = maxVal - minVal;
+        }
 
-        Console.WriteLine($"  {symbol,-6} {CliStrings.HistoryPriceDevelopmentLabel}");
-        Console.WriteLine();
+        int[] barHeights = values.Select(v =>
+        {
+            int h = (int)Math.Round((v - minVal) / range * BarChartHeight);
+            return Math.Clamp(h, 0, BarChartHeight);
+        }).ToArray();
+
+        var inv = CultureInfo.InvariantCulture;
 
         for (int row = BarChartHeight; row >= 0; row--)
         {
-            string line = "       │";
-            foreach (double v in values)
+            double gridPrice = minVal + range * row / BarChartHeight;
+            string label;
+            if (row == BarChartHeight || row == BarChartHeight / 2 || row == 0)
+                label = gridPrice.ToString("N2", inv).PadLeft(YAxisLabelWidth);
+            else
+                label = new string(' ', YAxisLabelWidth);
+
+            var line = new StringBuilder();
+            line.Append("  ").Append(label).Append(" │");
+            for (int i = 0; i < values.Length; i++)
             {
-                int barHeight = (int)Math.Round((v / maxVal) * BarChartHeight);
-                string block = barHeight >= row ? "██" : "  ";
-                line += block;
+                string block = barHeights[i] >= row ? "██" : "  ";
+                line.Append(block);
             }
-            Console.WriteLine("  " + line);
+            Console.WriteLine(line.ToString());
         }
-        Console.WriteLine("       └" + new string('─', values.Length * 2));
+
+        var bottom = new StringBuilder();
+        bottom.Append("  ").Append(new string(' ', YAxisLabelWidth)).Append(" └──");
+        bottom.Append(new string('─', values.Length * 2));
+        Console.WriteLine(bottom.ToString());
     }
 }
