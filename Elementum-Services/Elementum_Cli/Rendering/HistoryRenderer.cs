@@ -12,9 +12,26 @@ public static class HistoryRenderer
 {
     private const int BarChartHeight = 8;
 
-    private const string SparklineLevels = "▁▂▃▄▅▆▇█";
     /// <summary>Width for right-aligned Y-axis tick labels (price).</summary>
     private const int YAxisLabelWidth = 10;
+
+    /// <summary>
+    /// Outer box width for History charts: at least <see cref="CliConstants.ViewWidth"/>, wider when bar/sparkline rows need more columns.
+    /// </summary>
+    public static int ComputeHistoryViewWidth(int entryCount)
+    {
+        if (entryCount <= 0)
+            return CliConstants.ViewWidth;
+
+        // Bar row: "  " + y-label + " │" + 2 chars per day
+        int chartRowWidth = 2 + YAxisLabelWidth + 3 + entryCount * 2;
+        // Sparkline: "  " + symbol(6) + " │ " + price (~16) + " $ │ " + 2 chars per Chp block
+        const int sparkPriceMaxChars = 16;
+        int sparkRowWidth = 2 + 6 + 3 + sparkPriceMaxChars + 5 + entryCount * 2;
+
+        int content = Math.Max(chartRowWidth, sparkRowWidth);
+        return Math.Max(CliConstants.ViewWidth, content);
+    }
 
     /// <summary>Renders the period selection screen (Daily/Weekly/Monthly/Yearly).</summary>
     public static void RenderPeriodSelection(string sym, string name)
@@ -42,23 +59,24 @@ public static class HistoryRenderer
     /// <summary>Renders the full charts view: header, sparkline, bar chart, entries summary, footer.</summary>
     public static void RenderCharts(string sym, string name, string periodLabel, IReadOnlyList<PriceHistoryDto> slice)
     {
-        CliOutputHelper.RenderViewHeader($"{CliStrings.HistoryHeaderPrefix}{name.ToUpperInvariant()} ({sym}) · {periodLabel}");
+        int boxWidth = ComputeHistoryViewWidth(slice.Count);
+        CliOutputHelper.RenderViewHeader($"{CliStrings.HistoryHeaderPrefix}{name.ToUpperInvariant()} ({sym}) · {periodLabel}", boxWidth);
 
         var prices = slice.Select(p => (double)p.Price).ToArray();
         var chps = slice.Select(p => (double)(p.Chp ?? 0)).ToArray();
         var currentPrice = prices.Length > 0 ? prices[^1] : 0;
 
-        CliOutputHelper.RenderSectionTitle(string.Format(CliStrings.HistorySparklineSectionTitle, periodLabel));
+        CliOutputHelper.RenderSectionTitle(string.Format(CliStrings.HistorySparklineSectionTitle, periodLabel), boxWidth);
         RenderSparkline(sym, currentPrice, chps, doubleWidth: true);
 
-        CliOutputHelper.RenderSectionTitle(CliStrings.HistoryPriceDevelopmentSectionTitle);
+        CliOutputHelper.RenderSectionTitle(CliStrings.HistoryPriceDevelopmentSectionTitle, boxWidth);
         RenderBarChart(sym, prices);
 
         Console.WriteLine();
         Console.WriteLine(string.Format(CliStrings.HistoryEntriesSummary, slice.Count, periodLabel.ToLowerInvariant(), slice[0].EntryDate, slice[^1].EntryDate));
 
         var lastUpdate = slice.Max(p => p.EntryDate);
-        CliOutputHelper.RenderViewFooter(lastUpdate);
+        CliOutputHelper.RenderViewFooter(lastUpdate, boxWidth);
     }
 
     /// <summary>Draws the Chp sparkline (no extra legend lines; plain text to avoid terminal colour glitches).</summary>

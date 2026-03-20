@@ -1,9 +1,19 @@
+using Elementum_Cli.Constants;
 using Elementum_Cli.Rendering;
 
 namespace Elementum.Cli.Tests;
 
 public class HistoryRendererTests
 {
+    [Fact]
+    public void ComputeHistoryViewWidth_ScalesWithEntryCount_AndNotBelowDefault()
+    {
+        Assert.Equal(CliConstants.ViewWidth, HistoryRenderer.ComputeHistoryViewWidth(0));
+        int w31 = HistoryRenderer.ComputeHistoryViewWidth(31);
+        Assert.True(w31 > CliConstants.ViewWidth);
+        Assert.Equal(2 + 6 + 3 + 16 + 5 + 31 * 2, w31);
+    }
+
     [Fact]
     public void BuildSparkline_MapsPositiveNegativeZero()
     {

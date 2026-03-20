@@ -15,7 +15,7 @@ A full-stack .NET application for **precious metal price tracking** (gold, silve
 - [Getting started](#getting-started)
 - [Running the components](#running-the-components)
 - [Screenshots](#screenshots)
-- [Documentation](#documentation)
+- [Related documentation](#related-documentation)
 
 ---
 
@@ -142,7 +142,7 @@ To populate the database with daily prices, run the Worker (or install it as a W
 | **API (local)** | `dotnet run --project Elementum-ServiceApi` | [Elementum-ServiceApi/README.md](Elementum-Services/Elementum-ServiceApi/README.md) |
 | **API reference** | — | [Elementum-ServiceApi/API-Endpoints.md](Elementum-Services/Elementum-ServiceApi/API-Endpoints.md) |
 | **Worker** | `dotnet run --project Elementum-WorkerService` or install as Windows Service | [Elementum-WorkerService/README.md](Elementum-Services/Elementum-WorkerService/README.md) |
-| **CLI** | `dotnet run --project Elementum_Cli` (API must be running) | — |
+| **CLI** | `dotnet run --project Elementum_Cli` (API must be running) | [Elementum_Cli/README.md](Elementum-Services/Elementum_Cli/README.md) |
 
 ---
 
@@ -188,10 +188,11 @@ The CLI offers a main menu and several views. Below are placeholders for screens
 
 ---
 
-## Documentation
+## Related documentation
 
-- [Elementum-Database/README.md](Elementum-Database/README.md) — Docker Compose, environment variables, rebuilding, database init
+- [Elementum-ServiceApi/API-Endpoints.md](Elementum-Services/Elementum-ServiceApi/API-Endpoints.md) — API routes used by the CLI
+- [Elementum-Database/README.md](Elementum-Database/README.md) — Docker stack (API + DB + worker)
 - [Elementum-Database/init/README.md](Elementum-Database/init/README.md) — Database init scripts
 - [Elementum-ServiceApi/README.md](Elementum-Services/Elementum-ServiceApi/README.md) — Running the API locally and with Docker
-- [Elementum-ServiceApi/API-Endpoints.md](Elementum-Services/Elementum-ServiceApi/API-Endpoints.md) — API endpoint reference (paths, parameters, response shapes, health checks)
 - [Elementum-WorkerService/README.md](Elementum-Services/Elementum-WorkerService/README.md) — Worker setup and Windows Service installation
+- [Elementum_Cli/README.md](Elementum-Services/Elementum_Cli/README.md) — Command-line client (TUI)
