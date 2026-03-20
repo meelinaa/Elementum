@@ -1,30 +1,16 @@
-using Elementum_Cli.Navigation;
-using Elementum_Cli.Output;
-using System.Text;
+using Elementum_Cli.Hosting;
 
 namespace Elementum_Cli;
 
 /// <summary>
-/// Entry point for the Elementum CLI. Sets up console encoding, creates <see cref="AppContext"/>, and runs the main input loop.
+/// Entry point for the Elementum CLI. Applies console configuration and starts the menu host.
 /// </summary>
 public class Program
 {
-    /// <summary>Initializes the CLI, renders the menu, and processes keyboard input until the user exits.</summary>
+    /// <summary>Application entry: configure terminal, then run the main input loop until exit.</summary>
     public static void Main()
     {
-        Console.OutputEncoding = Encoding.UTF8;
-        Console.CursorVisible = false;
-
-        var app = new AppContext();
-        app.InitializeMenuItems();
-        AppContext.Current = app;
-
-        CliNavigation.EnsureValidStartIndex();
-        CliOutputHelper.RenderMenu();
-
-        while (app.Running)
-        {
-            CliNavigation.HandleInput();
-        }
+        CliConsoleConfiguration.Apply();
+        CliApplicationHost.Run();
     }
 }

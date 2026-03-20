@@ -3,6 +3,7 @@ using Elementum.Shared.DTOs;
 using Elementum.Shared.Mapping;
 using Elementum.Shared.Objects;
 using Elementum_ServiceApi.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace Elementum_ServiceApi.Services
 {
@@ -24,7 +25,7 @@ namespace Elementum_ServiceApi.Services
         /// <inheritdoc />
         public async Task<IEnumerable<MetalsDto>> GetAllMetals(CancellationToken cancellationToken)
         {
-            var list = await _db.GetMetalsAll(cancellationToken);
+            var list = await _db.QueryMetals().ToListAsync(cancellationToken);
             return list.Select(m => m.ToDto());
         }
 
@@ -41,7 +42,7 @@ namespace Elementum_ServiceApi.Services
         /// <inheritdoc />
         public async Task<IEnumerable<PriceHistoryDto>> GetPriceHistoryByMetalSymbol(string symbol, CancellationToken cancellationToken)
         {
-            var list = await _db.GetPriceHistoryByMetalSymbol(symbol, cancellationToken);
+            var list = await _db.QueryPriceHistoryByMetalSymbol(symbol).ToListAsync(cancellationToken);
             return list.Select(ph => ph.ToPriceHistoryDto());
         }
 
@@ -69,7 +70,7 @@ namespace Elementum_ServiceApi.Services
         /// <inheritdoc />
         public async Task<IEnumerable<PriceHistoryDto>> GetPriceHistoryByMetalSymbolAndDateRange(string symbol, DateOnly firstDate, DateOnly lastDate, CancellationToken cancellationToken)
         {
-            var list = await _db.GetPriceHistoryByMetalSymbolAndDateRange(symbol, firstDate, lastDate, cancellationToken);
+            var list = await _db.QueryPriceHistoryByMetalSymbolAndDateRange(symbol, firstDate, lastDate).ToListAsync(cancellationToken);
             return list.Select(ph => ph.ToPriceHistoryDto());
         }
 

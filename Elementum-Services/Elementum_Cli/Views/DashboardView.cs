@@ -4,6 +4,7 @@ using Elementum_Cli.Constants;
 using Elementum_Cli.Output;
 using Elementum_Cli.Views.Interfaces;
 using System.Text.Json;
+using System.Linq;
 
 namespace Elementum_Cli.Views;
 
@@ -60,7 +61,8 @@ public class DashboardView : AsyncDetailViewBase
             }
 
             Console.WriteLine();
-            CliOutputHelper.RenderViewFooter();
+            DateOnly? lastUpdate = items is { Count: > 0 } ? items.Max(i => i.EntryDate) : null;
+            CliOutputHelper.RenderViewFooter(lastUpdate);
         });
     }
 }

@@ -50,38 +50,51 @@ public class CliOutputHelper
     }
 
     /// <summary>Draws the view header: double-line box with title (e.g. "HISTORY — GOLD (XAU)").</summary>
-    public static void RenderViewHeader(string title)
+    /// <param name="totalWidth">Outer box width in characters; defaults to <see cref="ViewWidth"/>.</param>
+    public static void RenderViewHeader(string title, int? totalWidth = null)
     {
+        int w = totalWidth ?? ViewWidth;
         Console.WriteLine();
-        Console.WriteLine("╔" + new string('═', ViewWidth - 2) + "╗");
-        Console.WriteLine("║ " + title.PadRight(ViewWidth - 4) + " ║");
-        Console.WriteLine("╠" + new string('═', ViewWidth - 2) + "╣");
+        Console.WriteLine("╔" + new string('═', w - 2) + "╗");
+        Console.WriteLine("║ " + title.PadRight(w - 4) + " ║");
+        Console.WriteLine("╠" + new string('═', w - 2) + "╣");
     }
 
-    /// <summary>Draws a section title box (single-line, e.g. "Sparkline — Daily (Chp)").</summary>
-    public static void RenderSectionTitle(string title)
+    /// <summary>Draws a section title box (single-line, e.g. "Price development (USD)").</summary>
+    /// <param name="totalWidth">Outer width aligned with header/footer; defaults to <see cref="ViewWidth"/>.</param>
+    public static void RenderSectionTitle(string title, int? totalWidth = null)
     {
+        int w = totalWidth ?? ViewWidth;
         Console.WriteLine();
-        Console.WriteLine("  ┌" + new string('─', ViewWidth - 6) + "┐");
-        Console.WriteLine("  │ " + title.PadRight(ViewWidth - 8) + " │");
-        Console.WriteLine("  ├" + new string('─', ViewWidth - 6) + "┤");
+        Console.WriteLine("  ┌" + new string('─', w - 6) + "┐");
+        Console.WriteLine("  │ " + title.PadRight(w - 8) + " │");
+        Console.WriteLine("  ├" + new string('─', w - 6) + "┤");
     }
 
-    /// <summary>Draws the view footer: back-to-menu and [R] reload hint.</summary>
-    public static void RenderViewFooter()
+    /// <summary>Draws the view footer: optional last-update line (from DTO <c>EntryDate</c>), back-to-menu, and [R] reload hint.</summary>
+    /// <param name="lastUpdate">When set, shown as the first footer line (bottom-left aligned inside the box).</param>
+    /// <param name="totalWidth">Outer box width; defaults to <see cref="ViewWidth"/>.</param>
+    public static void RenderViewFooter(DateOnly? lastUpdate = null, int? totalWidth = null)
     {
+        int w = totalWidth ?? ViewWidth;
         Console.WriteLine();
-        Console.WriteLine("╟" + new string('─', ViewWidth - 2) + "╢");
-        Console.WriteLine("║ " + CliStrings.FooterBackToMenu.PadRight(ViewWidth - 4) + " ║");
-        Console.WriteLine("║ " + CliStrings.FooterReloadHint.PadRight(ViewWidth - 4) + " ║");
-        Console.WriteLine("╚" + new string('═', ViewWidth - 2) + "╝");
+        Console.WriteLine("╟" + new string('─', w - 2) + "╢");
+        if (lastUpdate.HasValue)
+        {
+            var updateLine = CliStrings.LastUpdateFromPrefix + " " + lastUpdate.Value.ToString(CliConstants.DisplayDateFormat);
+            Console.WriteLine("║ " + updateLine.PadRight(w - 4) + " ║");
+        }
+        Console.WriteLine("║ " + CliStrings.FooterBackToMenu.PadRight(w - 4) + " ║");
+        Console.WriteLine("║ " + CliStrings.FooterReloadHint.PadRight(w - 4) + " ║");
+        Console.WriteLine("╚" + new string('═', w - 2) + "╝");
         Console.WriteLine();
     }
 
     /// <summary>Renders the metal selection screen (header, question, options 1–3, footer).</summary>
     public static void RenderMetalSelectionPrompt()
     {
-        RenderViewHeader(CliStrings.MetalSelectionHeader);
+        var header = CliStrings.GetMetalSelectionHeaderTitle(AppContext.Current?.CurrentDetailView);
+        RenderViewHeader(header);
         Console.WriteLine("  " + CliStrings.MetalSelectionQuestion);
         Console.WriteLine();
         Console.WriteLine(CliStrings.MetalSelectionOptions);

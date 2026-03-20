@@ -69,10 +69,7 @@ public class KaratCalculatorView : MetalDetailViewBase
             Console.WriteLine($"  │  10k        │  {FormatEuro(p10),-13} │  {DiffStr(d10),-32} │");
             Console.WriteLine("  └─────────────┴────────────────┴───────────────────────────────────┘");
 
-            Console.WriteLine();
-            Console.WriteLine($"  Last update (EntryDate): {dto.EntryDate:yyyy-MM-dd}");
-
-            CliOutputHelper.RenderViewFooter();
+            CliOutputHelper.RenderViewFooter(dto.EntryDate);
         });
     }
 }

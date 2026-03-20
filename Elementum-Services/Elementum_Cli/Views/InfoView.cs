@@ -6,7 +6,7 @@ using Elementum_Cli.Views.Interfaces;
 namespace Elementum_Cli.Views;
 
 /// <summary>
-/// Static info screen: app title, section title, and placeholder text (no API call).
+/// Static info screen: app title, section title, and GoldAPI.com data policy (no API call).
 /// </summary>
 public class InfoView : IDetailView
 {
@@ -22,9 +22,8 @@ public class InfoView : IDetailView
         Console.WriteLine(CliStrings.InfoDescriptionLine);
         Console.WriteLine(CliStrings.InfoBoxBottom);
         Console.WriteLine();
-        Console.WriteLine(CliStrings.InfoBackendPlaceholder);
-        Console.WriteLine();
-        Console.WriteLine(CliStrings.InfoDummyOutput);
+        Console.WriteLine(CliStrings.InfoGoldapiDailyLine);
+        Console.WriteLine(CliStrings.InfoGoldapiQuotaLine);
 
         CliOutputHelper.RenderViewFooter();
         return Task.CompletedTask;

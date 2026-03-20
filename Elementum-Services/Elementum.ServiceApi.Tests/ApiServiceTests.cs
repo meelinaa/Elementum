@@ -1,48 +1,47 @@
+using Elementum.Infrastructure.Data;
 using Elementum.Infrastructure.Data.Interfaces;
-using Elementum.Shared.DTOs;
 using Elementum.Shared.Objects;
 using Elementum_ServiceApi.Services;
+using Microsoft.EntityFrameworkCore;
 using Moq;
 
 namespace Elementum.ServiceApi.Tests;
 
 public class ApiServiceTests
 {
-    private readonly Mock<IElementumDbContext> _dbMock = new();
-    private readonly ApiService _sut;
-
-    public ApiServiceTests()
-    {
-        _sut = new ApiService(_dbMock.Object);
-    }
-
     [Fact]
     public async Task GetAllMetals_DelegatesToDbContext_AndReturnsDtos()
     {
-        var metals = new List<Metals> { new() { Id = 1, Symbol = "XAU", Name = "Gold" } };
-        _dbMock.Setup(db => db.GetMetalsAll(It.IsAny<CancellationToken>()))
-               .ReturnsAsync(metals);
+        var options = new DbContextOptionsBuilder<ElementumDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        await using var dbContext = new ElementumDbContext(options);
+        dbContext.Metals.Add(new Metals { Id = 1, Symbol = "XAU", Name = "Gold" });
+        await dbContext.SaveChangesAsync();
 
-        var result = await _sut.GetAllMetals(CancellationToken.None);
+        var sut = new ApiService(dbContext);
+
+        var result = await sut.GetAllMetals(CancellationToken.None);
 
         var list = result.ToList();
         Assert.Single(list);
         Assert.Equal(1, list[0].Id);
         Assert.Equal("XAU", list[0].Symbol);
         Assert.Equal("Gold", list[0].Name);
-        _dbMock.Verify(db => db.GetMetalsAll(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task GetPriceHistoryByMetalSymbolLatest_ReturnsNull_WhenNoResult()
     {
-        _dbMock.Setup(db => db.GetPriceHistoryByMetalSymbolLatest("XAU", It.IsAny<CancellationToken>()))
-               .ReturnsAsync((PriceHistory?)null);
+        var dbMock = new Mock<IElementumDbContext>();
+        dbMock.Setup(db => db.GetPriceHistoryByMetalSymbolLatest("XAU", It.IsAny<CancellationToken>()))
+              .ReturnsAsync((PriceHistory?)null);
 
-        var result = await _sut.GetPriceHistoryByMetalSymbolLatest("XAU", CancellationToken.None);
+        var sut = new ApiService(dbMock.Object);
+
+        var result = await sut.GetPriceHistoryByMetalSymbolLatest("XAU", CancellationToken.None);
 
         Assert.Null(result);
-        _dbMock.Verify(db => db.GetPriceHistoryByMetalSymbolLatest("XAU", It.IsAny<CancellationToken>()), Times.Once);
+        dbMock.Verify(db => db.GetPriceHistoryByMetalSymbolLatest("XAU", It.IsAny<CancellationToken>()), Times.Once);
     }
-
 }
