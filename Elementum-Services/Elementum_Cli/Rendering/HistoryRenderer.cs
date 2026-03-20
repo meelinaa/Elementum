@@ -12,6 +12,7 @@ public static class HistoryRenderer
 {
     private const int BarChartHeight = 8;
 
+    private const string SparklineLevels = "▁▂▃▄▅▆▇█";
     /// <summary>Width for right-aligned Y-axis tick labels (price).</summary>
     private const int YAxisLabelWidth = 10;
 
