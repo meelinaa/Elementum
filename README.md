@@ -148,43 +148,41 @@ To populate the database with daily prices, run the Worker (or install it as a W
 
 ## Screenshots
 
-The CLI offers a main menu and several views. Below are placeholders for screenshots; add your own images to `docs/screenshots/` using the filenames listed in [docs/screenshots/README.md](docs/screenshots/README.md).
-
 ### Main menu
 
 *[Screenshot: CLI main menu with options (Dashboard, List metals, Trading, Karat calculator, History, Info).]*
 
-![CLI main menu](docs/screenshots/cli-main-menu.png)
+<img width="1008" height="487" alt="image" src="https://github.com/user-attachments/assets/b1d5c4a5-f4fd-4a2e-b925-6cc1038ac9f6" />
 
 ### Dashboard
 
 *[Screenshot: Dashboard view with latest prices for all metals.]*
 
-![CLI dashboard](docs/screenshots/cli-dashboard.png)
+<img width="883" height="425" alt="image" src="https://github.com/user-attachments/assets/1ae8e25b-0cac-494c-8197-5d5f6d8392ce" />
 
 ### List metals
 
 *[Screenshot: List metals view (e.g. XAU, XAG, XPT, XPD).]*
 
-![CLI list metals](docs/screenshots/cli-list-metals.png)
+<img width="890" height="388" alt="image" src="https://github.com/user-attachments/assets/8e258c89-a9d4-4b1c-a351-064d883e0671" />
 
 ### Trading view
 
 *[Screenshot: Trading view for one metal (bid/ask, high/low).]*
 
-![CLI trading view](docs/screenshots/cli-trading.png)
+<img width="873" height="1033" alt="image" src="https://github.com/user-attachments/assets/b414a7e9-2201-4798-a06b-e1279f1382e4" />
 
-### Karat calculator
+### Karat view
 
-*[Screenshot: Karat calculator view with price per gram by purity.]*
+*[Screenshot: Karat view with price per gram by purity.]*
 
-![CLI karat calculator](docs/screenshots/cli-karat.png)
+<img width="882" height="719" alt="image" src="https://github.com/user-attachments/assets/f160fae3-de54-40eb-af15-f0c03d87c687" />
 
 ### History view
 
 *[Screenshot: History view with price history for a selected metal.]*
 
-![CLI history](docs/screenshots/cli-history.png)
+<img width="891" height="719" alt="image" src="https://github.com/user-attachments/assets/cd4b6a6c-e794-4e60-a339-f7e126d9d5f5" />
 
 ---
 
