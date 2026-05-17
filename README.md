@@ -1,3 +1,6 @@
+<img width="1920" height="553" alt="Elementum" src="https://github.com/user-attachments/assets/ea4edcb2-94d2-41b8-8d60-de1f83949946" />
+
+
 # Elementum
 
 A full-stack .NET application for **precious metal price tracking** (gold, silver, platinum, palladium). It demonstrates a clean separation between data persistence, REST API, background ingestion, and a console client — suitable for portfolio or technical assessment contexts.
