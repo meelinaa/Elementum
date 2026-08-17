@@ -14,7 +14,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.0" />
-    <ProjectReference Include="..\Elementum.Shared\Elementum.Shared.csproj" />
+    <ProjectReference Include="..\Elementum.Application\Elementum.Application.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="appsettings.json">

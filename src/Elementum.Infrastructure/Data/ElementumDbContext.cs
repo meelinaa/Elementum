@@ -1,18 +1,15 @@
 using System.Globalization;
+using Elementum.Domain.Entities;
+using Elementum.Domain.Models;
 using Elementum.Infrastructure.Data.Interfaces;
-using Elementum.Shared.DTOs;
-using Elementum.Shared.Mapping;
-using Elementum.Shared.Objects;
 using Microsoft.EntityFrameworkCore;
-
 
 namespace Elementum.Infrastructure.Data;
 
 /// <summary>
-/// EF Core DbContext for Elementum. Maps to the existing MySQL schema with tables <c>metals</c> and <c>price_history</c>.
-/// Used by the Worker (ingestion) and the ServiceApi (read API).
+/// EF Core DbContext for Elementum. Maps to the MySQL schema with tables <c>metals</c> and <c>price_history</c>.
+/// Implements <see cref="IElementumDbContext"/> and domain port <see cref="Elementum.Domain.Ports.IPriceHistoryRepository"/>.
 /// </summary>
-/// <remarks>Initializes the context with the given options (e.g. connection string, provider).</remarks>
 public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : DbContext(options), IElementumDbContext
 {
     #region SET
@@ -25,13 +22,68 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
 
     #endregion SET
 
-    #region GET
+    #region GET & MUTATIONS
 
     /// <summary>Returns true if at least one row in price_history has EntryDate equal to today (UTC).</summary>
     public async Task<bool> IsDataAlreadyIngestedToday(CancellationToken ct)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         return await PriceHistory.AnyAsync(x => x.EntryDate == today, ct);
+    }
+
+    /// <summary>Saves incoming daily prices from external sources to the database.</summary>
+    public async Task SavePricesAsync(IReadOnlyList<DailyPrices> prices, CancellationToken cancellationToken = default)
+    {
+        if (prices.Count == 0)
+            return;
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var metalsBySymbol = await Metals.ToDictionaryAsync(m => m.Symbol, StringComparer.OrdinalIgnoreCase, cancellationToken);
+
+        foreach (var api in prices)
+        {
+            if (string.IsNullOrEmpty(api.Metal) || !metalsBySymbol.TryGetValue(api.Metal, out var metal))
+            {
+                continue;
+            }
+            var row = new PriceHistory
+            {
+                MetalId = metal.Id,
+                Currency = api.Currency,
+                Exchange = api.Exchange,
+                Symbol = api.Symbol,
+                ReferenceTimestamp = api.Timestamp.ToString(CultureInfo.InvariantCulture),
+                OpenTime = api.OpenTime.ToString(CultureInfo.InvariantCulture),
+                EntryDate = today,
+                Price = api.Price,
+                PrevClosePrice = api.PrevClosePrice,
+                OpenPrice = api.OpenPrice,
+                LowPrice = api.LowPrice,
+                HighPrice = api.HighPrice,
+                Ch = api.Ch,
+                Chp = api.Chp,
+                Ask = api.Ask,
+                Bid = api.Bid,
+                PriceGram24k = api.PriceGram24k,
+                PriceGram22k = api.PriceGram22k,
+                PriceGram21k = api.PriceGram21k,
+                PriceGram20k = api.PriceGram20k,
+                PriceGram18k = api.PriceGram18k,
+                PriceGram16k = api.PriceGram16k,
+                PriceGram14k = api.PriceGram14k,
+                PriceGram10k = api.PriceGram10k
+            };
+            PriceHistory.Add(row);
+        }
+
+        try
+        {
+            await SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            // Ignore duplicate entries on same date
+        }
     }
 
     #region Metals
@@ -69,19 +121,17 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
     public IQueryable<PriceHistory> QueryPriceHistoryAll() =>
         PriceHistory.Include(x => x.Metal);
 
-    /// <summary>Latest price history entry per metal. Groups in memory so Include(Metal) is preserved for mapping.</summary>
-    public async Task<IEnumerable<PriceHistoryDto>> GetPriceHistoryAllLatest(CancellationToken ct)
+    /// <summary>Latest price history entry per metal. Groups in memory so Include(Metal) is preserved.</summary>
+    public async Task<IEnumerable<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken ct)
     {
         var all = await PriceHistory
             .Include(x => x.Metal)
             .ToListAsync(ct);
 
-        var latestPerMetal = all
+        return all
             .GroupBy(x => x.MetalId)
             .Select(g => g.OrderByDescending(x => x.EntryDate).First())
             .ToList();
-
-        return latestPerMetal.Select(PriceHistoryMapping.ToPriceHistoryDto);
     }
 
     /// <inheritdoc />
@@ -106,9 +156,7 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
                         x.EntryDate <= lastDate);
 
     /// <summary>
-    /// Returns price history for a metal: either last N daily points (count) or aggregated by period (weekly/monthly/yearly)
-    /// with one value per period as the average of all days in that period.
-    /// Count is passed by the caller (e.g. 31 daily, 52 weekly, 12 monthly, 10 yearly); API returns at most that many entries.
+    /// Returns price history for a metal: either last N daily points (count) or aggregated by period (weekly/monthly/yearly).
     /// </summary>
     public async Task<IEnumerable<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct)
     {
@@ -116,87 +164,72 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
         if (metal == null)
             return [];
 
-        var period = aggregation.Trim().ToLowerInvariant() switch
-        {
-            "daily" => 0,
-            "weekly" => 1,
-            "monthly" => 2,
-            "yearly" => 3,
-            _ => 0
-        };
-
-        // Caller passes desired count (e.g. PeriodCounts: Daily 31, Weekly 52, Monthly 12, Yearly 10). Fallback only if count <= 0.
-        int effectiveCount = count > 0 ? count : 31;
-
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-
-        if (period == 0)
-        {
-            // Daily: last N days, no aggregation
-            return await PriceHistory
-                .Include(x => x.Metal)
-                .Where(x => x.Metal != null && x.Metal.Symbol == metalSymbol)
-                .OrderByDescending(x => x.EntryDate)
-                .Take(effectiveCount)
-                .ToListAsync(ct);
-        }
-
-        // Aggregated: need enough date range, then group and average
-        DateOnly fromDate = period switch
-        {
-            1 => today.AddDays(-effectiveCount * 7 - 7),
-            2 => today.AddMonths(-effectiveCount - 1),
-            3 => today.AddYears(-effectiveCount - 1),
-            _ => today.AddDays(-effectiveCount)
-        };
+        var effectiveCount = count <= 0 ? 30 : count;
 
         var raw = await PriceHistory
             .Include(x => x.Metal)
-            .Where(x => x.Metal != null && x.Metal.Symbol == metalSymbol && x.EntryDate >= fromDate && x.EntryDate <= today)
+            .Where(x => x.MetalId == metal.Id)
             .OrderBy(x => x.EntryDate)
             .ToListAsync(ct);
 
         if (raw.Count == 0)
             return [];
 
+        var agg = (aggregation ?? "daily").Trim().ToLowerInvariant();
         List<PriceHistory> result;
-        if (period == 1)
+
+        if (agg == "daily")
         {
-            var weekGroups = raw
-                .GroupBy(x => (ISOWeek.GetYear(x.EntryDate), ISOWeek.GetWeekOfYear(x.EntryDate)))
-                .OrderBy(g => g.Key.Item1).ThenBy(g => g.Key.Item2)
+            result = raw.TakeLast(effectiveCount).ToList();
+        }
+        else if (agg == "weekly")
+        {
+            var dfi = DateTimeFormatInfo.CurrentInfo;
+            var cal = dfi.Calendar;
+
+            var weeklyGroups = raw
+                .GroupBy(x =>
+                {
+                    var dt = x.EntryDate.ToDateTime(TimeOnly.MinValue);
+                    var week = cal.GetWeekOfYear(dt, dfi.CalendarWeekRule, dfi.FirstDayOfWeek);
+                    return (x.EntryDate.Year, Week: week);
+                })
+                .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Week)
                 .Select(g => new
                 {
-                    Key = g.Key,
+                    g.Key.Year,
+                    g.Key.Week,
                     AvgPrice = g.Average(p => p.Price),
-                    First = g.OrderBy(p => p.EntryDate).First()
+                    First = g.First()
                 })
                 .TakeLast(effectiveCount)
                 .ToList();
-            result = weekGroups.Select(w => new PriceHistory
+
+            result = weeklyGroups.Select(w => new PriceHistory
             {
                 Id = 0,
                 MetalId = metal.Id,
                 Currency = w.First.Currency,
                 Symbol = metalSymbol,
-                EntryDate = ISOWeek.ToDateOnly(w.Key.Item1, w.Key.Item2, DayOfWeek.Monday),
+                EntryDate = w.First.EntryDate,
                 Price = w.AvgPrice,
                 Metal = metal
             }).ToList();
         }
-        else if (period == 2)
+        else if (agg == "monthly")
         {
             var monthGroups = raw
                 .GroupBy(x => (x.EntryDate.Year, x.EntryDate.Month))
                 .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
                 .Select(g => new
                 {
-                    Key = g.Key,
+                    g.Key,
                     AvgPrice = g.Average(p => p.Price),
                     First = g.First()
                 })
                 .TakeLast(effectiveCount)
                 .ToList();
+
             result = monthGroups.Select(m => new PriceHistory
             {
                 Id = 0,
@@ -221,6 +254,7 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
                 })
                 .TakeLast(effectiveCount)
                 .ToList();
+
             result = yearGroups.Select(y => new PriceHistory
             {
                 Id = 0,
@@ -237,14 +271,13 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
     }
 
     #endregion PriceHistory
-    #endregion GET
+    #endregion GET & MUTATIONS
 
     #region CREATING
 
-    /// <summary>Configures the entity model: table names, keys, and column mappings (snake_case for MySQL).</summary>
+    /// <summary>Configures the entity model: table names, keys, and column mappings.</summary>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // metals: table name and column renames to match existing schema
         modelBuilder.Entity<Metals>(e =>
         {
             e.ToTable("metals");
@@ -252,12 +285,11 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
         });
 
-        // price_history: table name, FK to metals (cascade delete), snake_case column names
         modelBuilder.Entity<PriceHistory>(e =>
         {
             e.ToTable("price_history");
             e.HasKey(x => x.Id);
-            e.HasOne(x => x.Metal).WithMany().HasForeignKey(x => x.MetalId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Metal).WithMany(m => m.PriceHistory).HasForeignKey(x => x.MetalId).OnDelete(DeleteBehavior.Cascade);
 
             e.Property(x => x.MetalId).HasColumnName("metal_id");
             e.Property(x => x.ReferenceTimestamp).HasColumnName("reference_timestamp");
@@ -277,5 +309,6 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
             e.Property(x => x.PriceGram10k).HasColumnName("price_gram_10k");
         });
     }
+
     #endregion CREATING
 }

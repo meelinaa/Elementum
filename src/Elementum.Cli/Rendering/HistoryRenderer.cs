@@ -1,6 +1,6 @@
 using System.Globalization;
 using System.Text;
-using Elementum.Shared.DTOs;
+using Elementum.Application.DTOs;
 using Elementum.Cli.Constants;
 using Elementum.Cli.Output;
 using System.Linq;

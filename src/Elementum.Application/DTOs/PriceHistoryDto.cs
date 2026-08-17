@@ -1,0 +1,15 @@
+namespace Elementum.Application.DTOs;
+
+public record PriceHistoryDto
+{
+    public int Id { get; init; }
+    public int MetalId { get; init; }
+    public string Currency { get; init; } = string.Empty;
+    public string Exchange { get; init; } = string.Empty;
+    public string Symbol { get; init; } = string.Empty;
+    public string ReferenceTimestamp { get; init; } = string.Empty;
+    public DateOnly EntryDate { get; init; }
+    public decimal Price { get; init; }
+    public decimal? Chp { get; init; }
+    public MetalsDto? Metal { get; init; }
+}

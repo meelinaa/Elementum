@@ -1,6 +1,6 @@
 using Serilog.Context;
 
-namespace Elementum.ServiceApi.Middleware;
+namespace Elementum.Api.Middleware;
 
 /// <summary>
 /// Adds a correlation ID to each request: reads from header (X-Correlation-Id or X-Request-Id) or generates one.

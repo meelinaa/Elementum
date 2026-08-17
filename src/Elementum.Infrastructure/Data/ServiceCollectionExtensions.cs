@@ -1,25 +1,46 @@
+using Elementum.Domain.Ports;
 using Elementum.Infrastructure.Data.Interfaces;
 using Elementum.Infrastructure.Data.Resilience;
+using Elementum.Infrastructure.External;
+using Elementum.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Polly;
+using Polly.Extensions.Http;
 
 namespace Elementum.Infrastructure.Data;
 
 /// <summary>
-/// Extension methods for registering Elementum data access in the DI container.
-/// Supports optional resilience (retry on transient MySQL errors); same extension is used by API and Worker.
+/// Extension methods for registering Elementum Infrastructure and secondary adapters in DI.
 /// </summary>
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers <see cref="ElementumDbContext"/> with the MySQL provider and <see cref="IElementumDbContext"/>.
-    /// When <paramref name="configureResilience"/> is set, <see cref="IElementumDbContext"/> is resolved as <see cref="ResilientElementumDbContext"/> (retry on transient DB errors); otherwise the concrete context is returned.
+    /// Registers all Elementum Infrastructure dependencies (DbContext, Ports, External API, Resiliency).
     /// </summary>
-    /// <param name="services">The service collection.</param>
-    /// <param name="connectionString">MySQL connection string (Server=...;Port=3306;Database=...;User=...;Password=...).</param>
-    /// <param name="configureResilience">Optional. When not null, configures retry options and registers the resilient decorator. Use e.g. <c>_ => { }</c> for defaults, or <c>o => { o.MaxRetryCount = 5; }</c> to override.</param>
-    /// <returns>The service collection for chaining.</returns>
+    public static IServiceCollection AddElementumInfrastructure(
+        this IServiceCollection services,
+        string connectionString,
+        Action<ElementumDbContextResilienceOptions>? configureResilience = null)
+    {
+        services.AddElementumDbContext(connectionString, configureResilience);
+
+        // Register Driven / Secondary Ports
+        services.AddScoped<IPriceHistoryRepository>(sp => sp.GetRequiredService<IElementumDbContext>());
+        services.AddSingleton<IDatabaseCheckService, DatabaseCheckService>();
+        services.AddSingleton<IMetalsApiClient, MetalsApiClient>();
+
+        // Register HTTP client for GoldAPI with Polly transient retry policy
+        services.AddHttpClient("GoldApi")
+            .AddPolicyHandler(GetRetryPolicy());
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers <see cref="ElementumDbContext"/> and <see cref="IElementumDbContext"/>.
+    /// </summary>
     public static IServiceCollection AddElementumDbContext(
         this IServiceCollection services,
         string connectionString,
@@ -30,7 +51,6 @@ public static class ServiceCollectionExtensions
 
         if (configureResilience != null)
         {
-            // Register options so IOptions&lt;ElementumDbContextResilienceOptions&gt; is available; then resolve IElementumDbContext as the retry decorator.
             services.Configure(configureResilience);
             services.AddScoped<IElementumDbContext>(sp =>
             {
@@ -46,5 +66,13 @@ public static class ServiceCollectionExtensions
         }
 
         return services;
+    }
+
+    private static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
+    {
+        return HttpPolicyExtensions
+            .HandleTransientHttpError()
+            .OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.NotFound)
+            .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
     }
 }

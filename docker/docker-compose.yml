@@ -41,12 +41,12 @@ services:
       start_period: 30s
 
   # ---------------------------------------------------------------------------
-  # Elementum.ServiceApi (ASP.NET Core)
+  # Elementum.Api (ASP.NET Core)
   # ---------------------------------------------------------------------------
   api:
     build:
       context: ../src
-      dockerfile: Elementum.ServiceApi/Dockerfile
+      dockerfile: Elementum.Api/Dockerfile
     container_name: elementum-api
     restart: unless-stopped
     ports:
@@ -59,18 +59,18 @@ services:
         condition: service_healthy
 
   # ---------------------------------------------------------------------------
-  # Elementum.WorkerService (Background worker)
+  # Elementum.Worker (Background worker)
   # ---------------------------------------------------------------------------
   worker:
     build:
       context: ../src
-      dockerfile: Elementum.WorkerService/Dockerfile
+      dockerfile: Elementum.Worker/Dockerfile
     container_name: elementum-worker
     restart: unless-stopped
     ports:
       - "${WORKER_PORT:-5094}:5094"
     env_file:
-      - ../src/Elementum.WorkerService/.env
+      - ../src/Elementum.Worker/.env
     environment:
       # Worker listens on this port (Program.cs uses configuration key "Urls")
       Urls: "http://+:${WORKER_PORT:-5094}"

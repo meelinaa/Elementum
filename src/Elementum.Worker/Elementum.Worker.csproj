@@ -4,8 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>dotnet-Elementum.WorkerService-735268a8-3635-437f-ad4c-2990aff3c8d5</UserSecretsId>
-    <RootNamespace>Elementum.WorkerService</RootNamespace>
+    <RootNamespace>Elementum.Worker</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,8 +21,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Elementum.Application\Elementum.Application.csproj" />
     <ProjectReference Include="..\Elementum.Infrastructure\Elementum.Infrastructure.csproj" />
-    <ProjectReference Include="..\Elementum.Shared\Elementum.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

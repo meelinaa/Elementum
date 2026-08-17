@@ -1,6 +1,6 @@
 using System.Diagnostics.Metrics;
 
-namespace Elementum.WorkerService.Observability;
+namespace Elementum.Worker.Observability;
 
 /// <summary>
 /// Metrics for the metals ingestion job (runs, errors) for production observability.
@@ -15,7 +15,7 @@ public sealed class IngestionMetrics
     /// <summary>Creates the meter and counters for ingestion runs, errors, and prices saved.</summary>
     public IngestionMetrics()
     {
-        _meter = new Meter("Elementum.WorkerService", "1.0");
+        _meter = new Meter("Elementum.Worker", "1.0");
         _runsTotal = _meter.CreateCounter<long>("ingestion_runs_total", description: "Total number of ingestion job runs");
         _errorsTotal = _meter.CreateCounter<long>("ingestion_errors_total", description: "Total number of ingestion errors");
         _pricesSavedTotal = _meter.CreateCounter<long>("ingestion_prices_saved_total", description: "Total number of price rows saved");

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Elementum.ServiceApi.RequestModels;
+namespace Elementum.Api.RequestModels;
 
 /// <summary>
 /// Request model for date range parameters (e.g. from route or query).

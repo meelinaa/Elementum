@@ -1,4 +1,4 @@
-using Elementum.Shared.DTOs;
+using Elementum.Application.DTOs;
 using Elementum.Cli.Api;
 using Elementum.Cli.Constants;
 using Elementum.Cli.Output;

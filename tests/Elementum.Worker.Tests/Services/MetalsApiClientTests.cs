@@ -1,10 +1,10 @@
-using Elementum.WorkerService.Options;
-using Elementum.WorkerService.Services;
+using Elementum.Application.Options;
+using Elementum.Infrastructure.External;
 using Microsoft.Extensions.Logging;
 using MicrosoftOptions = Microsoft.Extensions.Options.Options;
 using Moq;
 
-namespace Elementum.WorkerService.Tests.Services;
+namespace Elementum.Worker.Tests.Services;
 
 public class MetalsApiClientTests
 {

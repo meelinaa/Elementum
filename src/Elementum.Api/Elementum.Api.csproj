@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>Elementum.ServiceApi</RootNamespace>
+    <RootNamespace>Elementum.Api</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,8 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Elementum.Application\Elementum.Application.csproj" />
     <ProjectReference Include="..\Elementum.Infrastructure\Elementum.Infrastructure.csproj" />
-    <ProjectReference Include="..\Elementum.Shared\Elementum.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,21 +1,23 @@
-using Elementum.Shared.DTOs;
-using Elementum.ServiceApi.Controllers;
-using Elementum.ServiceApi.RequestModels;
-using Elementum.ServiceApi.Services.Interfaces;
+using Elementum.Api.Controllers;
+using Elementum.Api.RequestModels;
+using Elementum.Application.DTOs;
+using Elementum.Application.UseCases.Metals;
+using Elementum.Application.UseCases.Prices;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 
-namespace Elementum.ServiceApi.Tests;
+namespace Elementum.Api.Tests;
 
 public class ApiControllerTests
 {
-    private readonly Mock<IApiService> _apiServiceMock = new();
+    private readonly Mock<IGetPriceHistoryUseCase> _priceHistoryUseCaseMock = new();
+    private readonly Mock<IGetMetalsUseCase> _metalsUseCaseMock = new();
     private readonly ApiController _controller;
 
     public ApiControllerTests()
     {
-        _controller = new ApiController(_apiServiceMock.Object)
+        _controller = new ApiController(_priceHistoryUseCaseMock.Object, _metalsUseCaseMock.Object)
         {
             ControllerContext = new ControllerContext
             {
@@ -28,13 +30,13 @@ public class ApiControllerTests
     public async Task GetAllMetals_ReturnsServiceResult()
     {
         var metals = new List<MetalsDto> { new() { Id = 1, Symbol = "XPT", Name = "Platinum" } };
-        _apiServiceMock.Setup(s => s.GetAllMetals(It.IsAny<CancellationToken>()))
+        _metalsUseCaseMock.Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
                        .ReturnsAsync(metals);
 
         var result = await _controller.GetAllMetals(CancellationToken.None);
 
         Assert.Same(metals, result);
-        _apiServiceMock.Verify(s => s.GetAllMetals(It.IsAny<CancellationToken>()), Times.Once);
+        _metalsUseCaseMock.Verify(s => s.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -46,7 +48,7 @@ public class ApiControllerTests
         {
             new() { Id = 1, MetalId = 3, Currency = "USD", EntryDate = DateOnly.FromDateTime(DateTime.UtcNow) }
         };
-        _apiServiceMock.Setup(s => s.GetPriceHistoryByMetalSymbol("XPT", It.IsAny<CancellationToken>()))
+        _priceHistoryUseCaseMock.Setup(s => s.GetBySymbolAsync("XPT", It.IsAny<CancellationToken>()))
                        .ReturnsAsync(history);
 
         // Act
@@ -61,7 +63,7 @@ public class ApiControllerTests
     public async Task GetPriceHistoryByMetalSymbolLatest_ReturnsNotFound_WhenNoData()
     {
         var request = new SymbolRequest { Symbol = "XAU" };
-        _apiServiceMock.Setup(s => s.GetPriceHistoryByMetalSymbolLatest("XAU", It.IsAny<CancellationToken>()))
+        _priceHistoryUseCaseMock.Setup(s => s.GetLatestBySymbolAsync("XAU", It.IsAny<CancellationToken>()))
                        .ReturnsAsync((PriceHistoryDto?)null);
 
         var actionResult = await _controller.GetPriceHistoryByMetalSymbolLatest(request, CancellationToken.None);
@@ -76,14 +78,13 @@ public class ApiControllerTests
     {
         var request = new SymbolRequest { Symbol = "XAG" };
         var dto = new PriceHistoryDto { Id = 1, MetalId = 2, Currency = "USD", EntryDate = DateOnly.FromDateTime(DateTime.UtcNow), Price = 24.50m };
-        _apiServiceMock.Setup(s => s.GetPriceHistoryByMetalSymbolLatest("XAG", It.IsAny<CancellationToken>()))
+        _priceHistoryUseCaseMock.Setup(s => s.GetLatestBySymbolAsync("XAG", It.IsAny<CancellationToken>()))
                        .ReturnsAsync(dto);
 
         var actionResult = await _controller.GetPriceHistoryByMetalSymbolLatest(request, CancellationToken.None);
 
         var ok = Assert.IsType<OkObjectResult>(actionResult.Result);
         Assert.Equal(dto, ok.Value);
-        _apiServiceMock.Verify(s => s.GetPriceHistoryByMetalSymbolLatest("XAG", It.IsAny<CancellationToken>()), Times.Once);
+        _priceHistoryUseCaseMock.Verify(s => s.GetLatestBySymbolAsync("XAG", It.IsAny<CancellationToken>()), Times.Once);
     }
-
 }
