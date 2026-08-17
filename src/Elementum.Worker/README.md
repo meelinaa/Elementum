@@ -1,76 +1,61 @@
-# Elementum Worker as a Windows Service
+# Elementum.Worker (Background Ingestion & Single-Run Job)
 
-**Default deployment:** The worker is normally run as a **Docker container** together with MySQL and the API — see `**Elementum-Database/README.md`** and the `worker` service in `Elementum-Database/docker-compose.yml`.
+The **Elementum.Worker** is responsible for fetching daily precious metal spot prices from the external GoldAPI and persisting them into MySQL.
 
-**This page** describes an **alternative**: installing the same worker on a Windows machine as a **Windows Service** (no Docker). Use this when you need a native Windows service instead of the container.
-
----
-
-The worker can be installed as a Windows service and will then run automatically in the background. The daily ingestion time is configured under `**Worker:DailyRunTime`** in `appsettings.json` (default `23:00:00` local time).
-
-## Prerequisites
-
-- .NET (net10.0) on the machine, or use a self-contained publish (see below).
-- **All `sc.exe` commands must be run from an elevated Command Prompt or PowerShell** (right-click → “Run as administrator”).
-
-## 1. Publish the project
-
-From the solution root (or project folder) run:
-
-```powershell
-dotnet publish Elementum-WorkerService\Elementum.Worker.csproj -c Release -r win-x64 --self-contained true -o Elementum-WorkerService\bin\Release\net10.0\publish\win-x64
-```
-
-Alternatively, without `-r win-x64` (framework-dependent; requires .NET runtime installed):
-
-```powershell
-dotnet publish Elementum-WorkerService\Elementum.Worker.csproj -c Release -o Elementum-WorkerService\bin\publish
-```
-
-The EXE will be at `Elementum-WorkerService\bin\publish\Elementum.Worker.exe` (or under the self-contained path above).
-
-## 2. Install the service (one-time)
-
-Run **as Administrator**. `binpath=` must be the **full path to the EXE** (use quotes if the path contains spaces).
-
-Self-contained (win-x64):
-
-```cmd
-sc.exe create "Elementum-WorkerService" binpath= "C:\Users\..\Elementum.Worker.exe" start= auto
-```
-
-Optional description:
-
-```cmd
-sc.exe description "Elementum-WorkerService" "Fetches daily metal prices from GoldAPI and saves them to the Elementum database."
-```
-
-## 3. Start / stop the service
-
-```cmd
-sc.exe start "Elementum-WorkerService"
-sc.exe stop "Elementum-WorkerService"
-```
-
-## 4. Remove the service (uninstall)
-
-Stop the service first, then delete it:
-
-```cmd
-sc.exe stop "Elementum-WorkerService"
-sc.exe delete "Elementum-WorkerService"
-```
-
-## Notes
-
-- **start= auto** makes the service start automatically when Windows starts.
-- Configuration (connection string, API key, `**Worker:DailyRunTime`**) is read from `appsettings.json` and `.env` in the **same folder as the EXE** (the publish output). You can override the schedule with the environment variable `**Worker__DailyRunTime`** (e.g. `02:30:00`).
-- Logs may appear in Windows Event Viewer under “Application and Services Logs” (if configured), or only in the console when run manually; for proper service logging, consider configuring Serilog to write to a file.
+It supports **two operational modes**:
 
 ---
 
-## Related documentation
+## 1. Single-Run Mode (Cron / Windows Aufgabenplanung / Kubernetes CronJob)
 
-- [Elementum-ServiceApi/API-Endpoints.md](../Elementum-ServiceApi/API-Endpoints.md) — API routes used by the CLI
-- [Elementum-Database/README.md](../../Elementum-Database/README.md) — Docker stack (API + DB + worker)
+Ideal for scheduled batch jobs (0 MB RAM & 0% CPU consumption outside the execution window):
 
+```bash
+# Via .NET CLI
+dotnet run --project src/Elementum.Worker -- --run-once
+
+# Or with short flag
+dotnet run --project src/Elementum.Worker -- --once
+
+# Or with the compiled binary
+Elementum.Worker.exe --run-once
+```
+
+### Behavior:
+1. Bootstraps Dependency Injection, Configuration, and Resilience pipelines.
+2. Executes `IIngestPricesUseCase.ExecuteAsync()`.
+3. Returns exit code `0` on success (or `1` on error) and terminates immediately.
+
+---
+
+## 2. Daemon Mode (24/7 Service / Docker Container / Windows Service)
+
+Runs continuously in the background and executes the ingestion at the configured schedule (`WorkerSchedule:DailyRunTime`).
+
+```bash
+# Start daemon
+dotnet run --project src/Elementum.Worker
+```
+
+### Features in Daemon Mode:
+- **Periodic Scheduling:** Configurable daily run time via `appsettings.json` or `.env`.
+- **Health Check Endpoint:** Exposes `http://localhost:5094/health` for orchestrator liveness/readiness probes.
+- **Continuous Metrics:** Records metrics via `IngestionMetrics` for production observability.
+
+---
+
+## Windows Service Installation (Optional)
+
+1. **Publish:**
+   ```powershell
+   dotnet publish src/Elementum.Worker/Elementum.Worker.csproj -c Release -o bin/publish
+   ```
+2. **Register as Windows Service (Run as Administrator):**
+   ```cmd
+   sc.exe create "Elementum.Worker" binpath= "C:\path\to\publish\Elementum.Worker.exe" start= auto
+   sc.exe description "Elementum.Worker" "Fetches daily metal prices from GoldAPI into Elementum MySQL database."
+   ```
+3. **Start Service:**
+   ```cmd
+   sc.exe start "Elementum.Worker"
+   ```
