@@ -33,7 +33,7 @@ public class MetalsIngestionJob
     {
         await using var lockHandle = await _lockProvider.TryAcquireLockAsync(
             IngestionLockResource,
-            TimeSpan.FromSeconds(5),
+            TimeSpan.FromSeconds(30),
             cancellationToken);
 
         if (!lockHandle.IsAcquired)

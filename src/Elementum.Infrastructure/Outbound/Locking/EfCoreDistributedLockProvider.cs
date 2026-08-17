@@ -72,7 +72,7 @@ public class EfCoreDistributedLockProvider : IDistributedLockProvider
                 "Acquired EF Core distributed lock for '{Resource}' by '{InstanceId}' until {ExpiresAtUtc} UTC.",
                 resource, instanceId, expiresAt);
 
-            return new EfCoreDistributedLock(_scopeFactory, resource, instanceId, _logger);
+            return new EfCoreDistributedLock(_scopeFactory, resource, instanceId, timeout, _logger);
         }
         catch (DbUpdateConcurrencyException ex)
         {
@@ -102,7 +102,10 @@ public class EfCoreDistributedLockProvider : IDistributedLockProvider
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly string _resource;
         private readonly string _instanceId;
+        private readonly TimeSpan _timeout;
         private readonly ILogger _logger;
+        private readonly CancellationTokenSource _heartbeatCts = new();
+        private readonly Task _heartbeatTask;
         private int _disposed;
 
         public bool IsAcquired => true;
@@ -111,18 +114,65 @@ public class EfCoreDistributedLockProvider : IDistributedLockProvider
             IServiceScopeFactory scopeFactory,
             string resource,
             string instanceId,
+            TimeSpan timeout,
             ILogger logger)
         {
             _scopeFactory = scopeFactory;
             _resource = resource;
             _instanceId = instanceId;
+            _timeout = timeout;
             _logger = logger;
+            _heartbeatTask = StartHeartbeatAsync(_heartbeatCts.Token);
+        }
+
+        private async Task StartHeartbeatAsync(CancellationToken ct)
+        {
+            var interval = TimeSpan.FromMilliseconds(Math.Max(500, _timeout.TotalMilliseconds / 2));
+            using var timer = new PeriodicTimer(interval);
+            try
+            {
+                while (await timer.WaitForNextTickAsync(ct))
+                {
+                    try
+                    {
+                        using var scope = _scopeFactory.CreateScope();
+                        var db = scope.ServiceProvider.GetRequiredService<ElementumDbContext>();
+                        var lockRecord = await db.DistributedLocks
+                            .FirstOrDefaultAsync(l => l.Resource == _resource && l.AcquiredBy == _instanceId, ct);
+
+                        if (lockRecord != null)
+                        {
+                            lockRecord.ExpiresAtUtc = DateTime.UtcNow.Add(_timeout);
+                            await db.SaveChangesAsync(ct);
+                            _logger.LogDebug("Auto-renewed distributed lock for '{Resource}' until {ExpiresAtUtc} UTC.", _resource, lockRecord.ExpiresAtUtc);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Lost ownership of distributed lock for '{Resource}' during heartbeat.", _resource);
+                            break;
+                        }
+                    }
+                    catch (DbUpdateConcurrencyException)
+                    {
+                        _logger.LogWarning("Concurrency collision renewing distributed lock for '{Resource}'.", _resource);
+                        break;
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        _logger.LogWarning(ex, "Failed to renew distributed lock for '{Resource}'.", _resource);
+                    }
+                }
+            }
+            catch (OperationCanceledException) { }
         }
 
         public async ValueTask DisposeAsync()
         {
             if (Interlocked.Exchange(ref _disposed, 1) != 0)
                 return;
+
+            await _heartbeatCts.CancelAsync();
+            _heartbeatCts.Dispose();
 
             try
             {
@@ -135,8 +185,15 @@ public class EfCoreDistributedLockProvider : IDistributedLockProvider
                 if (lockRecord != null)
                 {
                     db.DistributedLocks.Remove(lockRecord);
-                    await db.SaveChangesAsync();
-                    _logger.LogDebug("Released EF Core distributed lock for '{Resource}'", _resource);
+                    try
+                    {
+                        await db.SaveChangesAsync();
+                        _logger.LogDebug("Released EF Core distributed lock for '{Resource}'", _resource);
+                    }
+                    catch (DbUpdateConcurrencyException)
+                    {
+                        // Lock was already modified or removed
+                    }
                 }
             }
             catch (Exception ex)

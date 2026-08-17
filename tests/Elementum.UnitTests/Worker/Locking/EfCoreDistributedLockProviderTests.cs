@@ -94,4 +94,22 @@ public class EfCoreDistributedLockProviderTests
             await handle.DisposeAsync();
         }
     }
+
+    [Fact]
+    public async Task TryAcquireLockAsync_Heartbeat_ExtendsLockExpiration()
+    {
+        // Acquire with short TTL (1000ms -> heartbeat fires at 500ms)
+        await using var handle = await _lockProvider.TryAcquireLockAsync("resource_heartbeat", TimeSpan.FromMilliseconds(1000));
+        Assert.True(handle.IsAcquired);
+
+        // Wait 700ms (heartbeat should have fired at ~500ms and extended expiration)
+        await Task.Delay(700);
+
+        using var scope = _serviceProvider.GetRequiredService<IServiceScopeFactory>().CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ElementumDbContext>();
+        var lockRecord = await db.DistributedLocks.FirstOrDefaultAsync(l => l.Resource == "resource_heartbeat");
+
+        Assert.NotNull(lockRecord);
+        Assert.True(lockRecord.ExpiresAtUtc > DateTime.UtcNow);
+    }
 }
