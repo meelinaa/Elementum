@@ -76,4 +76,22 @@ public class EfCoreDistributedLockProviderTests
         await using var handle2 = await _lockProvider.TryAcquireLockAsync("resource_4", TimeSpan.FromMinutes(5));
         Assert.True(handle2.IsAcquired);
     }
+
+    [Fact]
+    public async Task TryAcquireLockAsync_ParallelAttempts_OnlyOneAcquiresLock()
+    {
+        var tasks = Enumerable.Range(0, 10)
+            .Select(_ => _lockProvider.TryAcquireLockAsync("resource_parallel", TimeSpan.FromMinutes(5)))
+            .ToList();
+
+        var handles = await Task.WhenAll(tasks);
+        var acquiredCount = handles.Count(h => h.IsAcquired);
+
+        Assert.Equal(1, acquiredCount);
+
+        foreach (var handle in handles)
+        {
+            await handle.DisposeAsync();
+        }
+    }
 }

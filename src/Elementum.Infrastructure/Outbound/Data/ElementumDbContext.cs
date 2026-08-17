@@ -311,7 +311,7 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
             e.Property(x => x.Resource).HasColumnName("resource").HasMaxLength(128).IsRequired();
             e.Property(x => x.AcquiredBy).HasColumnName("acquired_by").HasMaxLength(128).IsRequired();
             e.Property(x => x.AcquiredAtUtc).HasColumnName("acquired_at_utc").IsRequired();
-            e.Property(x => x.ExpiresAtUtc).HasColumnName("expires_at_utc").IsRequired();
+            e.Property(x => x.ExpiresAtUtc).HasColumnName("expires_at_utc").IsConcurrencyToken().IsRequired();
         });
     }
 }

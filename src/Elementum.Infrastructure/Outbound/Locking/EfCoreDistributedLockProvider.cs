@@ -53,7 +53,7 @@ public class EfCoreDistributedLockProvider : IDistributedLockProvider
             }
             else if (existing.ExpiresAtUtc < now)
             {
-                // Expired lock: take it over safely
+                // Expired lock: take it over safely with optimistic concurrency check (ExpiresAtUtc is ConcurrencyCheck token)
                 existing.AcquiredBy = instanceId;
                 existing.AcquiredAtUtc = now;
                 existing.ExpiresAtUtc = expiresAt;
@@ -74,9 +74,17 @@ public class EfCoreDistributedLockProvider : IDistributedLockProvider
 
             return new EfCoreDistributedLock(_scopeFactory, resource, instanceId, _logger);
         }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            // Concurrency conflict: another instance won the race to take over the expired lock
+            _logger.LogInformation(
+                "Concurrency race acquiring EF Core distributed lock for '{Resource}'. Another instance took it over: {Message}",
+                resource, ex.Message);
+            return new NoOpDistributedLock();
+        }
         catch (DbUpdateException ex)
         {
-            // Concurrency conflict / race condition between instances
+            // Concurrency conflict / primary key collision between instances creating a new lock
             _logger.LogInformation(
                 "Conflict acquiring EF Core distributed lock for '{Resource}'. Another instance won the race: {Message}",
                 resource, ex.Message);

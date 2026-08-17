@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Elementum.Domain.Entities;
 
 /// <summary>
@@ -14,6 +16,7 @@ public class DistributedLockEntity
     /// <summary>UTC timestamp when the lock was acquired.</summary>
     public DateTime AcquiredAtUtc { get; set; }
 
-    /// <summary>UTC timestamp when the lock expires (TTL for crash recovery).</summary>
+    /// <summary>UTC timestamp when the lock expires (TTL for crash recovery). Acts as concurrency token.</summary>
+    [ConcurrencyCheck]
     public DateTime ExpiresAtUtc { get; set; }
 }
