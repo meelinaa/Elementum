@@ -1,6 +1,6 @@
 using Elementum.Api.Controllers;
-using Elementum.Api.RequestModels;
 using Elementum.Application.DTOs;
+using Elementum.Application.Requests;
 using Elementum.Application.UseCases.Metals;
 using Elementum.Application.UseCases.Prices;
 using Microsoft.AspNetCore.Http;

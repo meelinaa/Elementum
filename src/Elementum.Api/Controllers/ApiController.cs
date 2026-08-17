@@ -1,5 +1,5 @@
-using Elementum.Api.RequestModels;
 using Elementum.Application.DTOs;
+using Elementum.Application.Requests;
 using Elementum.Application.UseCases.Metals;
 using Elementum.Application.UseCases.Prices;
 using Microsoft.AspNetCore.Http;
@@ -43,9 +43,6 @@ public class ApiController : ControllerBase
     [RequestTimeout("DataCruncher")]
     public async Task<ActionResult<IEnumerable<PriceHistoryDto>>> GetPriceHistoryByMetalSymbol([FromRoute] SymbolRequest symbolRequest, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-            return ValidationProblem(ModelState);
-
         var historyData = await _priceHistoryUseCase.GetBySymbolAsync(symbolRequest.Symbol.Trim(), cancellationToken);
         return Ok(historyData);
     }
@@ -54,9 +51,6 @@ public class ApiController : ControllerBase
     [HttpGet("history/{symbol}/latest", Order = 5)]
     public async Task<ActionResult<PriceHistoryDto>> GetPriceHistoryByMetalSymbolLatest([FromRoute] SymbolRequest symbolRequest, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-            return ValidationProblem(ModelState);
-
         var dto = await _priceHistoryUseCase.GetLatestBySymbolAsync(symbolRequest.Symbol.Trim(), cancellationToken);
         if (dto == null)
         {
@@ -75,9 +69,6 @@ public class ApiController : ControllerBase
     [HttpGet("history/{symbol}/latest/trading", Order = 1)]
     public async Task<ActionResult<TradingPriceDto>> GetPriceHistoryTradingLatest([FromRoute] SymbolRequest symbolRequest, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-            return ValidationProblem(ModelState);
-
         var dto = await _priceHistoryUseCase.GetTradingLatestAsync(symbolRequest.Symbol.Trim(), cancellationToken);
         if (dto == null)
         {
@@ -97,9 +88,6 @@ public class ApiController : ControllerBase
     [HttpGet("history/{symbol}/latest/karat", Order = 1)]
     public async Task<ActionResult<KaratPricesDto>> GetPriceHistoryKaratLatest([FromRoute] SymbolRequest symbolRequest, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-            return ValidationProblem(ModelState);
-
         var dto = await _priceHistoryUseCase.GetKaratLatestAsync(symbolRequest.Symbol.Trim(), cancellationToken);
         if (dto == null)
         {
@@ -120,9 +108,6 @@ public class ApiController : ControllerBase
     [RequestTimeout("DataCruncher")]
     public async Task<IActionResult> GetPriceHistoryByMetalSymbolAndDateRange([FromRoute] SymbolRequest symbolRequest, [FromRoute] DateRangeRequest dateRangeRequest, CancellationToken ct)
     {
-        if (!ModelState.IsValid)
-            return ValidationProblem(ModelState);
-
         var start = DateOnly.Parse(dateRangeRequest.FirstDate);
         var end = DateOnly.Parse(dateRangeRequest.LastDate);
         var historyData = await _priceHistoryUseCase.GetByDateRangeAsync(symbolRequest.Symbol.Trim(), start, end, ct);
@@ -134,9 +119,6 @@ public class ApiController : ControllerBase
     [RequestTimeout("DataCruncher")]
     public async Task<IActionResult> GetPriceHistoryMetalData([FromRoute] SymbolRequest symbolRequest, [FromRoute] string aggregation, [FromRoute] int count, CancellationToken ct)
     {
-        if (!ModelState.IsValid)
-            return ValidationProblem(ModelState);
-
         var historyData = await _priceHistoryUseCase.GetAggregatedAsync(symbolRequest.Symbol.Trim(), aggregation.Trim(), count, ct);
         return Ok(historyData);
     }

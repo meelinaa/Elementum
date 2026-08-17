@@ -27,7 +27,10 @@ public static class ApiServiceCollectionExtensions
         // Application: Use Cases and Interactors
         services.AddElementumApplication();
 
-        services.AddControllers();
+        services.AddControllers(options =>
+        {
+            options.Filters.Add<Filters.ValidationFilter>();
+        });
         services.AddOpenApi();
 
         // RFC 7807 ProblemDetails for validation errors and exception handler integration.
