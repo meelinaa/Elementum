@@ -36,37 +36,68 @@ public class Worker : BackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            if (_isFirstRun && _env.IsDevelopment())
+            try
             {
-                _logger.LogInformation("Debug mode detected: Start first run immediately...");
+                if (_isFirstRun && _env.IsDevelopment())
+                {
+                    _logger.LogInformation("Debug mode detected: Start first run immediately...");
+                    await RunJobAsync(stoppingToken);
+                    _isFirstRun = false;
+                }
+
+                var now = DateTime.Now;
+                var nextRun = now.Date.Add(_runTime);
+                if (now > nextRun)
+                    nextRun = nextRun.AddDays(1);
+
+                var delay = nextRun - now;
+                _logger.LogInformation("Next regular run: {NextRun} (DailyRunTime={DailyRunTime})", nextRun, _runTime);
+                await Task.Delay(delay, stoppingToken);
+
+                if (stoppingToken.IsCancellationRequested)
+                    break;
+
                 await RunJobAsync(stoppingToken);
-                _isFirstRun = false;
             }
-
-            var now = DateTime.Now;
-            var nextRun = now.Date.Add(_runTime);
-            if (now > nextRun)
-                nextRun = nextRun.AddDays(1);
-
-            var delay = nextRun - now;
-            _logger.LogInformation("Next regular run: {NextRun} (DailyRunTime={DailyRunTime})", nextRun, _runTime);
-            await Task.Delay(delay, stoppingToken);
-
-            if (stoppingToken.IsCancellationRequested)
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                _logger.LogInformation("Worker execution loop cancelled due to host shutdown.");
                 break;
-
-            await RunJobAsync(stoppingToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error in worker execution loop. Retrying in 1 minute...");
+                try
+                {
+                    await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+            }
         }
     }
 
     /// <summary>
-    /// Resolves <see cref="MetalsIngestionJob"/> from a new scope and runs it once.
+    /// Resolves <see cref="MetalsIngestionJob"/> from a new scope and runs it once with exception shielding.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     private async Task RunJobAsync(CancellationToken cancellationToken)
     {
-        await using var scope = _scopeFactory.CreateAsyncScope();
-        var job = scope.ServiceProvider.GetRequiredService<MetalsIngestionJob>();
-        await job.RunAsync(cancellationToken);
+        try
+        {
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            var job = scope.ServiceProvider.GetRequiredService<MetalsIngestionJob>();
+            await job.RunAsync(cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("Metals ingestion job cancelled as host is shutting down.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled exception during metals ingestion job execution. Host process remains running.");
+        }
     }
 }
