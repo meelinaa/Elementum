@@ -61,57 +61,57 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
 
             if (existingRow != null)
             {
-                existingRow.Exchange = api.Exchange;
-                existingRow.Symbol = api.Symbol;
-                existingRow.ReferenceTimestamp = api.Timestamp.ToString(CultureInfo.InvariantCulture);
-                existingRow.OpenTime = api.OpenTime.ToString(CultureInfo.InvariantCulture);
-                existingRow.Price = api.Price;
-                existingRow.PrevClosePrice = api.PrevClosePrice;
-                existingRow.OpenPrice = api.OpenPrice;
-                existingRow.LowPrice = api.LowPrice;
-                existingRow.HighPrice = api.HighPrice;
-                existingRow.Ch = api.Ch;
-                existingRow.Chp = api.Chp;
-                existingRow.Ask = api.Ask;
-                existingRow.Bid = api.Bid;
-                existingRow.PriceGram24k = api.PriceGram24k;
-                existingRow.PriceGram22k = api.PriceGram22k;
-                existingRow.PriceGram21k = api.PriceGram21k;
-                existingRow.PriceGram20k = api.PriceGram20k;
-                existingRow.PriceGram18k = api.PriceGram18k;
-                existingRow.PriceGram16k = api.PriceGram16k;
-                existingRow.PriceGram14k = api.PriceGram14k;
-                existingRow.PriceGram10k = api.PriceGram10k;
+                existingRow.UpdatePrices(
+                    price: api.Price,
+                    highPrice: api.HighPrice,
+                    lowPrice: api.LowPrice,
+                    openPrice: api.OpenPrice,
+                    prevClosePrice: api.PrevClosePrice,
+                    ask: api.Ask,
+                    bid: api.Bid,
+                    ch: api.Ch,
+                    chp: api.Chp,
+                    priceGram24k: api.PriceGram24k,
+                    priceGram22k: api.PriceGram22k,
+                    priceGram21k: api.PriceGram21k,
+                    priceGram20k: api.PriceGram20k,
+                    priceGram18k: api.PriceGram18k,
+                    priceGram16k: api.PriceGram16k,
+                    priceGram14k: api.PriceGram14k,
+                    priceGram10k: api.PriceGram10k,
+                    referenceTimestamp: api.Timestamp.ToString(CultureInfo.InvariantCulture),
+                    openTime: api.OpenTime.ToString(CultureInfo.InvariantCulture),
+                    exchange: api.Exchange,
+                    symbol: api.Symbol);
             }
             else
             {
-                var row = new PriceHistory
-                {
-                    MetalId = metal.Id,
-                    Currency = currency,
-                    Exchange = api.Exchange,
-                    Symbol = api.Symbol,
-                    ReferenceTimestamp = api.Timestamp.ToString(CultureInfo.InvariantCulture),
-                    OpenTime = api.OpenTime.ToString(CultureInfo.InvariantCulture),
-                    EntryDate = today,
-                    Price = api.Price,
-                    PrevClosePrice = api.PrevClosePrice,
-                    OpenPrice = api.OpenPrice,
-                    LowPrice = api.LowPrice,
-                    HighPrice = api.HighPrice,
-                    Ch = api.Ch,
-                    Chp = api.Chp,
-                    Ask = api.Ask,
-                    Bid = api.Bid,
-                    PriceGram24k = api.PriceGram24k,
-                    PriceGram22k = api.PriceGram22k,
-                    PriceGram21k = api.PriceGram21k,
-                    PriceGram20k = api.PriceGram20k,
-                    PriceGram18k = api.PriceGram18k,
-                    PriceGram16k = api.PriceGram16k,
-                    PriceGram14k = api.PriceGram14k,
-                    PriceGram10k = api.PriceGram10k
-                };
+                var row = Elementum.Domain.Entities.PriceHistory.Create(
+                    metalId: metal.Id,
+                    currency: currency,
+                    entryDate: today,
+                    price: api.Price,
+                    symbol: api.Symbol,
+                    exchange: api.Exchange,
+                    openPrice: api.OpenPrice,
+                    highPrice: api.HighPrice,
+                    lowPrice: api.LowPrice,
+                    prevClosePrice: api.PrevClosePrice,
+                    ask: api.Ask,
+                    bid: api.Bid,
+                    ch: api.Ch,
+                    chp: api.Chp,
+                    priceGram24k: api.PriceGram24k,
+                    priceGram22k: api.PriceGram22k,
+                    priceGram21k: api.PriceGram21k,
+                    priceGram20k: api.PriceGram20k,
+                    priceGram18k: api.PriceGram18k,
+                    priceGram16k: api.PriceGram16k,
+                    priceGram14k: api.PriceGram14k,
+                    priceGram10k: api.PriceGram10k,
+                    referenceTimestamp: api.Timestamp.ToString(CultureInfo.InvariantCulture),
+                    openTime: api.OpenTime.ToString(CultureInfo.InvariantCulture));
+
                 PriceHistory.Add(row);
             }
         }

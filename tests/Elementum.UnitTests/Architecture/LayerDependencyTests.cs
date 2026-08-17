@@ -99,4 +99,37 @@ public class LayerDependencyTests
 
         Assert.True(result.IsSuccessful, "API Controllers must not depend directly on ElementumDbContext (use Application Use Cases instead)");
     }
+
+    [Fact]
+    public void WorkerJobs_ShouldNot_HaveDirectDependencyOn_DbContext()
+    {
+        // Jobs in Elementum.Worker must consume Application Use Cases, not DbContext directly
+        var result = Types.InAssembly(typeof(Elementum.Worker.Jobs.MetalsIngestionJob).Assembly)
+            .That()
+            .ResideInNamespace("Elementum.Worker.Jobs")
+            .ShouldNot()
+            .HaveDependencyOn("Elementum.Infrastructure.Data.ElementumDbContext")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, "Worker Jobs must not depend directly on ElementumDbContext (use Application Use Cases instead)");
+    }
+
+    [Fact]
+    public void PresentationLayers_ShouldNot_DependOn_EachOther()
+    {
+        // Api and Worker are independent driving adapters and must never reference each other
+        var apiResult = Types.InAssembly(typeof(Elementum.Api.Controllers.ApiController).Assembly)
+            .ShouldNot()
+            .HaveDependencyOnAny(WorkerNamespace, CliNamespace)
+            .GetResult();
+
+        Assert.True(apiResult.IsSuccessful, "API project must not depend on Worker or Cli");
+
+        var workerResult = Types.InAssembly(typeof(Elementum.Worker.Jobs.MetalsIngestionJob).Assembly)
+            .ShouldNot()
+            .HaveDependencyOnAny(ApiNamespace, CliNamespace)
+            .GetResult();
+
+        Assert.True(workerResult.IsSuccessful, "Worker project must not depend on Api or Cli");
+    }
 }
