@@ -1,7 +1,7 @@
-using Elementum_WorkerService.Abstractions;
-using Elementum_WorkerService.Observability;
+using Elementum.WorkerService.Abstractions;
+using Elementum.WorkerService.Observability;
 
-namespace Elementum_WorkerService.Jobs;
+namespace Elementum.WorkerService.Jobs;
 
 /// <summary>
 /// Orchestrates a single run of metals price ingestion: checks preconditions, fetches prices from the API, and persists them to the database.

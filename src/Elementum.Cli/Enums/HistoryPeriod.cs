@@ -1,4 +1,4 @@
-namespace Elementum_Cli.Enums;
+namespace Elementum.Cli.Enums;
 
 /// <summary>
 /// Aggregation for the history view. Passed to the API (aggregation + count).

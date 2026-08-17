@@ -1,5 +1,5 @@
-using Elementum_Cli.Enums;
-using Elementum_Cli.Views;
+using Elementum.Cli.Enums;
+using Elementum.Cli.Views;
 
 namespace Elementum.Cli.Tests;
 

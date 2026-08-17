@@ -1,9 +1,9 @@
-using Elementum_Cli.Api;
-using Elementum_Cli.Enums;
-using Elementum_Cli.Views;
-using static Elementum_Cli.Output.CliOutputHelper;
+using Elementum.Cli.Api;
+using Elementum.Cli.Enums;
+using Elementum.Cli.Views;
+using static Elementum.Cli.Output.CliOutputHelper;
 
-namespace Elementum_Cli.Navigation;
+namespace Elementum.Cli.Navigation;
 
 /// <summary>
 /// Handles keyboard input for the CLI: menu navigation (↑/↓/Enter/ESC) and delegation to the current detail view. [R] clears cache and re-renders.

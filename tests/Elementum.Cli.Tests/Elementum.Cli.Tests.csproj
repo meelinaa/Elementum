@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Elementum_Cli\Elementum_Cli.csproj" />
+    <ProjectReference Include="..\..\src\Elementum.Cli\Elementum.Cli.csproj" />
   </ItemGroup>
 
   <ItemGroup>

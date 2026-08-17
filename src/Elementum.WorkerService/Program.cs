@@ -1,4 +1,4 @@
-using Elementum_WorkerService.Hosting;
+using Elementum.WorkerService.Hosting;
 using Microsoft.AspNetCore.Builder;
 using Serilog;
 

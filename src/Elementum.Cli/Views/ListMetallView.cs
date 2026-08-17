@@ -1,11 +1,11 @@
 using Elementum.Shared.DTOs;
-using Elementum_Cli.Api;
-using Elementum_Cli.Constants;
-using Elementum_Cli.Output;
-using Elementum_Cli.Views.Interfaces;
+using Elementum.Cli.Api;
+using Elementum.Cli.Constants;
+using Elementum.Cli.Output;
+using Elementum.Cli.Views.Interfaces;
 using System.Text.Json;
 
-namespace Elementum_Cli.Views;
+namespace Elementum.Cli.Views;
 
 /// <summary>
 /// Displays the list of all metals (Id, Symbol, Name) in a table. Data from GET metals/all.

@@ -1,9 +1,9 @@
 using System.Text.Json;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
-using Elementum_WorkerService.Options;
+using Elementum.WorkerService.Options;
 
-namespace Elementum_WorkerService.HealthChecks;
+namespace Elementum.WorkerService.HealthChecks;
 
 /// <summary>
 /// Health check that calls GoldAPI status endpoint (GET api/status) and verifies response <c>{"result": true}</c>.

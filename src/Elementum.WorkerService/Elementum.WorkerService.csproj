@@ -4,8 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>dotnet-Elementum_WorkerService-735268a8-3635-437f-ad4c-2990aff3c8d5</UserSecretsId>
-    <RootNamespace>Elementum_WorkerService</RootNamespace>
+    <UserSecretsId>dotnet-Elementum.WorkerService-735268a8-3635-437f-ad4c-2990aff3c8d5</UserSecretsId>
+    <RootNamespace>Elementum.WorkerService</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

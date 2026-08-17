@@ -1,6 +1,6 @@
-using Elementum_Cli.Enums;
+using Elementum.Cli.Enums;
 
-namespace Elementum_Cli.Constants;
+namespace Elementum.Cli.Constants;
 
 /// <summary>Central place for CLI UI strings. Simplifies changes and future localization.</summary>
 public static class CliStrings

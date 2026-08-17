@@ -1,7 +1,7 @@
 using Elementum.Shared.Objects;
-using Elementum_WorkerService.Abstractions;
-using Elementum_WorkerService.Jobs;
-using Elementum_WorkerService.Observability;
+using Elementum.WorkerService.Abstractions;
+using Elementum.WorkerService.Jobs;
+using Elementum.WorkerService.Observability;
 using Microsoft.Extensions.Logging;
 using Moq;
 

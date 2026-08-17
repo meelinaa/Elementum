@@ -1,6 +1,6 @@
 using Elementum.Shared.Objects;
 
-namespace Elementum_WorkerService.Abstractions;
+namespace Elementum.WorkerService.Abstractions;
 
 /// <summary>
 /// Persists API price data into the price_history table.

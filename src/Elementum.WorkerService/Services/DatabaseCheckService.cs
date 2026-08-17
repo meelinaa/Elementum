@@ -1,8 +1,8 @@
 using Elementum.Infrastructure.Data;
-using Elementum_WorkerService.Abstractions;
+using Elementum.WorkerService.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Elementum_WorkerService.Services;
+namespace Elementum.WorkerService.Services;
 
 /// <summary>
 /// Provides preconditions for the ingestion job: database connectivity and whether data for today already exists.

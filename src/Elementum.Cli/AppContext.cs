@@ -1,8 +1,8 @@
-using Elementum_Cli.Enums;
-using Elementum_Cli.Constants;
-using Elementum_Cli.Models;
+using Elementum.Cli.Enums;
+using Elementum.Cli.Constants;
+using Elementum.Cli.Models;
 
-namespace Elementum_Cli;
+namespace Elementum.Cli;
 
 /// <summary>
 /// Holds all application state for the CLI shell. Created once per run and can be passed or accessed via <see cref="Current"/>.

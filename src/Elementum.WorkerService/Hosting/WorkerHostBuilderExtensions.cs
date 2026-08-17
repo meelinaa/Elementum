@@ -1,11 +1,11 @@
 using System.Net;
 using Elementum.Infrastructure.Data;
-using Elementum_WorkerService.Abstractions;
-using Elementum_WorkerService.Jobs;
-using Elementum_WorkerService.Observability;
-using Elementum_WorkerService.HealthChecks;
-using Elementum_WorkerService.Options;
-using Elementum_WorkerService.Services;
+using Elementum.WorkerService.Abstractions;
+using Elementum.WorkerService.Jobs;
+using Elementum.WorkerService.Observability;
+using Elementum.WorkerService.HealthChecks;
+using Elementum.WorkerService.Options;
+using Elementum.WorkerService.Services;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Polly;
@@ -14,7 +14,7 @@ using Serilog;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 
-namespace Elementum_WorkerService.Hosting;
+namespace Elementum.WorkerService.Hosting;
 
 /// <summary>
 /// Configures the Worker as a minimal ASP.NET Core host (HTTP only for health), Serilog, GoldAPI HttpClient, DI, and background ingestion.
@@ -80,7 +80,7 @@ public static class WorkerHostBuilderExtensions
         services.AddSingleton<IPriceHistoryRepository, PriceHistoryRepository>();
         services.AddScoped<MetalsIngestionJob>();
 
-        services.AddHostedService<global::Elementum_WorkerService.Worker>();
+        services.AddHostedService<global::Elementum.WorkerService.Worker>();
 
         builder.Host.UseWindowsService();
 

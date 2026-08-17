@@ -1,10 +1,10 @@
 using Elementum.Shared.DTOs;
-using Elementum_Cli.Api;
-using Elementum_Cli.Constants;
-using Elementum_Cli.Output;
+using Elementum.Cli.Api;
+using Elementum.Cli.Constants;
+using Elementum.Cli.Output;
 using System.Text.Json;
 
-namespace Elementum_Cli.Views;
+namespace Elementum.Cli.Views;
 
 /// <summary>
 /// Displays trading data for one metal: bid/ask, spread, high/low, open, comparison vs previous close, volatility, timestamps.

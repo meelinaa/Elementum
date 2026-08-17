@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace Elementum_Cli.Hosting;
+namespace Elementum.Cli.Hosting;
 
 /// <summary>
 /// Console host settings for the terminal UI (encoding and cursor visibility).

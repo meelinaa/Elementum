@@ -1,8 +1,8 @@
-using Elementum_Cli.Input;
-using Elementum_Cli.Output;
-using Elementum_Cli.Views.Interfaces;
+using Elementum.Cli.Input;
+using Elementum.Cli.Output;
+using Elementum.Cli.Views.Interfaces;
 
-namespace Elementum_Cli.Views;
+namespace Elementum.Cli.Views;
 
 /// <summary>
 /// Base class for detail views that require a metal selection (e.g. Trading, Karat).

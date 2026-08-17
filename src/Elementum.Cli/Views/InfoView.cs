@@ -1,9 +1,9 @@
-using Elementum_Cli.Constants;
-using Elementum_Cli.Input;
-using Elementum_Cli.Output;
-using Elementum_Cli.Views.Interfaces;
+using Elementum.Cli.Constants;
+using Elementum.Cli.Input;
+using Elementum.Cli.Output;
+using Elementum.Cli.Views.Interfaces;
 
-namespace Elementum_Cli.Views;
+namespace Elementum.Cli.Views;
 
 /// <summary>
 /// Static info screen: app title, section title, and GoldAPI.com data policy (no API call).

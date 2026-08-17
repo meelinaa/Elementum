@@ -1,4 +1,4 @@
-using Elementum_Cli.Config;
+using Elementum.Cli.Config;
 
 namespace Elementum.Cli.Tests;
 

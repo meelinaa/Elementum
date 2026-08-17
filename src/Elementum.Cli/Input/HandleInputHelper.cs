@@ -1,7 +1,7 @@
-using Elementum_Cli.Enums;
-using Elementum_Cli.Output;
+using Elementum.Cli.Enums;
+using Elementum.Cli.Output;
 
-namespace Elementum_Cli.Input;
+namespace Elementum.Cli.Input;
 
 /// <summary>
 /// Handles common key actions for detail views: ESC/← back to menu, and (with metals) 1–3 for metal selection.

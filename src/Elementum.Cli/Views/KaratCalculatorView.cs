@@ -1,7 +1,7 @@
-using Elementum_Cli.Api;
-using Elementum_Cli.Output;
+using Elementum.Cli.Api;
+using Elementum.Cli.Output;
 
-namespace Elementum_Cli.Views;
+namespace Elementum.Cli.Views;
 
 /// <summary>
 /// Displays price per gram by purity (24k–10k) and alloy discount vs 24k for one metal.

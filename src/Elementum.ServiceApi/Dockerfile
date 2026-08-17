@@ -3,14 +3,14 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Copy project files for restore (better layer caching)
-COPY ["Elementum-ServiceApi/Elementum_ServiceApi.csproj", "Elementum-ServiceApi/"]
+COPY ["Elementum.ServiceApi/Elementum.ServiceApi.csproj", "Elementum.ServiceApi/"]
 COPY ["Elementum.Infrastructure/Elementum.Infrastructure.csproj", "Elementum.Infrastructure/"]
 COPY ["Elementum.Shared/Elementum.Shared.csproj", "Elementum.Shared/"]
-RUN dotnet restore "Elementum-ServiceApi/Elementum_ServiceApi.csproj"
+RUN dotnet restore "Elementum.ServiceApi/Elementum.ServiceApi.csproj"
 
 # Copy remaining source and publish
 COPY . .
-WORKDIR /src/Elementum-ServiceApi
+WORKDIR /src/Elementum.ServiceApi
 RUN dotnet publish -c Release -o /app/publish --no-restore
 
 # Runtime stage
@@ -22,4 +22,4 @@ COPY --from=build /app/publish .
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
 
-ENTRYPOINT ["dotnet", "Elementum_ServiceApi.dll"]
+ENTRYPOINT ["dotnet", "Elementum.ServiceApi.dll"]

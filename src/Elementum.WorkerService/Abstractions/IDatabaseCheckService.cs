@@ -1,4 +1,4 @@
-namespace Elementum_WorkerService.Abstractions;
+namespace Elementum.WorkerService.Abstractions;
 
 /// <summary>
 /// Precondition checks for the ingestion job: database availability and whether data for today already exists.

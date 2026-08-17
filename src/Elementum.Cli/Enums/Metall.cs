@@ -1,4 +1,4 @@
-namespace Elementum_Cli.Enums;
+namespace Elementum.Cli.Enums;
 
 /// <summary>Metal selection in the CLI (Gold/XAU, Silber/XAG, Platin/XPT). Used for views that require a metal choice.</summary>
 public enum Metall

@@ -1,12 +1,12 @@
 using Elementum.Infrastructure.Data;
-using Elementum_ServiceApi.Services;
-using Elementum_ServiceApi.Services.Interfaces;
+using Elementum.ServiceApi.Services;
+using Elementum.ServiceApi.Services.Interfaces;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Serilog;
 using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
-namespace Elementum_ServiceApi.Hosting;
+namespace Elementum.ServiceApi.Hosting;
 
 /// <summary>
 /// Registers all API dependencies: database, application services, OpenAPI, CORS, health checks, and request timeouts.

@@ -1,4 +1,4 @@
-namespace Elementum_Cli.Views.Interfaces;
+namespace Elementum.Cli.Views.Interfaces;
 
 /// <summary>
 /// Contract for a detail view (Dashboard, Trading, History, etc.). Each view can render asynchronously and handle keyboard input.

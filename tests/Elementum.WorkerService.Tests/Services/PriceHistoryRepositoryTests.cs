@@ -1,6 +1,6 @@
 using Elementum.Infrastructure.Data;
 using Elementum.Shared.Objects;
-using Elementum_WorkerService.Services;
+using Elementum.WorkerService.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

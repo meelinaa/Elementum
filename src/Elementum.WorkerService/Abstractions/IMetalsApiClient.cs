@@ -1,6 +1,6 @@
 using Elementum.Shared.Objects;
 
-namespace Elementum_WorkerService.Abstractions;
+namespace Elementum.WorkerService.Abstractions;
 
 /// <summary>
 /// Fetches current metal prices from the external API (e.g. GoldAPI).

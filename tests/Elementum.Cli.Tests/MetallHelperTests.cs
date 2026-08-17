@@ -1,5 +1,5 @@
-using Elementum_Cli.Enums;
-using Elementum_Cli.Input;
+using Elementum.Cli.Enums;
+using Elementum.Cli.Input;
 
 namespace Elementum.Cli.Tests;
 

@@ -1,10 +1,10 @@
 using Elementum.Shared.DTOs;
-using Elementum_ServiceApi.RequestModels;
-using Elementum_ServiceApi.Services.Interfaces;
+using Elementum.ServiceApi.RequestModels;
+using Elementum.ServiceApi.Services.Interfaces;
 using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Elementum_ServiceApi.Controllers
+namespace Elementum.ServiceApi.Controllers
 {
     /// <summary>
     /// REST API controller for Elementum: metals list and price history (latest, by symbol, by date range, aggregated, trading/karat views).

@@ -1,6 +1,6 @@
-using Elementum_Cli.Enums;
+using Elementum.Cli.Enums;
 
-namespace Elementum_Cli.Input;
+namespace Elementum.Cli.Input;
 
 /// <summary>
 /// Maps CLI metal enum to API symbol (XAU, XAG, XPT) and display name; parses key press (1–3, D1–D3, NumPad) to metal.

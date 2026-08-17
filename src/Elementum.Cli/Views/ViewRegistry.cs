@@ -1,7 +1,7 @@
-using Elementum_Cli.Enums;
-using Elementum_Cli.Views.Interfaces;
+using Elementum.Cli.Enums;
+using Elementum.Cli.Views.Interfaces;
 
-namespace Elementum_Cli.Views;
+namespace Elementum.Cli.Views;
 
 /// <summary>Factory and cache for detail views. One instance per <see cref="DetailView"/> for the process lifetime.</summary>
 public static class ViewRegistry

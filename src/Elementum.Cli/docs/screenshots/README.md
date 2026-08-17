@@ -16,7 +16,7 @@ Suggested files (see parent `README.md` — each has its own **###** section and
 5. `cli-karat.png`
 6. `cli-history.png`
 
-After adding a file, uncomment the matching `<!-- ![…](…) -->` line in `Elementum_Cli/README.md`, or replace it with a normal markdown image.
+After adding a file, uncomment the matching `<!-- ![…](…) -->` line in `Elementum.Cli/README.md`, or replace it with a normal markdown image.
 
 ---
 

@@ -1,14 +1,14 @@
 using System.Collections.Concurrent;
 using Elementum.Shared.DTOs;
-using Elementum_Cli.Config;
-using Elementum_Cli.Enums;
-using Elementum_Cli.Logging;
-using Elementum_Cli.Output;
+using Elementum.Cli.Config;
+using Elementum.Cli.Enums;
+using Elementum.Cli.Logging;
+using Elementum.Cli.Output;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
-namespace Elementum_Cli.Api;
+namespace Elementum.Cli.Api;
 
 /// <summary>
 /// Central HTTP client for the CLI. Calls the Elementum API (metals, price history, trading, karat, aggregated).

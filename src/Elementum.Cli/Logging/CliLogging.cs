@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace Elementum_Cli.Logging;
+namespace Elementum.Cli.Logging;
 
 /// <summary>Static logger for the CLI. Use for catch blocks and diagnostics.</summary>
 public static class CliLogging

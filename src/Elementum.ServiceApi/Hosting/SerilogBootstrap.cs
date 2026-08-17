@@ -1,6 +1,6 @@
 using Serilog;
 
-namespace Elementum_ServiceApi.Hosting;
+namespace Elementum.ServiceApi.Hosting;
 
 /// <summary>
 /// Minimal Serilog setup before the generic host and <c>appsettings</c> are fully loaded.

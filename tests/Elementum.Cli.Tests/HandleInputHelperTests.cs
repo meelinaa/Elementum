@@ -1,5 +1,5 @@
-using Elementum_Cli.Enums;
-using Elementum_Cli.Input;
+using Elementum.Cli.Enums;
+using Elementum.Cli.Input;
 
 namespace Elementum.Cli.Tests;
 
@@ -8,8 +8,8 @@ public class HandleInputHelperTests
     [Fact]
     public void HandleInputWithMetals_WhenNoMetalSelected_SetsMetalAndInvokesRender()
     {
-        var app = new Elementum_Cli.AppContext { State = AppState.Detail };
-        Elementum_Cli.AppContext.Current = app;
+        var app = new Elementum.Cli.AppContext { State = AppState.Detail };
+        Elementum.Cli.AppContext.Current = app;
         app.CurrentSelectedMetal = null;
 
         var renderCalls = 0;
@@ -29,8 +29,8 @@ public class HandleInputHelperTests
     [Fact]
     public void HandleInputWithMetals_WhenUnknownKey_DoesNotSetMetalOrInvokeRender()
     {
-        var app = new Elementum_Cli.AppContext { State = AppState.Detail };
-        Elementum_Cli.AppContext.Current = app;
+        var app = new Elementum.Cli.AppContext { State = AppState.Detail };
+        Elementum.Cli.AppContext.Current = app;
         app.CurrentSelectedMetal = null;
 
         var renderCalls = 0;

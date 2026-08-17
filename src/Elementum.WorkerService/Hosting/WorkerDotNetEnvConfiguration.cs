@@ -1,4 +1,4 @@
-namespace Elementum_WorkerService.Hosting;
+namespace Elementum.WorkerService.Hosting;
 
 /// <summary>
 /// Loads optional <c>.env</c> files into the process environment so <c>Configuration</c> can read METALS_API_KEY, connection strings, etc.

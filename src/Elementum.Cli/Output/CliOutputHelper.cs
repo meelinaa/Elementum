@@ -1,8 +1,8 @@
-using Elementum_Cli.Constants;
-using Elementum_Cli.Enums;
-using Elementum_Cli.Views;
+using Elementum.Cli.Constants;
+using Elementum.Cli.Enums;
+using Elementum.Cli.Views;
 
-namespace Elementum_Cli.Output;
+namespace Elementum.Cli.Output;
 
 /// <summary>
 /// Shared console output: view headers/footers, section titles, tables, menu rendering, formatting (currency, percent, colors).

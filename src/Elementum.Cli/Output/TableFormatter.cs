@@ -1,4 +1,4 @@
-namespace Elementum_Cli.Output;
+namespace Elementum.Cli.Output;
 
 /// <summary>
 /// Builds consistent table borders and data rows from column widths.

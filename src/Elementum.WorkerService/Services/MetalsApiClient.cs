@@ -1,11 +1,11 @@
 using Elementum.Shared.Enums;
 using Elementum.Shared.Objects;
-using Elementum_WorkerService.Abstractions;
-using Elementum_WorkerService.Options;
+using Elementum.WorkerService.Abstractions;
+using Elementum.WorkerService.Options;
 using Microsoft.Extensions.Options;
 using System.Net.Http.Json;
 
-namespace Elementum_WorkerService.Services;
+namespace Elementum.WorkerService.Services;
 
 /// <summary>
 /// Client for the GoldAPI (goldapi.io). Fetches current metal prices (XAU, XAG, etc.) in USD.

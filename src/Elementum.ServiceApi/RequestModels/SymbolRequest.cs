@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Elementum_ServiceApi.RequestModels
+namespace Elementum.ServiceApi.RequestModels
 {
     /// <summary>
     /// Request model for route parameter <c>symbol</c> (e.g. XAU, XAG, XPT). Validated via DataAnnotations.

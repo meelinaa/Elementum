@@ -1,8 +1,8 @@
-using Elementum_WorkerService.Jobs;
-using Elementum_WorkerService.Options;
+using Elementum.WorkerService.Jobs;
+using Elementum.WorkerService.Options;
 using Microsoft.Extensions.Options;
 
-namespace Elementum_WorkerService;
+namespace Elementum.WorkerService;
 
 /// <summary>
 /// Hosted background service that runs the metals ingestion job once per day at <see cref="WorkerScheduleOptions.DailyRunTime"/> (local time).

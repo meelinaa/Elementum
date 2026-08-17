@@ -1,8 +1,8 @@
-using Elementum_Cli.Logging;
+using Elementum.Cli.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace Elementum_Cli.Config;
+namespace Elementum.Cli.Config;
 
 /// <summary>CLI configuration. Base URL: env ELEMENTUM_API_BASEURL overrides appsettings.json.</summary>
 public static class CliConfig

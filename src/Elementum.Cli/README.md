@@ -12,10 +12,10 @@ Terminal UI (TUI) for **Elementum**: browse metal prices and history by calling 
 From the repository root:
 
 ```bash
-dotnet run --project Elementum-Services/Elementum_Cli/Elementum_Cli.csproj
+dotnet run --project Elementum-Services/Elementum.Cli/Elementum.Cli.csproj
 ```
 
-Or from this folder (`Elementum-Services/Elementum_Cli`):
+Or from this folder (`Elementum-Services/Elementum.Cli`):
 
 ```bash
 dotnet run
@@ -32,7 +32,7 @@ Ensure the API is running before starting the CLI; otherwise HTTP calls will fai
 | Environment variable `ELEMENTUM_API_BASEURL` | Overrides the base URL (must end with a path like `/api/v1/`). |
 
 
-The CLI loads config from the **application base directory** (next to the built `Elementum_Cli.dll`).
+The CLI loads config from the **application base directory** (next to the built `Elementum.Cli.dll`).
 
 ## Main menu (features)
 

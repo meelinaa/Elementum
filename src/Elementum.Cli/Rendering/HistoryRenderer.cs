@@ -1,11 +1,11 @@
 using System.Globalization;
 using System.Text;
 using Elementum.Shared.DTOs;
-using Elementum_Cli.Constants;
-using Elementum_Cli.Output;
+using Elementum.Cli.Constants;
+using Elementum.Cli.Output;
 using System.Linq;
 
-namespace Elementum_Cli.Rendering;
+namespace Elementum.Cli.Rendering;
 
 /// <summary>Renders the History view: period selection screen, Chp sparkline, and USD bar chart. Extracted for readability and testability.</summary>
 public static class HistoryRenderer

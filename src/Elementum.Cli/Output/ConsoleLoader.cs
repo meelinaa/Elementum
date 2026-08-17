@@ -1,7 +1,7 @@
-using Elementum_Cli.Logging;
+using Elementum.Cli.Logging;
 using Microsoft.Extensions.Logging;
 
-namespace Elementum_Cli.Output;
+namespace Elementum.Cli.Output;
 
 /// <summary>
 /// Runs an async action (e.g. API load + render) without a loading spinner. Logs and shows a generic error on failure.

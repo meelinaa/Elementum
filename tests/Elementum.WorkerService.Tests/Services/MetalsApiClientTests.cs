@@ -1,7 +1,7 @@
-using Elementum_WorkerService.Options;
-using Elementum_WorkerService.Services;
+using Elementum.WorkerService.Options;
+using Elementum.WorkerService.Services;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using MicrosoftOptions = Microsoft.Extensions.Options.Options;
 using Moq;
 
 namespace Elementum.WorkerService.Tests.Services;
@@ -18,7 +18,7 @@ public class MetalsApiClientTests
     [Fact]
     public async Task GetPricesAsync_WhenApiKeyIsEmpty_ReturnsEmptyList()
     {
-        var options = Options.Create(new MetalsApiOptions { ApiKey = "" });
+        var options = MicrosoftOptions.Create(new MetalsApiOptions { ApiKey = "" });
         var logger = new Mock<ILogger<MetalsApiClient>>().Object;
         var client = new MetalsApiClient(CreateHttpClientFactory(), logger, options);
 
@@ -31,7 +31,7 @@ public class MetalsApiClientTests
     [Fact]
     public async Task GetPricesAsync_WhenApiKeyIsNull_ReturnsEmptyList()
     {
-        var options = Options.Create(new MetalsApiOptions { ApiKey = null! });
+        var options = MicrosoftOptions.Create(new MetalsApiOptions { ApiKey = null! });
         var logger = new Mock<ILogger<MetalsApiClient>>().Object;
         var client = new MetalsApiClient(CreateHttpClientFactory(), logger, options);
 
@@ -44,7 +44,7 @@ public class MetalsApiClientTests
     [Fact]
     public async Task GetPricesAsync_WhenApiKeyIsSet_ReturnsListFromApi()
     {
-        var options = Options.Create(new MetalsApiOptions { ApiKey = "test-key" });
+        var options = MicrosoftOptions.Create(new MetalsApiOptions { ApiKey = "test-key" });
         var logger = new Mock<ILogger<MetalsApiClient>>().Object;
         var client = new MetalsApiClient(CreateHttpClientFactory(), logger, options);
 

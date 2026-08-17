@@ -18,16 +18,16 @@ The worker can be installed as a Windows service and will then run automatically
 From the solution root (or project folder) run:
 
 ```powershell
-dotnet publish Elementum-WorkerService\Elementum_WorkerService.csproj -c Release -r win-x64 --self-contained true -o Elementum-WorkerService\bin\Release\net10.0\publish\win-x64
+dotnet publish Elementum-WorkerService\Elementum.WorkerService.csproj -c Release -r win-x64 --self-contained true -o Elementum-WorkerService\bin\Release\net10.0\publish\win-x64
 ```
 
 Alternatively, without `-r win-x64` (framework-dependent; requires .NET runtime installed):
 
 ```powershell
-dotnet publish Elementum-WorkerService\Elementum_WorkerService.csproj -c Release -o Elementum-WorkerService\bin\publish
+dotnet publish Elementum-WorkerService\Elementum.WorkerService.csproj -c Release -o Elementum-WorkerService\bin\publish
 ```
 
-The EXE will be at `Elementum-WorkerService\bin\publish\Elementum_WorkerService.exe` (or under the self-contained path above).
+The EXE will be at `Elementum-WorkerService\bin\publish\Elementum.WorkerService.exe` (or under the self-contained path above).
 
 ## 2. Install the service (one-time)
 
@@ -36,7 +36,7 @@ Run **as Administrator**. `binpath=` must be the **full path to the EXE** (use q
 Self-contained (win-x64):
 
 ```cmd
-sc.exe create "Elementum-WorkerService" binpath= "C:\Users\..\Elementum_WorkerService.exe" start= auto
+sc.exe create "Elementum-WorkerService" binpath= "C:\Users\..\Elementum.WorkerService.exe" start= auto
 ```
 
 Optional description:

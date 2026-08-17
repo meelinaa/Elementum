@@ -1,4 +1,4 @@
-using Elementum_Cli.Constants;
+using Elementum.Cli.Constants;
 
 namespace Elementum.Cli.Tests;
 
@@ -7,7 +7,7 @@ public class AppContextTests
     [Fact]
     public void InitializeMenuItems_CreatesExpectedMenuEntries()
     {
-        var app = new Elementum_Cli.AppContext();
+        var app = new Elementum.Cli.AppContext();
         app.InitializeMenuItems();
 
         Assert.Contains(app.MenuItems, mi => mi.Text == CliStrings.MenuItemDashboard);

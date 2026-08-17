@@ -1,7 +1,7 @@
 using Elementum.Shared.DTOs;
-using Elementum_ServiceApi.Controllers;
-using Elementum_ServiceApi.RequestModels;
-using Elementum_ServiceApi.Services.Interfaces;
+using Elementum.ServiceApi.Controllers;
+using Elementum.ServiceApi.RequestModels;
+using Elementum.ServiceApi.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -81,7 +81,8 @@ public class ApiControllerTests
 
         var actionResult = await _controller.GetPriceHistoryByMetalSymbolLatest(request, CancellationToken.None);
 
-        Assert.Equal(dto, actionResult.Value);
+        var ok = Assert.IsType<OkObjectResult>(actionResult.Result);
+        Assert.Equal(dto, ok.Value);
         _apiServiceMock.Verify(s => s.GetPriceHistoryByMetalSymbolLatest("XAG", It.IsAny<CancellationToken>()), Times.Once);
     }
 

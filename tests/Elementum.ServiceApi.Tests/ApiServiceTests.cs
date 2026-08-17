@@ -1,7 +1,7 @@
 using Elementum.Infrastructure.Data;
 using Elementum.Infrastructure.Data.Interfaces;
 using Elementum.Shared.Objects;
-using Elementum_ServiceApi.Services;
+using Elementum.ServiceApi.Services;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 

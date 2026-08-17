@@ -1,10 +1,10 @@
 using Elementum.Infrastructure.Data;
 using Elementum.Shared.Objects;
-using Elementum_WorkerService.Abstractions;
+using Elementum.WorkerService.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Elementum_WorkerService.Services;
+namespace Elementum.WorkerService.Services;
 
 /// <summary>
 /// Persists API price data into the <c>price_history</c> table. Resolves <c>metal_id</c> from the <c>metals</c> table by symbol.

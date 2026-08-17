@@ -1,12 +1,12 @@
 using Elementum.Shared.DTOs;
-using Elementum_Cli.Api;
-using Elementum_Cli.Constants;
-using Elementum_Cli.Output;
-using Elementum_Cli.Views.Interfaces;
+using Elementum.Cli.Api;
+using Elementum.Cli.Constants;
+using Elementum.Cli.Output;
+using Elementum.Cli.Views.Interfaces;
 using System.Text.Json;
 using System.Linq;
 
-namespace Elementum_Cli.Views;
+namespace Elementum.Cli.Views;
 
 /// <summary>
 /// Displays the current market overview: latest price per metal in a table (ID, Name, Exchange, Price USD, Chp).

@@ -1,7 +1,7 @@
-using Elementum_Cli.Navigation;
-using Elementum_Cli.Output;
+using Elementum.Cli.Navigation;
+using Elementum.Cli.Output;
 
-namespace Elementum_Cli.Hosting;
+namespace Elementum.Cli.Hosting;
 
 /// <summary>
 /// Runs the interactive menu loop: initializes <see cref="AppContext"/>, draws the main menu, and delegates keys to <see cref="CliNavigation"/>.

@@ -2,10 +2,10 @@ using Elementum.Infrastructure.Data.Interfaces;
 using Elementum.Shared.DTOs;
 using Elementum.Shared.Mapping;
 using Elementum.Shared.Objects;
-using Elementum_ServiceApi.Services.Interfaces;
+using Elementum.ServiceApi.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace Elementum_ServiceApi.Services
+namespace Elementum.ServiceApi.Services
 {
     /// <summary>
     /// Service layer for the Elementum API. Delegates data access to <see cref="IElementumDbContext"/>.

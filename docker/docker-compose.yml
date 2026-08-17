@@ -2,7 +2,7 @@
 # Docker Compose für Elementum (Datenbank + API)
 # Start: docker compose up -d
 # Stopp: docker compose down
-# Ausführung: aus diesem Ordner (Elementum-Database)
+# Ausführung: aus diesem Ordner (docker)
 # =============================================================================
 
 services:
@@ -41,12 +41,12 @@ services:
       start_period: 30s
 
   # ---------------------------------------------------------------------------
-  # Elementum-ServiceApi (ASP.NET Core)
+  # Elementum.ServiceApi (ASP.NET Core)
   # ---------------------------------------------------------------------------
   api:
     build:
-      context: ../Elementum-Services
-      dockerfile: Elementum-ServiceApi/Dockerfile
+      context: ../src
+      dockerfile: Elementum.ServiceApi/Dockerfile
     container_name: elementum-api
     restart: unless-stopped
     ports:
@@ -59,18 +59,18 @@ services:
         condition: service_healthy
 
   # ---------------------------------------------------------------------------
-  # Elementum-WorkerService (Background worker)
+  # Elementum.WorkerService (Background worker)
   # ---------------------------------------------------------------------------
   worker:
     build:
-      context: ../Elementum-Services
-      dockerfile: Elementum-WorkerService/Dockerfile
+      context: ../src
+      dockerfile: Elementum.WorkerService/Dockerfile
     container_name: elementum-worker
     restart: unless-stopped
     ports:
       - "${WORKER_PORT:-5094}:5094"
     env_file:
-      - ../Elementum-Services/Elementum-WorkerService/.env
+      - ../src/Elementum.WorkerService/.env
     environment:
       # Worker listens on this port (Program.cs uses configuration key "Urls")
       Urls: "http://+:${WORKER_PORT:-5094}"

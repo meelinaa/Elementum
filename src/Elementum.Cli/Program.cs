@@ -1,6 +1,6 @@
-using Elementum_Cli.Hosting;
+using Elementum.Cli.Hosting;
 
-namespace Elementum_Cli;
+namespace Elementum.Cli;
 
 /// <summary>
 /// Entry point for the Elementum CLI. Applies console configuration and starts the menu host.

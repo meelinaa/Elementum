@@ -1,4 +1,4 @@
-using Elementum_ServiceApi.Hosting;
+using Elementum.ServiceApi.Hosting;
 using Serilog;
 
 // Minimal bootstrap logger so failures before host build are visible on the console.

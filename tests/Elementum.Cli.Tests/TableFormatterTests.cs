@@ -1,4 +1,4 @@
-using Elementum_Cli.Output;
+using Elementum.Cli.Output;
 
 namespace Elementum.Cli.Tests;
 

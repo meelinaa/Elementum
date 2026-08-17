@@ -1,13 +1,13 @@
 using Elementum.Shared.DTOs;
-using Elementum_Cli.Enums;
-using Elementum_Cli.Constants;
-using Elementum_Cli.Input;
-using Elementum_Cli.Output;
-using Elementum_Cli.Rendering;
-using Elementum_Cli.Views.Interfaces;
-using Elementum_Cli.Api;
+using Elementum.Cli.Enums;
+using Elementum.Cli.Constants;
+using Elementum.Cli.Input;
+using Elementum.Cli.Output;
+using Elementum.Cli.Rendering;
+using Elementum.Cli.Views.Interfaces;
+using Elementum.Cli.Api;
 
-namespace Elementum_Cli.Views;
+namespace Elementum.Cli.Views;
 
 /// <summary>
 /// Two-step view: first select metal, then select period (Daily/Weekly/Monthly/Yearly). Renders sparkline and bar chart from aggregated history.

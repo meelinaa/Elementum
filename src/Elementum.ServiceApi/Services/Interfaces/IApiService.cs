@@ -1,6 +1,6 @@
 using Elementum.Shared.DTOs;
 
-namespace Elementum_ServiceApi.Services.Interfaces
+namespace Elementum.ServiceApi.Services.Interfaces
 {
     /// <summary>
     /// Application service for the Elementum API. Exposes read operations for metals and price history.

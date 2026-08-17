@@ -17,9 +17,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Elementum-ServiceApi\Elementum_ServiceApi.csproj" />
-    <ProjectReference Include="..\Elementum.Infrastructure\Elementum.Infrastructure.csproj" />
-    <ProjectReference Include="..\Elementum.Shared\Elementum.Shared.csproj" />
+    <ProjectReference Include="..\..\src\Elementum.ServiceApi\Elementum.ServiceApi.csproj" />
+    <ProjectReference Include="..\..\src\Elementum.Infrastructure\Elementum.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Elementum.Shared\Elementum.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,5 +1,5 @@
-using Elementum_Cli.Constants;
-using Elementum_Cli.Rendering;
+using Elementum.Cli.Constants;
+using Elementum.Cli.Rendering;
 
 namespace Elementum.Cli.Tests;
 

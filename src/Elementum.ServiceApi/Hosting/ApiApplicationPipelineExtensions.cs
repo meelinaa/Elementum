@@ -1,10 +1,10 @@
-using Elementum_ServiceApi.Middleware;
+using Elementum.ServiceApi.Middleware;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
 using System.Text.Json;
 
-namespace Elementum_ServiceApi.Hosting;
+namespace Elementum.ServiceApi.Hosting;
 
 /// <summary>
 /// Configures the HTTP request pipeline: correlation IDs, timeouts, logging, exception handling, CORS, authorization, and health endpoints.

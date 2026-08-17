@@ -1,6 +1,6 @@
 using System.Diagnostics.Metrics;
 
-namespace Elementum_WorkerService.Observability;
+namespace Elementum.WorkerService.Observability;
 
 /// <summary>
 /// Metrics for the metals ingestion job (runs, errors) for production observability.

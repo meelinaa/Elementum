@@ -1,6 +1,6 @@
-using Elementum_Cli.Enums;
+using Elementum.Cli.Enums;
 
-namespace Elementum_Cli.Models;
+namespace Elementum.Cli.Models;
 
 /// <summary>
 /// One entry in the main menu. Links display text, selectability, optional shortcut key, and the view to open on selection.

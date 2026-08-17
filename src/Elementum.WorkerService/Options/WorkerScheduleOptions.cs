@@ -1,4 +1,4 @@
-namespace Elementum_WorkerService.Options;
+namespace Elementum.WorkerService.Options;
 
 /// <summary>
 /// Scheduling options for the background <see cref="Worker"/> (daily metals ingestion).
