@@ -112,17 +112,21 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
     public IQueryable<PriceHistory> QueryPriceHistoryAll() =>
         PriceHistory.Include(x => x.Metal);
 
-    /// <summary>Latest price history entry per metal. Groups in memory so Include(Metal) is preserved.</summary>
+    /// <summary>Latest price history entry per metal. Evaluated on database server side to avoid in-memory table scans.</summary>
     public async Task<IEnumerable<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken ct)
     {
-        var all = await PriceHistory
-            .Include(x => x.Metal)
+        var latestIds = await PriceHistory
+            .GroupBy(x => x.MetalId)
+            .Select(g => g.Max(x => x.Id))
             .ToListAsync(ct);
 
-        return all
-            .GroupBy(x => x.MetalId)
-            .Select(g => g.OrderByDescending(x => x.EntryDate).First())
-            .ToList();
+        if (latestIds.Count == 0)
+            return [];
+
+        return await PriceHistory
+            .Include(x => x.Metal)
+            .Where(x => latestIds.Contains(x.Id))
+            .ToListAsync(ct);
     }
 
     /// <inheritdoc />
