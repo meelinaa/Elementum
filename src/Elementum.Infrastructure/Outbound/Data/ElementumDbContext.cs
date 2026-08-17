@@ -21,14 +21,24 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
     /// <summary>DbSet for distributed locking table.</summary>
     public DbSet<DistributedLockEntity> DistributedLocks => Set<DistributedLockEntity>();
 
-    /// <summary>Returns true if at least one row in price_history has EntryDate equal to today (UTC).</summary>
+    /// <summary>Returns true if all configured metals in the catalog have price history entries for today (UTC).</summary>
     public async Task<bool> IsDataAlreadyIngestedToday(CancellationToken ct)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        return await PriceHistory.AnyAsync(x => x.EntryDate == today, ct);
+        var totalMetalsCount = await Metals.CountAsync(ct);
+        if (totalMetalsCount == 0)
+            return false;
+
+        var ingestedMetalsCountToday = await PriceHistory
+            .Where(x => x.EntryDate == today)
+            .Select(x => x.MetalId)
+            .Distinct()
+            .CountAsync(ct);
+
+        return ingestedMetalsCountToday >= totalMetalsCount;
     }
 
-    /// <summary>Saves incoming daily prices from external sources to the database.</summary>
+    /// <summary>Saves incoming daily prices from external sources to the database using idempotent upsert.</summary>
     public async Task SavePricesAsync(IReadOnlyList<DailyPrices> prices, CancellationToken cancellationToken = default)
     {
         if (prices.Count == 0)
@@ -43,44 +53,70 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
             {
                 continue;
             }
-            var row = new PriceHistory
+
+            var currency = string.IsNullOrEmpty(api.Currency) ? "USD" : api.Currency;
+
+            var existingRow = await PriceHistory
+                .FirstOrDefaultAsync(x => x.MetalId == metal.Id && x.Currency == currency && x.EntryDate == today, cancellationToken);
+
+            if (existingRow != null)
             {
-                MetalId = metal.Id,
-                Currency = api.Currency,
-                Exchange = api.Exchange,
-                Symbol = api.Symbol,
-                ReferenceTimestamp = api.Timestamp.ToString(CultureInfo.InvariantCulture),
-                OpenTime = api.OpenTime.ToString(CultureInfo.InvariantCulture),
-                EntryDate = today,
-                Price = api.Price,
-                PrevClosePrice = api.PrevClosePrice,
-                OpenPrice = api.OpenPrice,
-                LowPrice = api.LowPrice,
-                HighPrice = api.HighPrice,
-                Ch = api.Ch,
-                Chp = api.Chp,
-                Ask = api.Ask,
-                Bid = api.Bid,
-                PriceGram24k = api.PriceGram24k,
-                PriceGram22k = api.PriceGram22k,
-                PriceGram21k = api.PriceGram21k,
-                PriceGram20k = api.PriceGram20k,
-                PriceGram18k = api.PriceGram18k,
-                PriceGram16k = api.PriceGram16k,
-                PriceGram14k = api.PriceGram14k,
-                PriceGram10k = api.PriceGram10k
-            };
-            PriceHistory.Add(row);
+                existingRow.Exchange = api.Exchange;
+                existingRow.Symbol = api.Symbol;
+                existingRow.ReferenceTimestamp = api.Timestamp.ToString(CultureInfo.InvariantCulture);
+                existingRow.OpenTime = api.OpenTime.ToString(CultureInfo.InvariantCulture);
+                existingRow.Price = api.Price;
+                existingRow.PrevClosePrice = api.PrevClosePrice;
+                existingRow.OpenPrice = api.OpenPrice;
+                existingRow.LowPrice = api.LowPrice;
+                existingRow.HighPrice = api.HighPrice;
+                existingRow.Ch = api.Ch;
+                existingRow.Chp = api.Chp;
+                existingRow.Ask = api.Ask;
+                existingRow.Bid = api.Bid;
+                existingRow.PriceGram24k = api.PriceGram24k;
+                existingRow.PriceGram22k = api.PriceGram22k;
+                existingRow.PriceGram21k = api.PriceGram21k;
+                existingRow.PriceGram20k = api.PriceGram20k;
+                existingRow.PriceGram18k = api.PriceGram18k;
+                existingRow.PriceGram16k = api.PriceGram16k;
+                existingRow.PriceGram14k = api.PriceGram14k;
+                existingRow.PriceGram10k = api.PriceGram10k;
+            }
+            else
+            {
+                var row = new PriceHistory
+                {
+                    MetalId = metal.Id,
+                    Currency = currency,
+                    Exchange = api.Exchange,
+                    Symbol = api.Symbol,
+                    ReferenceTimestamp = api.Timestamp.ToString(CultureInfo.InvariantCulture),
+                    OpenTime = api.OpenTime.ToString(CultureInfo.InvariantCulture),
+                    EntryDate = today,
+                    Price = api.Price,
+                    PrevClosePrice = api.PrevClosePrice,
+                    OpenPrice = api.OpenPrice,
+                    LowPrice = api.LowPrice,
+                    HighPrice = api.HighPrice,
+                    Ch = api.Ch,
+                    Chp = api.Chp,
+                    Ask = api.Ask,
+                    Bid = api.Bid,
+                    PriceGram24k = api.PriceGram24k,
+                    PriceGram22k = api.PriceGram22k,
+                    PriceGram21k = api.PriceGram21k,
+                    PriceGram20k = api.PriceGram20k,
+                    PriceGram18k = api.PriceGram18k,
+                    PriceGram16k = api.PriceGram16k,
+                    PriceGram14k = api.PriceGram14k,
+                    PriceGram10k = api.PriceGram10k
+                };
+                PriceHistory.Add(row);
+            }
         }
 
-        try
-        {
-            await SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException)
-        {
-            // Ignore duplicate entries on same date
-        }
+        await SaveChangesAsync(cancellationToken);
     }
 
     /// <inheritdoc />
