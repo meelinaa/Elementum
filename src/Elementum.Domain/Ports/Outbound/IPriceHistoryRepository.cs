@@ -1,10 +1,10 @@
 using Elementum.Domain.Entities;
 using Elementum.Domain.Models;
 
-namespace Elementum.Domain.Ports;
+namespace Elementum.Domain.Ports.Outbound;
 
 /// <summary>
-/// Secondary / Driven Port: Abstraction for price history and metals persistence and querying.
+/// Secondary / Driven Outbound Port: Abstraction for price history and metals persistence and querying.
 /// </summary>
 public interface IPriceHistoryRepository
 {

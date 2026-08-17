@@ -1,6 +1,6 @@
 using Elementum.Application.DTOs;
 using Elementum.Application.Mapping;
-using Elementum.Domain.Ports;
+using Elementum.Domain.Ports.Outbound;
 
 namespace Elementum.Application.UseCases.Metals;
 

@@ -1,6 +1,6 @@
 using Elementum.Application.UseCases.Ingestion;
 using Elementum.Domain.Models;
-using Elementum.Domain.Ports;
+using Elementum.Domain.Ports.Outbound;
 using Microsoft.Extensions.Logging;
 using Moq;
 

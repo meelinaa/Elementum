@@ -1,4 +1,4 @@
-namespace Elementum.Domain.Ports;
+namespace Elementum.Domain.Ports.Outbound;
 
 /// <summary>
 /// Represents an acquired or unacquired distributed lock handle.
@@ -13,7 +13,7 @@ public interface IDistributedLock : IAsyncDisposable, IDisposable
 }
 
 /// <summary>
-/// Secondary / Driven Port: Provides distributed locking to prevent duplicate concurrent execution across instances.
+/// Secondary / Driven Outbound Port: Provides distributed locking to prevent duplicate concurrent execution across instances.
 /// </summary>
 public interface IDistributedLockProvider
 {

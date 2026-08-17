@@ -1,5 +1,5 @@
 using Elementum.Application.UseCases.Prices;
-using Elementum.Domain.Ports;
+using Elementum.Domain.Ports.Outbound;
 using Elementum.Infrastructure.Caching;
 using Elementum.Infrastructure.Data.Interfaces;
 using Elementum.Infrastructure.Data.Resilience;

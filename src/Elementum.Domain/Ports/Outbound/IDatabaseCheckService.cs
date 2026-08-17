@@ -1,7 +1,7 @@
-namespace Elementum.Domain.Ports;
+namespace Elementum.Domain.Ports.Outbound;
 
 /// <summary>
-/// Secondary / Driven Port: Checks database connectivity and health.
+/// Secondary / Driven Outbound Port: Checks database connectivity and health.
 /// </summary>
 public interface IDatabaseCheckService
 {

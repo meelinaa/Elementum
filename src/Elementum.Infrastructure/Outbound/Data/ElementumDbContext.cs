@@ -12,8 +12,6 @@ namespace Elementum.Infrastructure.Data;
 /// </summary>
 public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : DbContext(options), IElementumDbContext
 {
-    #region SET
-
     /// <summary>DbSet for the <c>metals</c> table.</summary>
     public DbSet<Metals> Metals => Set<Metals>();
 
@@ -22,10 +20,6 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
 
     /// <summary>DbSet for distributed locking table.</summary>
     public DbSet<DistributedLockEntity> DistributedLocks => Set<DistributedLockEntity>();
-
-    #endregion SET
-
-    #region GET & MUTATIONS
 
     /// <summary>Returns true if at least one row in price_history has EntryDate equal to today (UTC).</summary>
     public async Task<bool> IsDataAlreadyIngestedToday(CancellationToken ct)
@@ -89,8 +83,6 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
         }
     }
 
-    #region Metals
-
     /// <inheritdoc />
     public IQueryable<Metals> QueryMetals() => Metals;
 
@@ -105,10 +97,6 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
     {
         return await Metals.FirstOrDefaultAsync(x => x.Symbol == symbol, ct);
     }
-
-    #endregion Metals
-
-    #region PriceHistory
 
     /// <summary>Returns the most recent price history row for the given metal symbol (by EntryDate desc).</summary>
     public async Task<PriceHistory?> GetPriceHistoryByMetalSymbolLatest(string symbol, CancellationToken ct)
@@ -273,11 +261,6 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
         return result;
     }
 
-    #endregion PriceHistory
-    #endregion GET & MUTATIONS
-
-    #region CREATING
-
     /// <summary>Configures the entity model: table names, keys, and column mappings.</summary>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -322,6 +305,4 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
             e.Property(x => x.ExpiresAtUtc).HasColumnName("expires_at_utc").IsRequired();
         });
     }
-
-    #endregion CREATING
 }

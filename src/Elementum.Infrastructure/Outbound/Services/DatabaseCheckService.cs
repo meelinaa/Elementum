@@ -1,4 +1,4 @@
-using Elementum.Domain.Ports;
+using Elementum.Domain.Ports.Outbound;
 using Elementum.Infrastructure.Data;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

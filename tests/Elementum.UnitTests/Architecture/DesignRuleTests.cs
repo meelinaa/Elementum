@@ -45,9 +45,9 @@ public class DesignRuleTests
     [Fact]
     public void DomainPorts_Should_BePublicInterfaces()
     {
-        var result = Types.InAssembly(typeof(Elementum.Domain.Ports.IPriceHistoryRepository).Assembly)
+        var result = Types.InAssembly(typeof(Elementum.Domain.Ports.Outbound.IPriceHistoryRepository).Assembly)
             .That()
-            .ResideInNamespace("Elementum.Domain.Ports")
+            .ResideInNamespaceStartingWith("Elementum.Domain.Ports")
             .Should()
             .BePublic()
             .And()

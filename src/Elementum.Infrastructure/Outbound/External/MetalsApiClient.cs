@@ -2,7 +2,7 @@ using System.Net.Http.Json;
 using Elementum.Application.Options;
 using Elementum.Domain.Enums;
 using Elementum.Domain.Models;
-using Elementum.Domain.Ports;
+using Elementum.Domain.Ports.Outbound;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 

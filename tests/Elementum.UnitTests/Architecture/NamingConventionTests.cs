@@ -10,7 +10,7 @@ public class NamingConventionTests
     [Fact]
     public void DomainInterfaces_Should_StartWithI()
     {
-        var result = Types.InAssembly(typeof(Elementum.Domain.Ports.IPriceHistoryRepository).Assembly)
+        var result = Types.InAssembly(typeof(Elementum.Domain.Ports.Outbound.IPriceHistoryRepository).Assembly)
             .That()
             .AreInterfaces()
             .Should()

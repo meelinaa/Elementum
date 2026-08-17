@@ -1,5 +1,5 @@
 using Elementum.Domain.Entities;
-using Elementum.Domain.Ports;
+using Elementum.Domain.Ports.Outbound;
 using Elementum.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
