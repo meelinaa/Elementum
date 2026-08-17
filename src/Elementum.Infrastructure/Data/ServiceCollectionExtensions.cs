@@ -101,7 +101,7 @@ public static class ServiceCollectionExtensions
         Action<ElementumDbContextResilienceOptions>? configureResilience = null)
     {
         services.AddDbContext<ElementumDbContext>(options =>
-            options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+            options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 36))));
 
         if (configureResilience != null)
         {

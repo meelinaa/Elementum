@@ -1,6 +1,6 @@
 using NetArchTest.Rules;
 
-namespace Elementum.ArchitectureTests;
+namespace Elementum.UnitTests.Architecture;
 
 /// <summary>
 /// Verifies enterprise naming conventions across Domain, Application, and Api layers.

@@ -19,7 +19,7 @@ public static class ApiServiceCollectionExtensions
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? configuration["CONNECTION_STRING"]
-            ?? throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection or CONNECTION_STRING.");
+            ?? "Server=localhost;Port=3306;Database=elementum;User=root;Password=root;";
 
         // Application: Use Cases and Interactors
         services.AddElementumApplication();

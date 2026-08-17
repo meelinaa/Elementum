@@ -16,11 +16,11 @@ public static class CliConfig
     public static string ApiBaseUrl => _baseUrl.Value;
 
     /// <summary>Trims the URL and ensures it ends with a single trailing slash.</summary>
-    internal static string NormalizeBaseUrl(string baseUrl)
+    public static string NormalizeBaseUrl(string baseUrl)
         => baseUrl.Trim().TrimEnd('/') + "/";
 
     /// <summary>Returns the API base URL: env overrides file, file overrides default.</summary>
-    internal static string ResolveApiBaseUrl(string? fromEnv, string? fromFile)
+    public static string ResolveApiBaseUrl(string? fromEnv, string? fromFile)
     {
         if (!string.IsNullOrWhiteSpace(fromEnv))
             return NormalizeBaseUrl(fromEnv);

@@ -8,11 +8,7 @@
     <Project Path="src/Elementum.Cli/Elementum.Cli.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Elementum.Domain.Tests/Elementum.Domain.Tests.csproj" />
-    <Project Path="tests/Elementum.ArchitectureTests/Elementum.ArchitectureTests.csproj" />
-    <Project Path="tests/Elementum.Application.Tests/Elementum.Application.Tests.csproj" />
-    <Project Path="tests/Elementum.Api.Tests/Elementum.Api.Tests.csproj" />
-    <Project Path="tests/Elementum.Worker.Tests/Elementum.Worker.Tests.csproj" />
-    <Project Path="tests/Elementum.Cli.Tests/Elementum.Cli.Tests.csproj" />
+    <Project Path="tests/Elementum.UnitTests/Elementum.UnitTests.csproj" />
+    <Project Path="tests/Elementum.IntegrationTests/Elementum.IntegrationTests.csproj" />
   </Folder>
 </Solution>

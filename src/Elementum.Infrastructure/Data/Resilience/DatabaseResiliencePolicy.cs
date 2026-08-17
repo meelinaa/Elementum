@@ -16,6 +16,8 @@ public static class DatabaseResiliencePolicy
     {
         if (ex is MySqlConnector.MySqlException mySql && mySql.IsTransient)
             return true;
+        if (ex is System.IO.IOException or System.Net.Sockets.SocketException)
+            return true;
         if (ex is TimeoutException or OperationCanceledException)
             return false;
         if (ex.InnerException != null)

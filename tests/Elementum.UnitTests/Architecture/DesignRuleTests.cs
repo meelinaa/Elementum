@@ -1,10 +1,11 @@
 using Elementum.Application.UseCases.Ingestion;
 using Elementum.Application.UseCases.Metals;
 using Elementum.Application.UseCases.Prices;
+using Elementum.Infrastructure.Caching;
 using Microsoft.AspNetCore.Mvc;
 using NetArchTest.Rules;
 
-namespace Elementum.ArchitectureTests;
+namespace Elementum.UnitTests.Architecture;
 
 /// <summary>
 /// Verifies object-oriented design and encapsulation rules.

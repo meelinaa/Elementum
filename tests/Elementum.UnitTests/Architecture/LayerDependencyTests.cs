@@ -1,6 +1,6 @@
 using NetArchTest.Rules;
 
-namespace Elementum.ArchitectureTests;
+namespace Elementum.UnitTests.Architecture;
 
 /// <summary>
 /// Enforces hexagonal architecture dependency boundaries across all solution layers.
