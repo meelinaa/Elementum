@@ -1,4 +1,5 @@
 using Elementum.Application.UseCases.Ingestion;
+using Elementum.Domain.Ports;
 using Elementum.Worker.Observability;
 using Microsoft.Extensions.Logging;
 
@@ -6,27 +7,43 @@ namespace Elementum.Worker.Jobs;
 
 /// <summary>
 /// Orchestrates a single run of metals price ingestion using the <see cref="IIngestPricesUseCase"/>.
+/// Uses <see cref="IDistributedLockProvider"/> to prevent duplicate concurrent runs in multi-instance environments.
 /// </summary>
 public class MetalsIngestionJob
 {
+    private const string IngestionLockResource = "lock:job:metals_ingestion";
     private readonly ILogger<MetalsIngestionJob> _logger;
     private readonly IIngestPricesUseCase _ingestPricesUseCase;
     private readonly IngestionMetrics _metrics;
+    private readonly IDistributedLockProvider _lockProvider;
 
     public MetalsIngestionJob(
         ILogger<MetalsIngestionJob> logger,
         IIngestPricesUseCase ingestPricesUseCase,
-        IngestionMetrics metrics)
+        IngestionMetrics metrics,
+        IDistributedLockProvider lockProvider)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _ingestPricesUseCase = ingestPricesUseCase ?? throw new ArgumentNullException(nameof(ingestPricesUseCase));
         _metrics = metrics ?? throw new ArgumentNullException(nameof(metrics));
+        _lockProvider = lockProvider ?? throw new ArgumentNullException(nameof(lockProvider));
     }
 
     public async Task RunAsync(CancellationToken cancellationToken = default)
     {
+        await using var lockHandle = await _lockProvider.TryAcquireLockAsync(
+            IngestionLockResource,
+            TimeSpan.FromSeconds(5),
+            cancellationToken);
+
+        if (!lockHandle.IsAcquired)
+        {
+            _logger.LogWarning("Ingestion job skipped: another worker instance currently holds distributed lock '{Resource}'.", IngestionLockResource);
+            return;
+        }
+
         _metrics.RecordRun();
-        _logger.LogInformation("Metals ingestion job started.");
+        _logger.LogInformation("Metals ingestion job started (Distributed lock acquired).");
         try
         {
             await _ingestPricesUseCase.ExecuteAsync(cancellationToken);

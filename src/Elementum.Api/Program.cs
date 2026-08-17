@@ -1,33 +1,18 @@
 using Elementum.Api.Hosting;
 using Serilog;
 
-// Minimal bootstrap logger so failures before host build are visible on the console.
 SerilogBootstrap.InitializeGlobalLogger();
 
-try
-{
-    var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
-    // Structured logging: sinks and levels from appsettings (Serilog section).
-    builder.Host.UseElementumSerilog();
+builder.Host.UseElementumSerilog();
+builder.Services.AddElementumApiServices(builder.Configuration);
 
-    builder.Services.AddElementumApiServices(builder.Configuration);
+var app = builder.Build();
 
-    var app = builder.Build();
+app.UseElementumApiPipeline();
 
-    app.UseElementumApiPipeline();
-
-    Log.Information("Elementum-ServiceApi started");
-    app.Run();
-}
-catch (Exception ex)
-{
-    Log.Fatal(ex, "Application terminated unexpectedly");
-}
-finally
-{
-    Log.CloseAndFlush();
-}
+Log.Information("Elementum-ServiceApi started");
+app.Run();
 
 public partial class Program { }
-

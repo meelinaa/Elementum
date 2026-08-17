@@ -24,28 +24,22 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     {
         builder.ConfigureServices(services =>
         {
-            var efServices = services.Where(d =>
-                (d.ServiceType.Namespace != null && (
-                    d.ServiceType.Namespace.StartsWith("Microsoft.EntityFrameworkCore") ||
-                    d.ServiceType.Namespace.StartsWith("Pomelo.EntityFrameworkCore"))) ||
-                d.ServiceType == typeof(DbContextOptions<ElementumDbContext>) ||
-                d.ServiceType == typeof(DbContextOptions) ||
-                d.ServiceType == typeof(ElementumDbContext) ||
-                d.ServiceType == typeof(IElementumDbContext) ||
-                d.ServiceType == typeof(IPriceHistoryRepository)).ToList();
-
-            foreach (var descriptor in efServices)
+            var dbOptionsDescriptor = services.SingleOrDefault(
+                d => d.ServiceType == typeof(DbContextOptions<ElementumDbContext>));
+            if (dbOptionsDescriptor != null)
             {
-                services.Remove(descriptor);
+                services.Remove(dbOptionsDescriptor);
             }
+
+            var internalSp = new ServiceCollection()
+                .AddEntityFrameworkInMemoryDatabase()
+                .BuildServiceProvider();
 
             services.AddDbContext<ElementumDbContext>(options =>
             {
                 options.UseInMemoryDatabase(_databaseName, _dbRoot);
+                options.UseInternalServiceProvider(internalSp);
             });
-
-            services.AddScoped<IElementumDbContext>(sp => sp.GetRequiredService<ElementumDbContext>());
-            services.AddScoped<IPriceHistoryRepository>(sp => sp.GetRequiredService<ElementumDbContext>());
         });
     }
 

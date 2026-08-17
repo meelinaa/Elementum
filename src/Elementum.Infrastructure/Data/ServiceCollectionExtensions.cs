@@ -34,6 +34,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPriceHistoryRepository>(sp => sp.GetRequiredService<IElementumDbContext>());
         services.AddSingleton<IDatabaseCheckService, DatabaseCheckService>();
         services.AddSingleton<IMetalsApiClient, MetalsApiClient>();
+        services.AddSingleton<IDistributedLockProvider, Locking.EfCoreDistributedLockProvider>();
 
         // Register HTTP client for GoldAPI with Polly transient retry policy
         services.AddHttpClient("GoldApi")

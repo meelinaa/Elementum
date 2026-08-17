@@ -20,6 +20,9 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
     /// <summary>DbSet for the <c>price_history</c> table.</summary>
     public DbSet<PriceHistory> PriceHistory => Set<PriceHistory>();
 
+    /// <summary>DbSet for distributed locking table.</summary>
+    public DbSet<DistributedLockEntity> DistributedLocks => Set<DistributedLockEntity>();
+
     #endregion SET
 
     #region GET & MUTATIONS
@@ -307,6 +310,16 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
             e.Property(x => x.PriceGram16k).HasColumnName("price_gram_16k");
             e.Property(x => x.PriceGram14k).HasColumnName("price_gram_14k");
             e.Property(x => x.PriceGram10k).HasColumnName("price_gram_10k");
+        });
+
+        modelBuilder.Entity<DistributedLockEntity>(e =>
+        {
+            e.ToTable("distributed_locks");
+            e.HasKey(x => x.Resource);
+            e.Property(x => x.Resource).HasColumnName("resource").HasMaxLength(128).IsRequired();
+            e.Property(x => x.AcquiredBy).HasColumnName("acquired_by").HasMaxLength(128).IsRequired();
+            e.Property(x => x.AcquiredAtUtc).HasColumnName("acquired_at_utc").IsRequired();
+            e.Property(x => x.ExpiresAtUtc).HasColumnName("expires_at_utc").IsRequired();
         });
     }
 
