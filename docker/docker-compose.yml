@@ -1,5 +1,5 @@
 # =============================================================================
-# Docker Compose für Elementum (Datenbank + API)
+# Docker Compose für Elementum (Datenbank + Redis + API + Worker)
 # Start: docker compose up -d
 # Stopp: docker compose down
 # Ausführung: aus diesem Ordner (docker)
@@ -41,6 +41,21 @@ services:
       start_period: 30s
 
   # ---------------------------------------------------------------------------
+  # Redis (L2 Distributed Cache für HybridCache)
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: elementum-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
   # Elementum.Api (ASP.NET Core)
   # ---------------------------------------------------------------------------
   api:
@@ -53,9 +68,12 @@ services:
       - "${API_PORT:-8080}:8080"
     environment:
       ConnectionStrings__DefaultConnection: "Server=mysql;Port=3306;Database=${MYSQL_DATABASE};User=${MYSQL_USER};Password=${MYSQL_PASSWORD};"
+      ConnectionStrings__Redis: "redis:6379"
       ASPNETCORE_ENVIRONMENT: Production
     depends_on:
       mysql:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   # ---------------------------------------------------------------------------
@@ -76,8 +94,11 @@ services:
       Urls: "http://+:${WORKER_PORT:-5094}"
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__DefaultConnection: "Server=mysql;Port=3306;Database=${MYSQL_DATABASE};User=${MYSQL_USER};Password=${MYSQL_PASSWORD};"
+      ConnectionStrings__Redis: "redis:6379"
     depends_on:
       mysql:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
 volumes:

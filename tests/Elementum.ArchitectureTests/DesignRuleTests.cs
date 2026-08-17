@@ -94,4 +94,17 @@ public class DesignRuleTests
 
         Assert.True(result.IsSuccessful, "GetMetalsUseCase must implement IGetMetalsUseCase");
     }
+
+    [Fact]
+    public void CachedGetPriceHistoryUseCase_Should_Implement_IGetPriceHistoryUseCase()
+    {
+        var result = Types.InAssembly(typeof(Elementum.Infrastructure.Caching.CachedGetPriceHistoryUseCase).Assembly)
+            .That()
+            .HaveName("CachedGetPriceHistoryUseCase")
+            .Should()
+            .ImplementInterface(typeof(IGetPriceHistoryUseCase))
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, "CachedGetPriceHistoryUseCase must implement IGetPriceHistoryUseCase");
+    }
 }

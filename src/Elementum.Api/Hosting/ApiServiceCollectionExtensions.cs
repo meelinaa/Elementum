@@ -21,11 +21,14 @@ public static class ApiServiceCollectionExtensions
             ?? configuration["CONNECTION_STRING"]
             ?? throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection or CONNECTION_STRING.");
 
-        // Infrastructure: EF Core + MySQL with Polly retry and secondary adapters
-        services.AddElementumInfrastructure(connectionString, configureResilience: _ => { });
-
         // Application: Use Cases and Interactors
         services.AddElementumApplication();
+
+        var redisConnectionString = configuration.GetConnectionString("Redis")
+            ?? configuration["REDIS_CONNECTION_STRING"];
+
+        // Infrastructure: EF Core + MySQL with Polly retry, secondary adapters, and HybridCache
+        services.AddElementumInfrastructure(connectionString, configureResilience: _ => { }, redisConnectionString);
 
         services.AddControllers(options =>
         {
