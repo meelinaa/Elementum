@@ -152,6 +152,7 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
 
     /// <summary>
     /// Returns price history for a metal: either last N daily points (count) or aggregated by period (weekly/monthly/yearly).
+    /// Uses bounded queries and server-side aggregation to avoid unbounded in-memory table scans.
     /// </summary>
     public async Task<IEnumerable<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct)
     {
@@ -160,29 +161,91 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
             return [];
 
         var effectiveCount = count <= 0 ? 30 : count;
-
-        var raw = await PriceHistory
-            .Include(x => x.Metal)
-            .Where(x => x.MetalId == metal.Id)
-            .OrderBy(x => x.EntryDate)
-            .ToListAsync(ct);
-
-        if (raw.Count == 0)
-            return [];
-
         var agg = (aggregation ?? "daily").Trim().ToLowerInvariant();
-        List<PriceHistory> result;
 
         if (agg == "daily")
         {
-            result = raw.TakeLast(effectiveCount).ToList();
+            var dailyRows = await PriceHistory
+                .Include(x => x.Metal)
+                .Where(x => x.MetalId == metal.Id)
+                .OrderByDescending(x => x.EntryDate)
+                .Take(effectiveCount)
+                .ToListAsync(ct);
+
+            dailyRows.Reverse();
+            return dailyRows;
         }
-        else if (agg == "weekly")
+        else if (agg == "monthly")
         {
+            var monthGroups = await PriceHistory
+                .Where(x => x.MetalId == metal.Id)
+                .GroupBy(x => new { x.EntryDate.Year, x.EntryDate.Month })
+                .OrderByDescending(g => g.Key.Year).ThenByDescending(g => g.Key.Month)
+                .Take(effectiveCount)
+                .Select(g => new
+                {
+                    g.Key.Year,
+                    g.Key.Month,
+                    AvgPrice = g.Average(p => p.Price),
+                    Currency = g.Max(p => p.Currency)
+                })
+                .ToListAsync(ct);
+
+            monthGroups.Reverse();
+
+            return monthGroups.Select(m => new PriceHistory
+            {
+                Id = 0,
+                MetalId = metal.Id,
+                Currency = m.Currency ?? "USD",
+                Symbol = metalSymbol,
+                EntryDate = new DateOnly(m.Year, m.Month, 1),
+                Price = Math.Round(m.AvgPrice, 4, MidpointRounding.ToEven),
+                Metal = metal
+            }).ToList();
+        }
+        else if (agg == "yearly")
+        {
+            var yearGroups = await PriceHistory
+                .Where(x => x.MetalId == metal.Id)
+                .GroupBy(x => x.EntryDate.Year)
+                .OrderByDescending(g => g.Key)
+                .Take(effectiveCount)
+                .Select(g => new
+                {
+                    Year = g.Key,
+                    AvgPrice = g.Average(p => p.Price),
+                    Currency = g.Max(p => p.Currency)
+                })
+                .ToListAsync(ct);
+
+            yearGroups.Reverse();
+
+            return yearGroups.Select(y => new PriceHistory
+            {
+                Id = 0,
+                MetalId = metal.Id,
+                Currency = y.Currency ?? "USD",
+                Symbol = metalSymbol,
+                EntryDate = new DateOnly(y.Year, 1, 1),
+                Price = Math.Round(y.AvgPrice, 4, MidpointRounding.ToEven),
+                Metal = metal
+            }).ToList();
+        }
+        else // weekly
+        {
+            var recentRows = await PriceHistory
+                .Where(x => x.MetalId == metal.Id)
+                .OrderByDescending(x => x.EntryDate)
+                .Take(effectiveCount * 7)
+                .ToListAsync(ct);
+
+            recentRows.Reverse();
+
             var dfi = DateTimeFormatInfo.CurrentInfo;
             var cal = dfi.Calendar;
 
-            var weeklyGroups = raw
+            var weeklyGroups = recentRows
                 .GroupBy(x =>
                 {
                     var dt = x.EntryDate.ToDateTime(TimeOnly.MinValue);
@@ -190,79 +253,21 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
                     return (x.EntryDate.Year, Week: week);
                 })
                 .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Week)
-                .Select(g => new
-                {
-                    g.Key.Year,
-                    g.Key.Week,
-                    AvgPrice = g.Average(p => p.Price),
-                    First = g.First()
-                })
                 .TakeLast(effectiveCount)
+                .Select(g => new PriceHistory
+                {
+                    Id = 0,
+                    MetalId = metal.Id,
+                    Currency = g.First().Currency,
+                    Symbol = metalSymbol,
+                    EntryDate = g.First().EntryDate,
+                    Price = Math.Round(g.Average(p => p.Price), 4, MidpointRounding.ToEven),
+                    Metal = metal
+                })
                 .ToList();
 
-            result = weeklyGroups.Select(w => new PriceHistory
-            {
-                Id = 0,
-                MetalId = metal.Id,
-                Currency = w.First.Currency,
-                Symbol = metalSymbol,
-                EntryDate = w.First.EntryDate,
-                Price = w.AvgPrice,
-                Metal = metal
-            }).ToList();
+            return weeklyGroups;
         }
-        else if (agg == "monthly")
-        {
-            var monthGroups = raw
-                .GroupBy(x => (x.EntryDate.Year, x.EntryDate.Month))
-                .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
-                .Select(g => new
-                {
-                    g.Key,
-                    AvgPrice = g.Average(p => p.Price),
-                    First = g.First()
-                })
-                .TakeLast(effectiveCount)
-                .ToList();
-
-            result = monthGroups.Select(m => new PriceHistory
-            {
-                Id = 0,
-                MetalId = metal.Id,
-                Currency = m.First.Currency,
-                Symbol = metalSymbol,
-                EntryDate = new DateOnly(m.Key.Year, m.Key.Month, 1),
-                Price = m.AvgPrice,
-                Metal = metal
-            }).ToList();
-        }
-        else
-        {
-            var yearGroups = raw
-                .GroupBy(x => x.EntryDate.Year)
-                .OrderBy(g => g.Key)
-                .Select(g => new
-                {
-                    Year = g.Key,
-                    AvgPrice = g.Average(p => p.Price),
-                    First = g.First()
-                })
-                .TakeLast(effectiveCount)
-                .ToList();
-
-            result = yearGroups.Select(y => new PriceHistory
-            {
-                Id = 0,
-                MetalId = metal.Id,
-                Currency = y.First.Currency,
-                Symbol = metalSymbol,
-                EntryDate = new DateOnly(y.Year, 1, 1),
-                Price = y.AvgPrice,
-                Metal = metal
-            }).ToList();
-        }
-
-        return result;
     }
 
     /// <summary>Configures the entity model: table names, keys, and column mappings.</summary>

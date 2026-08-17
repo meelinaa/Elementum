@@ -50,17 +50,47 @@ public class PriceHistoryRepositoryTests
     }
 
     [Fact]
-    public async Task SavePricesAsync_WhenMetalUnknown_SkipsAndDoesNotInsert()
+    public async Task GetPriceHistoryMetalData_Daily_ReturnsBoundedChronologicalRecords()
     {
         await using var db = CreateDbContext();
-        var prices = new List<DailyPrices>
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        for (int i = 10; i >= 1; i--)
         {
-            new() { Metal = "UNKNOWN", Currency = "USD", Price = 1m }
-        };
+            db.PriceHistory.Add(new PriceHistory
+            {
+                MetalId = 1,
+                Currency = "USD",
+                EntryDate = today.AddDays(-i),
+                Price = 2000m + i,
+                Symbol = "FOREXCOM:XAUUSD"
+            });
+        }
+        await db.SaveChangesAsync();
 
-        await db.SavePricesAsync(prices);
+        var result = (await db.GetPriceHistoryMetalData("XAU", "daily", 5, CancellationToken.None)).ToList();
 
-        var count = await db.PriceHistory.CountAsync();
-        Assert.Equal(0, count);
+        Assert.Equal(5, result.Count);
+        Assert.True(result[0].EntryDate < result[4].EntryDate); // Chronological order
+        Assert.Equal(today.AddDays(-1), result[4].EntryDate);
+    }
+
+    [Fact]
+    public async Task GetPriceHistoryMetalData_Monthly_ReturnsAggregatedAverages()
+    {
+        await using var db = CreateDbContext();
+        db.PriceHistory.AddRange(
+            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = new DateOnly(2026, 1, 10), Price = 2000m, Symbol = "XAU" },
+            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = new DateOnly(2026, 1, 20), Price = 3000m, Symbol = "XAU" },
+            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = new DateOnly(2026, 2, 15), Price = 4000m, Symbol = "XAU" }
+        );
+        await db.SaveChangesAsync();
+
+        var result = (await db.GetPriceHistoryMetalData("XAU", "monthly", 12, CancellationToken.None)).ToList();
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal(new DateOnly(2026, 1, 1), result[0].EntryDate);
+        Assert.Equal(2500m, result[0].Price); // Average of 2000 and 3000
+        Assert.Equal(new DateOnly(2026, 2, 1), result[1].EntryDate);
+        Assert.Equal(4000m, result[1].Price);
     }
 }
