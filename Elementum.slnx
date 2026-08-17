@@ -8,6 +8,7 @@
     <Project Path="src/Elementum.Cli/Elementum.Cli.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Elementum.ArchitectureTests/Elementum.ArchitectureTests.csproj" />
     <Project Path="tests/Elementum.Application.Tests/Elementum.Application.Tests.csproj" />
     <Project Path="tests/Elementum.Api.Tests/Elementum.Api.Tests.csproj" />
     <Project Path="tests/Elementum.Worker.Tests/Elementum.Worker.Tests.csproj" />
