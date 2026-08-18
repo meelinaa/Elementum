@@ -1,19 +1,21 @@
 using Elementum.Domain.Entities;
+using Elementum.Domain.Models;
 using Elementum.Domain.Ports.Outbound;
 using Elementum.Infrastructure.Data;
-using Elementum.Infrastructure.Data.Interfaces;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Moq;
 
 namespace Elementum.IntegrationTests.Fixtures;
 
 /// <summary>
 /// Custom WebApplicationFactory for E2E integration testing.
-/// Configures an isolated in-memory database and seeds standard test fixtures.
+/// Configures an isolated in-memory database and deterministic offline test fixtures.
 /// </summary>
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {
@@ -40,6 +42,26 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 options.UseInMemoryDatabase(_databaseName, _dbRoot);
                 options.UseInternalServiceProvider(internalSp);
             });
+
+            // Mock external HTTP client for deterministic offline testing
+            var mockMetalsApi = new Mock<IMetalsApiClient>();
+            mockMetalsApi.Setup(c => c.GetEdelmetallePricesAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new EdelmetalleApiResponse
+                {
+                    GoldUsd = 2500.50m,
+                    GoldEur = 2280.80m,
+                    SilberUsd = 30.70m,
+                    SilberEur = 28.60m,
+                    PlatinUsd = 1000m,
+                    PlatinEur = 910m,
+                    PalladiumUsd = 1050m,
+                    PalladiumEur = 960m,
+                    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                    WechselkursUsdEur = 1.095m
+                });
+
+            services.RemoveAll<IMetalsApiClient>();
+            services.AddSingleton(mockMetalsApi.Object);
         });
     }
 
@@ -74,6 +96,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 MetalId = 1,
                 Currency = "USD",
                 Symbol = "FOREXCOM:XAUUSD",
+                ReferenceTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                 EntryDate = DateOnly.FromDateTime(DateTime.UtcNow),
                 Price = 2500.50m,
                 PrevClosePrice = 2480.00m,
