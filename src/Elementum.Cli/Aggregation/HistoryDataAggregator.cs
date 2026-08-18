@@ -43,9 +43,9 @@ public static class HistoryDataAggregator
 
     private static int GetHour(PriceHistoryDto p)
     {
-        if (long.TryParse(p.ReferenceTimestamp, out long unix) && unix > 0)
+        if (p.ReferenceTimestamp > 0)
         {
-            return DateTimeOffset.FromUnixTimeSeconds(unix).ToLocalTime().Hour;
+            return DateTimeOffset.FromUnixTimeSeconds(p.ReferenceTimestamp).ToLocalTime().Hour;
         }
         return 12;
     }

@@ -1,13 +1,10 @@
 namespace Elementum.Domain.Constants;
 
 /// <summary>
-/// Central domain-wide constants for symbols, currencies, physical conversion factors, and trading metrics.
+/// Central domain-wide constants for symbols, currencies, and trading metrics.
 /// </summary>
 public static class DomainConstants
 {
-    /// <summary>Exact physical mass of one Troy Ounce (oz t) in grams.</summary>
-    public const decimal TroyOunceInGrams = 31.1034768m;
-
     /// <summary>Standard ISO/Ticker symbols for precious metals.</summary>
     public static class Symbols
     {

@@ -39,9 +39,8 @@ dotnet run --project src/Elementum.Cli
 |-----------|-------------|
 | **Dashboard** | Real-time market overview with prices in USD and EUR, % changes, and intraday highs/lows. |
 | **Trading** | Technical analysis view with OHLC, bid/ask spreads, volatility %, and Bullish/Bearish indicators. |
-| **Karat Calculator** | Gram prices by alloy purity (24k down to 10k) and discount vs. pure gold. |
-| **List Metals** | Master table listing metal symbols, names, and identifiers. |
 | **History** | Historical price ticks and trend sparklines. |
+| **Info** | External API policies and data disclaimers. |
 | **Exit** | Terminate the application. |
 
 ---

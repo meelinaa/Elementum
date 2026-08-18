@@ -10,7 +10,7 @@ public class PriceHistory
     public int MetalId { get; set; }
     public string Currency { get; set; } = "USD";
     public string Symbol { get; set; } = string.Empty;
-    public string ReferenceTimestamp { get; set; } = string.Empty;
+    public long ReferenceTimestamp { get; set; }
     public DateOnly EntryDate { get; set; }
     public decimal Price { get; set; }
     public decimal? PrevClosePrice { get; set; }
@@ -39,7 +39,7 @@ public class PriceHistory
         decimal? prevClosePrice = null,
         decimal? ch = null,
         decimal? chp = null,
-        string referenceTimestamp = "")
+        long referenceTimestamp = 0)
     {
         ValidateInvariants(metalId, currency, price, highPrice, lowPrice);
 
@@ -61,7 +61,7 @@ public class PriceHistory
     }
 
     /// <summary>
-    /// Updates quote prices while enforcing domain invariants.
+    /// Updates prices on an existing <see cref="PriceHistory"/> entity.
     /// </summary>
     public void UpdatePrices(
         decimal price,
@@ -71,21 +71,23 @@ public class PriceHistory
         decimal? prevClosePrice = null,
         decimal? ch = null,
         decimal? chp = null,
-        string? referenceTimestamp = null,
-        string? symbol = null)
+        long referenceTimestamp = 0,
+        string symbol = "")
     {
         ValidateInvariants(MetalId, Currency, price, highPrice, lowPrice);
 
         Price = price;
-        HighPrice = highPrice ?? HighPrice;
-        LowPrice = lowPrice ?? LowPrice;
-        OpenPrice = openPrice ?? OpenPrice;
-        PrevClosePrice = prevClosePrice ?? PrevClosePrice;
-        Ch = ch ?? Ch;
-        Chp = chp ?? Chp;
+        HighPrice = highPrice;
+        LowPrice = lowPrice;
+        OpenPrice = openPrice;
+        PrevClosePrice = prevClosePrice;
+        Ch = ch;
+        Chp = chp;
 
-        if (referenceTimestamp != null) ReferenceTimestamp = referenceTimestamp;
-        if (symbol != null) Symbol = symbol;
+        if (referenceTimestamp > 0)
+            ReferenceTimestamp = referenceTimestamp;
+        if (!string.IsNullOrEmpty(symbol))
+            Symbol = symbol;
     }
 
     private static void ValidateInvariants(
@@ -99,15 +101,15 @@ public class PriceHistory
             throw new ArgumentOutOfRangeException(nameof(metalId), "MetalId must be greater than zero.");
 
         if (string.IsNullOrWhiteSpace(currency))
-            throw new ArgumentException("Currency must not be null or whitespace.", nameof(currency));
+            throw new ArgumentException("Currency cannot be empty.", nameof(currency));
 
-        // Enforce supported currencies (EUR, USD)
+        // Enforce valid domain currency (USD or EUR)
         ValueObjects.Currency.FromCode(currency);
 
         if (price <= 0)
-            throw new ArgumentOutOfRangeException(nameof(price), "Price must be strictly positive (> 0).");
+            throw new ArgumentOutOfRangeException(nameof(price), "Price must be greater than zero.");
 
-        if (lowPrice.HasValue && highPrice.HasValue && lowPrice > highPrice)
-            throw new ArgumentException($"Low price ({lowPrice}) cannot be greater than High price ({highPrice}).");
+        if (highPrice.HasValue && lowPrice.HasValue && highPrice < lowPrice)
+            throw new ArgumentException("HighPrice cannot be less than LowPrice.");
     }
 }

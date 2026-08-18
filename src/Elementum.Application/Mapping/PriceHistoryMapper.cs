@@ -65,8 +65,6 @@ public static class PriceHistoryMapper
     /// <summary>Maps a <see cref="PriceHistory"/> entity to <see cref="TradingPriceDto"/>.</summary>
     public static TradingPriceDto ToTradingPriceDto(this PriceHistory entity)
     {
-        long? refTimestamp = long.TryParse(entity?.ReferenceTimestamp, out var rt) ? rt : null;
-
         return entity == null
             ? throw new ArgumentNullException(nameof(entity))
             : new TradingPriceDto
@@ -77,7 +75,7 @@ public static class PriceHistoryMapper
                 Exchange = "EDELMETALLE",
                 Currency = entity.Currency ?? string.Empty,
                 EntryDate = entity.EntryDate,
-                ReferenceTimestamp = refTimestamp,
+                ReferenceTimestamp = entity.ReferenceTimestamp == 0 ? null : entity.ReferenceTimestamp,
                 Price = entity.Price,
                 PrevClosePrice = entity.PrevClosePrice,
                 OpenPrice = entity.OpenPrice,

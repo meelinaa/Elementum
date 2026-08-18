@@ -5,7 +5,7 @@ using Elementum.Cli.Views.Interfaces;
 namespace Elementum.Cli.Views;
 
 /// <summary>
-/// Base class for detail views that require a metal selection (e.g. Trading, Karat).
+/// Base class for detail views that require a metal selection (e.g. Trading, History).
 /// Shared flow: Clear → prompt if no metal → header + loading message + footer → LoadAndRenderAsync(sym, name).
 /// </summary>
 public abstract class MetalDetailViewBase : IDetailView

@@ -83,7 +83,7 @@ public class PriceHistoryRepository : IElementumDbContext
                 (DomainConstants.Currencies.Eur, q.EurPrice)
             ];
 
-            var refTimestamp = data.Timestamp.ToString(CultureInfo.InvariantCulture);
+            var refTimestamp = data.Timestamp;
 
             foreach (var (currency, price) in currencyQuotes)
             {
@@ -184,7 +184,7 @@ public class PriceHistoryRepository : IElementumDbContext
                     prevClosePrice: api.PrevClosePrice,
                     ch: api.Ch,
                     chp: api.Chp,
-                    referenceTimestamp: api.Timestamp.ToString(CultureInfo.InvariantCulture),
+                    referenceTimestamp: api.Timestamp,
                     symbol: api.Symbol);
             }
             else
@@ -201,7 +201,7 @@ public class PriceHistoryRepository : IElementumDbContext
                     prevClosePrice: api.PrevClosePrice,
                     ch: api.Ch,
                     chp: api.Chp,
-                    referenceTimestamp: api.Timestamp.ToString(CultureInfo.InvariantCulture));
+                    referenceTimestamp: api.Timestamp);
 
                 _db.PriceHistory.Add(row);
             }

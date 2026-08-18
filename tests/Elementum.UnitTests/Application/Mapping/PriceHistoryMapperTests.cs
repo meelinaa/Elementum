@@ -26,6 +26,7 @@ public class PriceHistoryMapperTests
             MetalId = 1,
             Currency = "USD",
             Symbol = "XAU",
+            ReferenceTimestamp = 1723900000L,
             EntryDate = new DateOnly(2026, 8, 17),
             Price = 2500.50m,
             Chp = 1.2m,
@@ -37,6 +38,7 @@ public class PriceHistoryMapperTests
         Assert.Equal(42, dto.Id);
         Assert.Equal(1, dto.MetalId);
         Assert.Equal("USD", dto.Currency);
+        Assert.Equal(1723900000L, dto.ReferenceTimestamp);
         Assert.Equal(2500.50m, dto.Price);
         Assert.Equal(1.2m, dto.Chp);
         Assert.NotNull(dto.Metal);
@@ -78,7 +80,7 @@ public class PriceHistoryMapperTests
             Symbol = "XAUUSD",
             Currency = "USD",
             EntryDate = new DateOnly(2026, 8, 17),
-            ReferenceTimestamp = "1723900000",
+            ReferenceTimestamp = 1723900000L,
             Price = 2500m,
             OpenPrice = 2480m,
             PrevClosePrice = 2470m,

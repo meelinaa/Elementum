@@ -215,10 +215,10 @@ public class PriceHistoryRepositoryTests
         var date = new DateOnly(2026, 8, 17);
 
         db.PriceHistory.AddRange(
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, Price = 4400m, ReferenceTimestamp = "1000", Symbol = "XAU" },
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, Price = 4480m, ReferenceTimestamp = "1001", Symbol = "XAU" }, // High
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, Price = 4390m, ReferenceTimestamp = "1002", Symbol = "XAU" }, // Low
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, Price = 4420m, ReferenceTimestamp = "1003", Symbol = "XAU" }  // Close
+            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, Price = 4400m, ReferenceTimestamp = 1000L, Symbol = "XAU" },
+            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, Price = 4480m, ReferenceTimestamp = 1001L, Symbol = "XAU" }, // High
+            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, Price = 4390m, ReferenceTimestamp = 1002L, Symbol = "XAU" }, // Low
+            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, Price = 4420m, ReferenceTimestamp = 1003L, Symbol = "XAU" }  // Close
         );
         await db.SaveChangesAsync();
 

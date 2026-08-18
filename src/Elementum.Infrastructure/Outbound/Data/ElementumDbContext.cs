@@ -21,6 +21,14 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
     /// <summary>DbSet for the <c>daily_price_summaries</c> table (consolidated daily candles: 22:00 Close, Min, Max, Open).</summary>
     public DbSet<DailyPriceSummary> DailyPriceSummaries => Set<DailyPriceSummary>();
 
+    /// <summary>
+    /// Configures global decimal precision (18, 4) for all currency and spot price properties across the entire domain model.
+    /// </summary>
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Properties<decimal>().HavePrecision(18, 4);
+    }
+
     /// <summary>Configures the entity model: table names, keys, precision, and column mappings.</summary>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -41,10 +49,13 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
             e.Property(x => x.MetalId).HasColumnName("metal_id");
             e.Property(x => x.ReferenceTimestamp).HasColumnName("reference_timestamp");
             e.Property(x => x.EntryDate).HasColumnName("entry_date");
+            e.Property(x => x.Price).HasColumnName("price");
             e.Property(x => x.PrevClosePrice).HasColumnName("prev_close_price");
             e.Property(x => x.OpenPrice).HasColumnName("open_price");
             e.Property(x => x.LowPrice).HasColumnName("low_price");
             e.Property(x => x.HighPrice).HasColumnName("high_price");
+            e.Property(x => x.Ch).HasColumnName("ch");
+            e.Property(x => x.Chp).HasColumnName("chp");
         });
 
         modelBuilder.Entity<DistributedLockEntity>(e =>
@@ -67,10 +78,10 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
             e.Property(x => x.MetalId).HasColumnName("metal_id").IsRequired();
             e.Property(x => x.Currency).HasColumnName("currency").HasMaxLength(3).IsRequired();
             e.Property(x => x.EntryDate).HasColumnName("entry_date").IsRequired();
-            e.Property(x => x.OpenPrice).HasColumnName("open_price").HasPrecision(18, 4).IsRequired();
-            e.Property(x => x.HighPrice).HasColumnName("high_price").HasPrecision(18, 4).IsRequired();
-            e.Property(x => x.LowPrice).HasColumnName("low_price").HasPrecision(18, 4).IsRequired();
-            e.Property(x => x.ClosePrice).HasColumnName("close_price").HasPrecision(18, 4).IsRequired();
+            e.Property(x => x.OpenPrice).HasColumnName("open_price").IsRequired();
+            e.Property(x => x.HighPrice).HasColumnName("high_price").IsRequired();
+            e.Property(x => x.LowPrice).HasColumnName("low_price").IsRequired();
+            e.Property(x => x.ClosePrice).HasColumnName("close_price").IsRequired();
             e.Property(x => x.ExchangeRateUsdEur).HasColumnName("exchange_rate_usd_eur").HasPrecision(18, 8);
             e.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
             e.Property(x => x.UpdatedAtUtc).HasColumnName("updated_at_utc").IsRequired();
