@@ -3,7 +3,7 @@ using Elementum.Cli.Views.Interfaces;
 
 namespace Elementum.Cli.Views;
 
-/// <summary>Factory and cache for detail views. One instance per <see cref="DetailView"/> for the process lifetime.</summary>
+/// <summary>Factory and cache for detail views.</summary>
 public static class ViewRegistry
 {
     private static readonly Dictionary<DetailView, IDetailView> _cache = [];
@@ -23,24 +23,22 @@ public static class ViewRegistry
         }
     }
 
-    /// <summary>Creates a new instance of the view type (Dashboard, Trading, History, etc.).</summary>
+    /// <summary>Creates a new instance of the view type (Dashboard, Trading, History, Info).</summary>
     private static IDetailView Create(DetailView view)
     {
         return view switch
         {
             DetailView.Dashboard => new DashboardView(),
-            DetailView.ListMetals => new ListMetallView(),
             DetailView.TradingView => new TradingView(),
-            DetailView.KaratCalculator => new KaratCalculatorView(),
             DetailView.History => new HistoryView(),
             DetailView.Info => new InfoView(),
             _ => new DashboardView()
         };
     }
 
-    /// <summary>Returns true if the view requires the user to select a metal (Trading, Karat, History) before showing data.</summary>
+    /// <summary>Returns true if the view requires the user to select a metal (Trading, History) before showing data.</summary>
     public static bool RequiresMetalSelection(DetailView view)
     {
-        return view is DetailView.TradingView or DetailView.KaratCalculator or DetailView.History;
+        return view is DetailView.TradingView or DetailView.History;
     }
 }

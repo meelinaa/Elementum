@@ -5,8 +5,8 @@ public record TradingPriceDto
     public int Id { get; init; }
     public string Symbol { get; init; } = string.Empty;
     public string MetalName { get; init; } = string.Empty;
-    public string Exchange { get; init; } = string.Empty;
-    public string Currency { get; init; } = string.Empty;
+    public string Exchange { get; init; } = "EDELMETALLE";
+    public string Currency { get; init; } = "EUR";
     public DateOnly EntryDate { get; init; }
     public long? ReferenceTimestamp { get; init; }
     public long? OpenTime { get; init; }
@@ -17,6 +17,11 @@ public record TradingPriceDto
     public decimal? HighPrice { get; init; }
     public decimal? Ch { get; init; }
     public decimal? Chp { get; init; }
+    public decimal? DifferencePrevClose { get; init; }
+    public decimal? VolatilityRange { get; init; }
+    public decimal? VolatilityPercent { get; init; }
+    public string Status { get; init; } = "NEUTRAL";
+    public decimal? ExchangeRateUsdEur { get; init; }
     public decimal? Ask { get; init; }
     public decimal? Bid { get; init; }
 }

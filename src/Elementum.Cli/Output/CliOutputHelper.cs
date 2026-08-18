@@ -85,6 +85,25 @@ public class CliOutputHelper
             Console.WriteLine("║ " + updateLine.PadRight(w - 4) + " ║");
         }
         Console.WriteLine("║ " + CliStrings.FooterBackToMenu.PadRight(w - 4) + " ║");
+        Console.WriteLine("║ " + "[C] Toggle Currency (EUR/USD)".PadRight(w - 4) + " ║");
+        Console.WriteLine("║ " + CliStrings.FooterReloadHint.PadRight(w - 4) + " ║");
+        Console.WriteLine("╚" + new string('═', w - 2) + "╝");
+        Console.WriteLine();
+    }
+
+    /// <summary>Draws the view footer with precise DateTime timestamp.</summary>
+    public static void RenderViewFooter(DateTime? lastUpdate, int? totalWidth = null)
+    {
+        int w = totalWidth ?? ViewWidth;
+        Console.WriteLine();
+        Console.WriteLine("╟" + new string('─', w - 2) + "╢");
+        if (lastUpdate.HasValue)
+        {
+            var updateLine = CliStrings.LastUpdateFromPrefix + " " + lastUpdate.Value.ToString(CliConstants.DisplayDateTimeFormat);
+            Console.WriteLine("║ " + updateLine.PadRight(w - 4) + " ║");
+        }
+        Console.WriteLine("║ " + CliStrings.FooterBackToMenu.PadRight(w - 4) + " ║");
+        Console.WriteLine("║ " + "[C] Toggle Currency (EUR/USD)".PadRight(w - 4) + " ║");
         Console.WriteLine("║ " + CliStrings.FooterReloadHint.PadRight(w - 4) + " ║");
         Console.WriteLine("╚" + new string('═', w - 2) + "╝");
         Console.WriteLine();

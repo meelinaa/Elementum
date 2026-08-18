@@ -83,9 +83,10 @@ public class HistoryView : IDetailView
                 return;
             }
 
+            var app = AppContext.Current!;
             // API already returns at most count entries (aggregated); order by date for chart display.
             var ordered = list!.OrderBy(p => p.EntryDate).ToList();
-            HistoryRenderer.RenderCharts(sym, name, periodLabel, ordered);
+            HistoryRenderer.RenderCharts(sym, name, periodLabel, ordered, app?.SelectedCurrency ?? "EUR", app?.CurrencySymbol ?? "€");
         });
     }
 

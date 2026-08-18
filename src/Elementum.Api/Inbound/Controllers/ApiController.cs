@@ -12,11 +12,46 @@ namespace Elementum.Api.Inbound.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1")]
-public class ApiController(IGetPriceHistoryUseCase priceHistoryUseCase, IGetMetalsUseCase metalsUseCase, IGetDailyCandlesUseCase dailyCandlesUseCase) : ControllerBase
+public class ApiController(
+    IGetPriceHistoryUseCase priceHistoryUseCase,
+    IGetMetalsUseCase metalsUseCase,
+    IGetDailyCandlesUseCase dailyCandlesUseCase,
+    ILivePricesUseCase livePricesUseCase) : ControllerBase
 {
     private readonly IGetPriceHistoryUseCase _priceHistoryUseCase = priceHistoryUseCase ?? throw new ArgumentNullException(nameof(priceHistoryUseCase));
     private readonly IGetMetalsUseCase _metalsUseCase = metalsUseCase ?? throw new ArgumentNullException(nameof(metalsUseCase));
     private readonly IGetDailyCandlesUseCase _dailyCandlesUseCase = dailyCandlesUseCase ?? throw new ArgumentNullException(nameof(dailyCandlesUseCase));
+    private readonly ILivePricesUseCase _livePricesUseCase = livePricesUseCase ?? throw new ArgumentNullException(nameof(livePricesUseCase));
+
+    /// <summary>GET /api/v1/prices/live — 5-minute live market overview for Dashboard.</summary>
+    [HttpGet("prices/live")]
+    public async Task<ActionResult<LiveMarketOverviewDto>> GetLivePrices(CancellationToken cancellationToken)
+    {
+        var overview = await _livePricesUseCase.GetLiveMarketOverviewAsync(cancellationToken);
+        return Ok(overview);
+    }
+
+    /// <summary>GET /api/v1/prices/live/trading/{symbol} — 5-minute live trading analysis for TradingView.</summary>
+    [HttpGet("prices/live/trading/{symbol}")]
+    public async Task<ActionResult<TradingPriceDto>> GetLiveTradingAnalysis(
+        [FromRoute] SymbolRequest symbolRequest,
+        [FromQuery] string currency = "EUR",
+        CancellationToken cancellationToken = default)
+    {
+        var dto = await _livePricesUseCase.GetLiveTradingAnalysisAsync(symbolRequest.Symbol.Trim(), currency, cancellationToken);
+        if (dto == null)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Not Found",
+                Status = StatusCodes.Status404NotFound,
+                Detail = $"No trading analysis found for symbol '{symbolRequest.Symbol}'.",
+                Instance = $"{Request.Method} {Request.Path}"
+            });
+        }
+
+        return Ok(dto);
+    }
 
     /// <summary>GET /api/v1/history/{symbol}/candles — daily candle summaries (Min, Max, Open, Close at 22:00) for charts.</summary>
     [HttpGet("history/{symbol}/candles", Order = 1)]
@@ -53,7 +88,7 @@ public class ApiController(IGetPriceHistoryUseCase priceHistoryUseCase, IGetMeta
         return await _metalsUseCase.GetAllAsync(cancellationToken);
     }
 
-    /// <summary>GET /api/v1/history/all/latest — latest per metal as <see cref="PriceHistoryDto"/> for Dashboard.</summary>
+    /// <summary>GET /api/v1/history/all/latest — latest per metal as <see cref="PriceHistoryDto"/> for historical queries.</summary>
     [HttpGet("history/all/latest")]
     public async Task<IEnumerable<PriceHistoryDto>> GetPriceHistoryAllLatest(CancellationToken cancellationToken)
     {
@@ -87,7 +122,7 @@ public class ApiController(IGetPriceHistoryUseCase priceHistoryUseCase, IGetMeta
         return Ok(dto);
     }
 
-    /// <summary>GET /api/v1/history/{symbol}/latest/trading — latest price as <see cref="TradingPriceDto"/>.</summary>
+    /// <summary>GET /api/v1/history/{symbol}/latest/trading — latest price as <see cref="TradingPriceDto"/> from database.</summary>
     [HttpGet("history/{symbol}/latest/trading", Order = 1)]
     public async Task<ActionResult<TradingPriceDto>> GetPriceHistoryTradingLatest([FromRoute] SymbolRequest symbolRequest, CancellationToken cancellationToken)
     {

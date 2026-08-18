@@ -13,10 +13,12 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddElementumApplication(this IServiceCollection services)
     {
+        services.AddMemoryCache();
         services.AddScoped<IIngestPricesUseCase, IngestPricesUseCase>();
         services.AddScoped<IGetPriceHistoryUseCase, GetPriceHistoryUseCase>();
         services.AddScoped<IGetMetalsUseCase, GetMetalsUseCase>();
         services.AddScoped<IGetDailyCandlesUseCase, GetDailyCandlesUseCase>();
+        services.AddScoped<ILivePricesUseCase, LivePricesUseCase>();
 
         services.AddValidatorsFromAssembly(typeof(ServiceCollectionExtensions).Assembly);
 

@@ -5,8 +5,7 @@ using Elementum.Cli.Models;
 namespace Elementum.Cli;
 
 /// <summary>
-/// Holds all application state for the CLI shell. Created once per run and can be passed or accessed via <see cref="Current"/>.
-/// Replaces global static state for easier testing and clearer dependencies.
+/// Holds all application state for the CLI shell.
 /// </summary>
 public class AppContext
 {
@@ -19,8 +18,17 @@ public class AppContext
     /// <summary>Which detail view is shown when State is Detail.</summary>
     public DetailView? CurrentDetailView { get; set; }
 
-    /// <summary>Selected metal for views that require one (Trading, Karat, History).</summary>
+    /// <summary>Selected metal for views that require one (Trading, History).</summary>
     public Metall? CurrentSelectedMetal { get; set; }
+
+    /// <summary>Selected currency for display (EUR or USD).</summary>
+    public string SelectedCurrency { get; set; } = "EUR";
+
+    /// <summary>Currency symbol for current selection (€ or $).</summary>
+    public string CurrencySymbol => SelectedCurrency == "EUR" ? "€" : "$";
+
+    /// <summary>Toggles between EUR and USD.</summary>
+    public void ToggleCurrency() => SelectedCurrency = SelectedCurrency == "EUR" ? "USD" : "EUR";
 
     /// <summary>When false, the main loop exits and the app closes.</summary>
     public bool Running { get; set; } = true;
@@ -43,9 +51,6 @@ public class AppContext
             new(CliStrings.MenuItemDashboard, true, 'D', DetailView.Dashboard),
             new("", false),
             new(CliStrings.MenuItemTrading, true, 'T', DetailView.TradingView),
-            new(CliStrings.MenuItemKarat, true, 'K', DetailView.KaratCalculator),
-            new("", false),
-            new(CliStrings.MenuItemListMetals, true, 'L', DetailView.ListMetals),
             new(CliStrings.MenuItemHistory, true, 'H', DetailView.History),
             new("", false),
             new(CliStrings.MenuItemInfo, true, 'I', DetailView.Info),

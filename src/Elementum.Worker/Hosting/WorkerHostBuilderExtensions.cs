@@ -38,7 +38,7 @@ public static class WorkerHostBuilderExtensions
         Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(builder.Configuration)
             .Enrich.FromLogContext()
-            .CreateBootstrapLogger();
+            .CreateLogger();
         builder.Logging.AddSerilog(Log.Logger, dispose: true);
     }
 

@@ -18,9 +18,8 @@ public class ViewRegistryTests
     public void Get_ReturnsDifferentInstances_ForDifferentViews()
     {
         var dashboard = ViewRegistry.Get(DetailView.Dashboard);
-        var list = ViewRegistry.Get(DetailView.ListMetals);
+        var trading = ViewRegistry.Get(DetailView.TradingView);
 
-        Assert.NotSame(dashboard, list);
+        Assert.NotSame(dashboard, trading);
     }
 }
-

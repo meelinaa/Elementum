@@ -14,6 +14,7 @@ public class ApiControllerTests
     private readonly Mock<IGetPriceHistoryUseCase> _priceHistoryUseCaseMock = new();
     private readonly Mock<IGetMetalsUseCase> _metalsUseCaseMock = new();
     private readonly Mock<IGetDailyCandlesUseCase> _dailyCandlesUseCaseMock = new();
+    private readonly Mock<ILivePricesUseCase> _livePricesUseCaseMock = new();
     private readonly ApiController _controller;
 
     public ApiControllerTests()
@@ -21,7 +22,8 @@ public class ApiControllerTests
         _controller = new ApiController(
             _priceHistoryUseCaseMock.Object,
             _metalsUseCaseMock.Object,
-            _dailyCandlesUseCaseMock.Object)
+            _dailyCandlesUseCaseMock.Object,
+            _livePricesUseCaseMock.Object)
         {
             ControllerContext = new ControllerContext
             {

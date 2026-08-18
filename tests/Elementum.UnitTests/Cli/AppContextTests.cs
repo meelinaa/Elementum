@@ -12,11 +12,8 @@ public class AppContextTests
 
         Assert.Contains(app.MenuItems, mi => mi.Text == CliStrings.MenuItemDashboard);
         Assert.Contains(app.MenuItems, mi => mi.Text == CliStrings.MenuItemTrading);
-        Assert.Contains(app.MenuItems, mi => mi.Text == CliStrings.MenuItemKarat);
-        Assert.Contains(app.MenuItems, mi => mi.Text == CliStrings.MenuItemListMetals);
         Assert.Contains(app.MenuItems, mi => mi.Text == CliStrings.MenuItemHistory);
         Assert.Contains(app.MenuItems, mi => mi.Text == CliStrings.MenuItemInfo);
         Assert.Contains(app.MenuItems, mi => mi.Text == CliStrings.MenuItemExit);
     }
 }
-

@@ -55,6 +55,13 @@ public class CliNavigation
                 _ = view.RenderAsync();
                 return;
             }
+            if (key.Key == ConsoleKey.C)
+            {
+                app.ToggleCurrency();
+                HttpCall.ClearCache();
+                _ = view.RenderAsync();
+                return;
+            }
             view.HandleInput(key);
         }
     }

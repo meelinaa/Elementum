@@ -3,11 +3,10 @@ using System.Text;
 using Elementum.Application.DTOs;
 using Elementum.Cli.Constants;
 using Elementum.Cli.Output;
-using System.Linq;
 
 namespace Elementum.Cli.Rendering;
 
-/// <summary>Renders the History view: period selection screen, Chp sparkline, and USD bar chart. Extracted for readability and testability.</summary>
+/// <summary>Renders the History view: period selection screen, Chp sparkline, and price bar chart.</summary>
 public static class HistoryRenderer
 {
     private const int BarChartHeight = 8;
@@ -16,16 +15,14 @@ public static class HistoryRenderer
     private const int YAxisLabelWidth = 10;
 
     /// <summary>
-    /// Outer box width for History charts: at least <see cref="CliConstants.ViewWidth"/>, wider when bar/sparkline rows need more columns.
+    /// Outer box width for History charts.
     /// </summary>
     public static int ComputeHistoryViewWidth(int entryCount)
     {
         if (entryCount <= 0)
             return CliConstants.ViewWidth;
 
-        // Bar row: "  " + y-label + " │" + 2 chars per day
         int chartRowWidth = 2 + YAxisLabelWidth + 3 + entryCount * 2;
-        // Sparkline: "  " + symbol(6) + " │ " + price (~16) + " $ │ " + 2 chars per Chp block
         const int sparkPriceMaxChars = 16;
         int sparkRowWidth = 2 + 6 + 3 + sparkPriceMaxChars + 5 + entryCount * 2;
 
@@ -48,7 +45,7 @@ public static class HistoryRenderer
         CliOutputHelper.RenderViewFooter();
     }
 
-    /// <summary>Renders the "no data" message lines (caller draws header and footer).</summary>
+    /// <summary>Renders the "no data" message lines.</summary>
     public static void RenderNoDataMessage()
     {
         Console.WriteLine();
@@ -57,7 +54,7 @@ public static class HistoryRenderer
     }
 
     /// <summary>Renders the full charts view: header, sparkline, bar chart, entries summary, footer.</summary>
-    public static void RenderCharts(string sym, string name, string periodLabel, IReadOnlyList<PriceHistoryDto> slice)
+    public static void RenderCharts(string sym, string name, string periodLabel, IReadOnlyList<PriceHistoryDto> slice, string currency = "EUR", string currencySymbol = "€")
     {
         int boxWidth = ComputeHistoryViewWidth(slice.Count);
         CliOutputHelper.RenderViewHeader($"{CliStrings.HistoryHeaderPrefix}{name.ToUpperInvariant()} ({sym}) · {periodLabel}", boxWidth);
@@ -67,9 +64,9 @@ public static class HistoryRenderer
         var currentPrice = prices.Length > 0 ? prices[^1] : 0;
 
         CliOutputHelper.RenderSectionTitle(string.Format(CliStrings.HistorySparklineSectionTitle, periodLabel), boxWidth);
-        RenderSparkline(sym, currentPrice, chps, doubleWidth: true);
+        RenderSparkline(sym, currentPrice, chps, currencySymbol, doubleWidth: true);
 
-        CliOutputHelper.RenderSectionTitle(CliStrings.HistoryPriceDevelopmentSectionTitle, boxWidth);
+        CliOutputHelper.RenderSectionTitle(string.Format(CliStrings.HistoryPriceDevelopmentSectionTitle, currency), boxWidth);
         RenderBarChart(sym, prices);
 
         Console.WriteLine();
@@ -79,15 +76,15 @@ public static class HistoryRenderer
         CliOutputHelper.RenderViewFooter(lastUpdate, boxWidth);
     }
 
-    /// <summary>Draws the Chp sparkline (no extra legend lines; plain text to avoid terminal colour glitches).</summary>
-    public static void RenderSparkline(string symbol, double currentPrice, double[] changes, bool doubleWidth)
+    /// <summary>Draws the Chp sparkline.</summary>
+    public static void RenderSparkline(string symbol, double currentPrice, double[] changes, string currencySymbol, bool doubleWidth)
     {
         var spark = BuildSparkline(changes, doubleWidth);
         Console.WriteLine();
-        Console.WriteLine($"  {symbol,-6} │ {currentPrice:N2} $ │ {spark}");
+        Console.WriteLine($"  {symbol,-6} │ {currentPrice:N2} {currencySymbol} │ {spark}");
     }
 
-    /// <summary>Builds the sparkline character sequence (for testing without console).</summary>
+    /// <summary>Builds the sparkline character sequence.</summary>
     public static string BuildSparkline(double[] changes, bool doubleWidth = false)
     {
         string spark = "";
@@ -99,7 +96,7 @@ public static class HistoryRenderer
         return spark;
     }
 
-    /// <summary>Draws a bar chart with Y-axis price ticks (USD); no extra legend lines.</summary>
+    /// <summary>Draws a bar chart with Y-axis price ticks.</summary>
     public static void RenderBarChart(string symbol, double[] values)
     {
         if (values.Length == 0) return;
