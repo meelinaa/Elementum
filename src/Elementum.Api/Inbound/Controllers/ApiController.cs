@@ -98,9 +98,12 @@ public class ApiController(
     /// <summary>GET /api/v1/history/{symbol} — price history for one metal as <see cref="PriceHistoryDto"/> array.</summary>
     [HttpGet("history/{symbol}", Order = 10)]
     [RequestTimeout("DataCruncher")]
-    public async Task<ActionResult<IEnumerable<PriceHistoryDto>>> GetPriceHistoryByMetalSymbol([FromRoute] SymbolRequest symbolRequest, CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<PriceHistoryDto>>> GetPriceHistoryByMetalSymbol(
+        [FromRoute] SymbolRequest symbolRequest,
+        [FromQuery] string? currency,
+        CancellationToken cancellationToken)
     {
-        var historyData = await _priceHistoryUseCase.GetBySymbolAsync(symbolRequest.Symbol.Trim(), cancellationToken);
+        var historyData = await _priceHistoryUseCase.GetBySymbolAsync(symbolRequest.Symbol.Trim(), currency, cancellationToken);
         return Ok(historyData);
     }
 

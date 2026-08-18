@@ -33,12 +33,15 @@ public class CachedGetPriceHistoryUseCase : IGetPriceHistoryUseCase
             cancellationToken: ct);
     }
 
-    public async Task<IEnumerable<PriceHistoryDto>> GetBySymbolAsync(string symbol, CancellationToken ct = default)
+    public async Task<IEnumerable<PriceHistoryDto>> GetBySymbolAsync(string symbol, string? currency = null, CancellationToken ct = default)
     {
         var normalized = (symbol ?? string.Empty).Trim().ToUpperInvariant();
+        var cur = (currency ?? string.Empty).Trim().ToUpperInvariant();
+        var cacheKey = string.IsNullOrEmpty(cur) ? $"prices:symbol:{normalized}" : $"prices:symbol:{normalized}:{cur}";
+
         return await _cache.GetOrCreateAsync(
-            $"prices:symbol:{normalized}",
-            async token => (await _inner.GetBySymbolAsync(normalized, token)).ToList(),
+            cacheKey,
+            async token => (await _inner.GetBySymbolAsync(normalized, currency, token)).ToList(),
             SpotPriceOptions,
             cancellationToken: ct);
     }

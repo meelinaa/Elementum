@@ -17,9 +17,15 @@ public class GetPriceHistoryUseCase(IPriceHistoryRepository repository) : IGetPr
         return entities.Select(e => e.ToPriceHistoryDto());
     }
 
-    public async Task<IEnumerable<PriceHistoryDto>> GetBySymbolAsync(string symbol, CancellationToken ct = default)
+    public async Task<IEnumerable<PriceHistoryDto>> GetBySymbolAsync(string symbol, string? currency = null, CancellationToken ct = default)
     {
-        var entities = _repository.QueryPriceHistoryByMetalSymbol(symbol).ToList();
+        var query = _repository.QueryPriceHistoryByMetalSymbol(symbol);
+        if (!string.IsNullOrWhiteSpace(currency))
+        {
+            var cur = currency.Trim().ToUpperInvariant();
+            query = query.Where(p => p.Currency == cur);
+        }
+        var entities = query.ToList();
         return entities.Select(e => e.ToPriceHistoryDto());
     }
 

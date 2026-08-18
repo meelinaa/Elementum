@@ -8,7 +8,7 @@ namespace Elementum.Application.Inbound.UseCases.Prices;
 public interface IGetPriceHistoryUseCase
 {
     Task<IEnumerable<PriceHistoryDto>> GetLatestAllAsync(CancellationToken ct = default);
-    Task<IEnumerable<PriceHistoryDto>> GetBySymbolAsync(string symbol, CancellationToken ct = default);
+    Task<IEnumerable<PriceHistoryDto>> GetBySymbolAsync(string symbol, string? currency = null, CancellationToken ct = default);
     Task<PriceHistoryDto?> GetLatestBySymbolAsync(string symbol, CancellationToken ct = default);
     Task<TradingPriceDto?> GetTradingLatestAsync(string symbol, CancellationToken ct = default);
     Task<KaratPricesDto?> GetKaratLatestAsync(string symbol, CancellationToken ct = default);

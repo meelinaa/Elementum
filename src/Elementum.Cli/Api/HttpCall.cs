@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Text.Json;
 using Elementum.Application.DTOs;
 using Elementum.Cli.Config;
@@ -19,15 +20,21 @@ public class HttpCall
     /// <summary>Shared options for JSON (de)serialization.</summary>
     public static readonly JsonSerializerOptions DefaultJsonOptions = new() { PropertyNameCaseInsensitive = true };
 
+    private static readonly Lazy<HttpClient> _httpClient = new(() =>
+    {
+        var client = new HttpClient
+        {
+            BaseAddress = new Uri(CliConfig.ApiBaseUrl),
+            Timeout = TimeSpan.FromSeconds(15)
+        };
+        client.DefaultRequestHeaders.Add("Accept", "application/json");
+        return client;
+    });
+
     private static readonly IMemoryCache _cache = new MemoryCache(new MemoryCacheOptions());
     private static readonly ConcurrentDictionary<string, byte> _cacheKeys = new();
 
-    private static readonly Lazy<HttpClient> _httpClient = new(() => new HttpClient
-    {
-        BaseAddress = new Uri(CliConfig.ApiBaseUrl)
-    });
-
-    /// <summary>GET prices/live — returns 5-minute live market overview for Dashboard.</summary>
+    /// <summary>GET prices/live — live market overview for all 4 metals in USD and EUR.</summary>
     public static async Task<LiveMarketOverviewDto?> GetLiveMarketOverviewAsync()
     {
         try
@@ -36,12 +43,12 @@ public class HttpCall
         }
         catch (Exception ex)
         {
-            _log.LogWarning(ex, "Failed to load live market overview from API.");
+            _log.LogWarning(ex, "Failed to load live market overview.");
             return null;
         }
     }
 
-    /// <summary>Calls GET history/{symbol}/latest/trading?currency={currency} and returns <see cref="TradingPriceDto"/> for TradingView.</summary>
+    /// <summary>GET prices/live/trading/{symbol}?currency={currency} — live trading analysis for a specific metal.</summary>
     public static async Task<TradingPriceDto?> GetPriceHistoryTradingLatestAsync(string metalSymbol, string currency = "EUR")
     {
         try
@@ -56,7 +63,7 @@ public class HttpCall
     }
 
     /// <summary>GET history/{symbol}/candles — daily candle summaries for charts.</summary>
-    public static async Task<List<DailyPriceSummaryDto>?> GetDailyCandlesAsync(string metalSymbol, string currency = "EUR")
+    public static async Task<List<DailyPriceSummaryDto>> GetDailyCandlesAsync(string metalSymbol, string currency = "EUR")
     {
         try
         {
@@ -65,20 +72,20 @@ public class HttpCall
         catch (Exception ex)
         {
             _log.LogWarning(ex, "Failed to load candles for {Symbol}.", metalSymbol);
-            return null;
+            return [];
         }
     }
 
-    /// <summary>GET history/{symbol} — returns JSON array of all price history for one metal.</summary>
-    public static async Task<List<PriceHistoryDto>?> GetPriceHistoryMetalAsync(string metalSymbol)
+    /// <summary>GET history/{symbol}?currency={currency} — returns JSON array of price history for one metal and currency.</summary>
+    public static async Task<List<PriceHistoryDto>?> GetPriceHistoryMetalAsync(string metalSymbol, string currency = "EUR")
     {
         try
         {
-            return await SendRequestAsync<List<PriceHistoryDto>>($"history/{metalSymbol}");
+            return await SendRequestAsync<List<PriceHistoryDto>>($"history/{metalSymbol}?currency={currency}");
         }
         catch (Exception ex)
         {
-            _log.LogWarning(ex, "Failed to load price history for {Symbol}.", metalSymbol);
+            _log.LogWarning(ex, "Failed to load price history for {Symbol} ({Currency}).", metalSymbol, currency);
             return null;
         }
     }
@@ -124,15 +131,25 @@ public class HttpCall
         _cacheKeys.Clear();
     }
 
-    /// <summary>Fetches history data for charts with logic.</summary>
-    public static async Task<List<PriceHistoryDto>?> GetPriceHistoryMetalWithLogicAsync(string sym, string aggregation, int count, HistoryPeriod period)
+    /// <summary>Fetches history data for charts with currency filtering and gap-ignoring aggregation logic.</summary>
+    public static async Task<List<PriceHistoryDto>?> GetPriceHistoryMetalWithLogicAsync(string sym, string aggregation, int count, HistoryPeriod period, string currency = "EUR")
     {
         try
         {
-            var rawList = await GetPriceHistoryMetalAsync(sym);
+            var rawList = await GetPriceHistoryMetalAsync(sym, currency);
             if (rawList != null && rawList.Count > 0)
             {
-                return AggregateClientSide(rawList, period, count);
+                // Strict currency filter
+                var filtered = rawList
+                    .Where(p => string.Equals(p.Currency, currency, StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(p => p.EntryDate)
+                    .ThenBy(p => p.Id)
+                    .ToList();
+
+                if (filtered.Count > 0)
+                {
+                    return AggregateClientSide(filtered, period, count);
+                }
             }
         }
         catch (Exception ex)
@@ -143,46 +160,78 @@ public class HttpCall
         return null;
     }
 
-    private static List<PriceHistoryDto> AggregateClientSide(List<PriceHistoryDto> ordered, HistoryPeriod period, int targetCount)
+    private static List<PriceHistoryDto> AggregateClientSide(List<PriceHistoryDto> list, HistoryPeriod period, int targetCount)
     {
-        ordered = ordered.OrderBy(p => p.EntryDate).ToList();
-        if (ordered.Count <= targetCount) return ordered.TakeLast(targetCount).ToList();
+        var ordered = list.OrderBy(p => p.EntryDate).ThenBy(p => p.Id).ToList();
 
         return period switch
         {
-            HistoryPeriod.Daily => ordered.TakeLast(targetCount).ToList(),
-            HistoryPeriod.Weekly => TakeEveryNth(ordered, 7, targetCount),
-            HistoryPeriod.Monthly => TakeByMonth(ordered, targetCount),
-            HistoryPeriod.Yearly => TakeByYear(ordered, targetCount),
+            HistoryPeriod.Daily => AggregateByDay(ordered, targetCount),
+            HistoryPeriod.Weekly => AggregateByWeek(ordered, targetCount),
+            HistoryPeriod.Monthly => AggregateByMonth(ordered, targetCount),
+            HistoryPeriod.Yearly => AggregateByYear(ordered, targetCount),
             _ => ordered.TakeLast(targetCount).ToList()
         };
     }
 
-    private static List<PriceHistoryDto> TakeEveryNth(List<PriceHistoryDto> list, int step, int maxCount)
+    private static List<PriceHistoryDto> AggregateByDay(List<PriceHistoryDto> list, int maxCount)
     {
-        var result = new List<PriceHistoryDto>();
-        for (int i = list.Count - 1; i >= 0 && result.Count < maxCount; i -= step)
-            result.Insert(0, list[i]);
-        return result;
-    }
-
-    private static List<PriceHistoryDto> TakeByMonth(List<PriceHistoryDto> list, int maxCount)
-    {
+        // 1 entry per distinct day (latest tick of each day)
         return list
-            .GroupBy(p => (p.EntryDate.Year, p.EntryDate.Month))
-            .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
-            .Select(g => g.OrderByDescending(p => p.EntryDate).First())
-            .TakeLast(maxCount)
-            .ToList();
-    }
-
-    private static List<PriceHistoryDto> TakeByYear(List<PriceHistoryDto> list, int maxCount)
-    {
-        return list
-            .GroupBy(p => p.EntryDate.Year)
+            .GroupBy(p => p.EntryDate)
             .OrderBy(g => g.Key)
-            .Select(g => g.OrderByDescending(p => p.EntryDate).First())
+            .Select(g => g.OrderByDescending(p => p.Id).First())
             .TakeLast(maxCount)
             .ToList();
+    }
+
+    private static List<PriceHistoryDto> AggregateByWeek(List<PriceHistoryDto> list, int maxCount)
+    {
+        // 1 entry per distinct calendar week
+        return list
+            .GroupBy(p => new { p.EntryDate.Year, Week = ISOWeek.GetWeekOfYear(p.EntryDate.ToDateTime(TimeOnly.MinValue)) })
+            .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Week)
+            .Select(g => g.OrderByDescending(p => p.EntryDate).ThenByDescending(p => p.Id).First())
+            .TakeLast(maxCount)
+            .ToList();
+    }
+
+    private static List<PriceHistoryDto> AggregateByMonth(List<PriceHistoryDto> list, int maxCount)
+    {
+        // 1 entry per distinct month (up to 24 months / 2 years)
+        return list
+            .GroupBy(p => new { p.EntryDate.Year, p.EntryDate.Month })
+            .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
+            .Select(g => g.OrderByDescending(p => p.EntryDate).ThenByDescending(p => p.Id).First())
+            .TakeLast(maxCount)
+            .ToList();
+    }
+
+    private static List<PriceHistoryDto> AggregateByYear(List<PriceHistoryDto> list, int maxCount)
+    {
+        // For each year: January (or start of year) and Mid-Year (June/July or mid of year)
+        var result = new List<PriceHistoryDto>();
+
+        var yearGroups = list
+            .GroupBy(p => p.EntryDate.Year)
+            .OrderBy(g => g.Key);
+
+        foreach (var yg in yearGroups)
+        {
+            var orderedYear = yg.OrderBy(p => p.EntryDate).ThenBy(p => p.Id).ToList();
+
+            // 1. January / H1 point (earliest entry in the first half of the year)
+            var janPoint = orderedYear.FirstOrDefault(p => p.EntryDate.Month <= 5) ?? orderedYear.First();
+            result.Add(janPoint);
+
+            // 2. Mid-Year / H2 point (e.g. June/July or earliest in second half, if distinct)
+            var midYearPoint = orderedYear.FirstOrDefault(p => p.EntryDate.Month >= 6);
+            if (midYearPoint != null && midYearPoint.Id != janPoint.Id && midYearPoint.EntryDate != janPoint.EntryDate)
+            {
+                result.Add(midYearPoint);
+            }
+        }
+
+        return result.TakeLast(maxCount).ToList();
     }
 }

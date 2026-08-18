@@ -70,7 +70,14 @@ public static class HistoryRenderer
         RenderBarChart(sym, prices);
 
         Console.WriteLine();
-        Console.WriteLine(string.Format(CliStrings.HistoryEntriesSummary, slice.Count, periodLabel.ToLowerInvariant(), slice[0].EntryDate, slice[^1].EntryDate));
+        if (slice.Count == 1)
+        {
+            Console.WriteLine($"  Entries: 1 ({periodLabel.ToLowerInvariant()})  ·  {slice[0].EntryDate:dd.MM.yyyy}");
+        }
+        else
+        {
+            Console.WriteLine(string.Format(CliStrings.HistoryEntriesSummary, slice.Count, periodLabel.ToLowerInvariant(), slice[0].EntryDate, slice[^1].EntryDate));
+        }
 
         var lastUpdate = slice.Max(p => p.EntryDate);
         CliOutputHelper.RenderViewFooter(lastUpdate, boxWidth);
@@ -81,7 +88,7 @@ public static class HistoryRenderer
     {
         var spark = BuildSparkline(changes, doubleWidth);
         Console.WriteLine();
-        Console.WriteLine($"  {symbol,-6} │ {currentPrice:N2} {currencySymbol} │ {spark}");
+        Console.WriteLine($"    {symbol,-6} │ {currentPrice:N2} {currencySymbol} │ {spark}");
     }
 
     /// <summary>Builds the sparkline character sequence.</summary>

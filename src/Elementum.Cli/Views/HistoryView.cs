@@ -18,10 +18,10 @@ public class HistoryView : IDetailView
     /// <summary>Number of data points per aggregation (passed to API as count).</summary>
     private static readonly Dictionary<HistoryPeriod, int> PeriodCounts = new()
     {
-        { HistoryPeriod.Daily, 31 },
+        { HistoryPeriod.Daily, 30 },
         { HistoryPeriod.Weekly, 52 },
-        { HistoryPeriod.Monthly, 12 },
-        { HistoryPeriod.Yearly, 10 }
+        { HistoryPeriod.Monthly, 24 },
+        { HistoryPeriod.Yearly, 20 }
     };
 
     private static readonly Dictionary<HistoryPeriod, string> PeriodLabels = new()
@@ -72,7 +72,11 @@ public class HistoryView : IDetailView
     {
         await ConsoleLoader.RunAsync(async () =>
         {
-            List<PriceHistoryDto>? list = await HttpCall.GetPriceHistoryMetalWithLogicAsync(sym, aggregation, count, period);
+            var app = AppContext.Current!;
+            var currency = app?.SelectedCurrency ?? "EUR";
+            var currencySymbol = app?.CurrencySymbol ?? "€";
+
+            List<PriceHistoryDto>? list = await HttpCall.GetPriceHistoryMetalWithLogicAsync(sym, aggregation, count, period, currency);
             var periodLabel = PeriodLabels[period];
             Console.Clear();
 
@@ -83,10 +87,9 @@ public class HistoryView : IDetailView
                 return;
             }
 
-            var app = AppContext.Current!;
             // API already returns at most count entries (aggregated); order by date for chart display.
-            var ordered = list!.OrderBy(p => p.EntryDate).ToList();
-            HistoryRenderer.RenderCharts(sym, name, periodLabel, ordered, app?.SelectedCurrency ?? "EUR", app?.CurrencySymbol ?? "€");
+            var ordered = list.OrderBy(p => p.EntryDate).ToList();
+            HistoryRenderer.RenderCharts(sym, name, periodLabel, ordered, currency, currencySymbol);
         });
     }
 
