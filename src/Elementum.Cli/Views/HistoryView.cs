@@ -1,17 +1,17 @@
 using Elementum.Application.DTOs;
-using Elementum.Cli.Enums;
+using Elementum.Cli.Aggregation;
+using Elementum.Cli.Api;
 using Elementum.Cli.Constants;
+using Elementum.Cli.Enums;
 using Elementum.Cli.Input;
 using Elementum.Cli.Output;
 using Elementum.Cli.Rendering;
 using Elementum.Cli.Views.Interfaces;
-using Elementum.Cli.Api;
 
 namespace Elementum.Cli.Views;
 
 /// <summary>
 /// Two-step view: first select metal, then select period (Daily/Weekly/Monthly/Yearly). Renders sparkline and bar chart from aggregated history.
-/// Data from GET history/{symbol}/aggregated/{aggregation}/{count}.
 /// </summary>
 public class HistoryView : IDetailView
 {
@@ -56,19 +56,18 @@ public class HistoryView : IDetailView
 
         var period = _selectedPeriod.Value;
         var count = PeriodCounts[period];
-        var agg = period.ToString().ToLowerInvariant();
 
 
         CliOutputHelper.RenderViewHeader($"{CliStrings.HistoryHeaderPrefix}{name.ToUpperInvariant()} ({sym}) · {PeriodLabels[period]}");
         Console.WriteLine($"  Loading {PeriodLabels[period].ToLower()} ({count} values)…");
         CliOutputHelper.RenderViewFooter();
 
-        _ = LoadAndRenderChartsAsync(sym, name, period, count, agg);
+        _ = LoadAndRenderChartsAsync(sym, name, period, count);
         return Task.CompletedTask;
     }
 
-    /// <summary>Fetches aggregated history and renders sparkline, bar chart, and summary via <see cref="HistoryRenderer"/>.</summary>
-    private static async Task LoadAndRenderChartsAsync(string sym, string name, HistoryPeriod period, int count, string aggregation)
+    /// <summary>Fetches history data, aggregates via <see cref="HistoryDataAggregator"/> and renders charts via <see cref="HistoryRenderer"/>.</summary>
+    private static async Task LoadAndRenderChartsAsync(string sym, string name, HistoryPeriod period, int count)
     {
         await ConsoleLoader.RunAsync(async () =>
         {
@@ -76,7 +75,8 @@ public class HistoryView : IDetailView
             var currency = app?.SelectedCurrency ?? "EUR";
             var currencySymbol = app?.CurrencySymbol ?? "€";
 
-            List<PriceHistoryDto>? list = await HttpCall.GetPriceHistoryMetalWithLogicAsync(sym, aggregation, count, period, currency);
+            var rawList = await HttpCall.GetPriceHistoryMetalAsync(sym, currency);
+            var list = HistoryDataAggregator.Aggregate(rawList, period, count, currency);
             var periodLabel = PeriodLabels[period];
             Console.Clear();
 
@@ -87,7 +87,6 @@ public class HistoryView : IDetailView
                 return;
             }
 
-            // API already returns at most count entries (aggregated); order by date for chart display.
             var ordered = list.OrderBy(p => p.EntryDate).ToList();
             HistoryRenderer.RenderCharts(sym, name, periodLabel, ordered, currency, currencySymbol);
         });
