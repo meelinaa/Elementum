@@ -32,7 +32,7 @@ public class MetalsApiClient : IMetalsApiClient
         cancellationToken.ThrowIfCancellationRequested();
 
         var client = _httpClientFactory.CreateClient("GoldApi");
-        var url = string.IsNullOrWhiteSpace(_options.BaseUrl) ? "https://api.edelmetalle.de/public.json" : _options.BaseUrl;
+        var url = _options.BaseUrl;
 
         try
         {

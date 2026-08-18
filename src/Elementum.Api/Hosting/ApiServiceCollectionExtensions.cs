@@ -1,6 +1,10 @@
 using Elementum.Application;
+using Elementum.Application.Options;
 using Elementum.Infrastructure.Data;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Timeouts;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Elementum.Api.Hosting;
@@ -10,14 +14,28 @@ namespace Elementum.Api.Hosting;
 /// </summary>
 public static class ApiServiceCollectionExtensions
 {
+    private static readonly TimeSpan StrictTimeout = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan DataCruncherTimeout = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(30);
+
     /// <summary>
-    /// Adds Elementum API services to the DI container.
+    /// Adds Elementum API services to the DI container with fail-fast options validation.
     /// </summary>
     public static void AddElementumApiServices(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? configuration["CONNECTION_STRING"]
-            ?? "Server=localhost;Port=3306;Database=elementum;User=root;Password=root;";
+            ?? configuration["CONNECTION_STRING"];
+
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection or CONNECTION_STRING in appsettings.json or environment variables.");
+        }
+
+        // Fail-Fast Options Validation on Start
+        services.AddOptions<MetalsApiOptions>()
+            .BindConfiguration(MetalsApiOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
         // Application: Use Cases and Interactors
         services.AddElementumApplication();
@@ -56,12 +74,12 @@ public static class ApiServiceCollectionExtensions
         // Per-request timeouts
         services.AddRequestTimeouts(options =>
         {
-            options.AddPolicy("Strict", TimeSpan.FromSeconds(5));
-            options.AddPolicy("DataCruncher", TimeSpan.FromMinutes(1));
+            options.AddPolicy("Strict", StrictTimeout);
+            options.AddPolicy("DataCruncher", DataCruncherTimeout);
 
             options.DefaultPolicy = new RequestTimeoutPolicy
             {
-                Timeout = TimeSpan.FromSeconds(30),
+                Timeout = DefaultTimeout,
                 TimeoutStatusCode = StatusCodes.Status504GatewayTimeout
             };
         });

@@ -43,7 +43,7 @@ public static class WorkerHostBuilderExtensions
     }
 
     /// <summary>
-    /// Registers Infrastructure, Application, health checks, ingestion job, hosted <see cref="Worker"/>, and options.
+    /// Registers Infrastructure, Application, health checks, ingestion job, hosted <see cref="Worker"/>, and options with fail-fast validation.
     /// </summary>
     public static void AddWorkerApplicationServices(this WebApplicationBuilder builder)
     {
@@ -69,19 +69,15 @@ public static class WorkerHostBuilderExtensions
 
         builder.Host.UseWindowsService();
 
-        ConfigureMetalsApiOptions(services, configuration);
-        services.Configure<WorkerScheduleOptions>(configuration.GetSection(WorkerScheduleOptions.SectionName));
-    }
+        // Fail-Fast Options Validation on Start
+        services.AddOptions<MetalsApiOptions>()
+            .BindConfiguration(MetalsApiOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
-    private static void ConfigureMetalsApiOptions(IServiceCollection services, IConfiguration configuration)
-    {
-        services.Configure<MetalsApiOptions>(options =>
-        {
-            var section = configuration.GetSection(MetalsApiOptions.SectionName);
-            section.Bind(options);
-            options.ApiKey = configuration["METALS_API_KEY"] ?? options.ApiKey;
-            options.BaseUrl = configuration["METALS_API_BASE_URL"] ?? options.BaseUrl;
-            options.Currency = configuration["METALS_API_CURRENCY"] ?? options.Currency;
-        });
+        services.AddOptions<WorkerScheduleOptions>()
+            .BindConfiguration(WorkerScheduleOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
     }
 }

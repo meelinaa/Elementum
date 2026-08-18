@@ -4,10 +4,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Elementum.Cli.Config;
 
-/// <summary>CLI configuration. Base URL: env ELEMENTUM_API_BASEURL overrides appsettings.json.</summary>
+/// <summary>
+/// CLI configuration. Base URL: env ELEMENTUM_API_BASEURL overrides appsettings.json.
+/// Fail-fast: Throws InvalidOperationException if URL is missing.
+/// </summary>
 public static class CliConfig
 {
-    private const string DefaultBaseUrl = "http://localhost:5093/api/v1/";
     private const string EnvApiBaseUrl = "ELEMENTUM_API_BASEURL";
 
     private static readonly Lazy<string> _baseUrl = new(LoadBaseUrl);
@@ -19,14 +21,16 @@ public static class CliConfig
     public static string NormalizeBaseUrl(string baseUrl)
         => baseUrl.Trim().TrimEnd('/') + "/";
 
-    /// <summary>Returns the API base URL: env overrides file, file overrides default.</summary>
+    /// <summary>Returns the API base URL: env overrides file. Throws if neither is configured.</summary>
     public static string ResolveApiBaseUrl(string? fromEnv, string? fromFile)
     {
         if (!string.IsNullOrWhiteSpace(fromEnv))
             return NormalizeBaseUrl(fromEnv);
         if (!string.IsNullOrWhiteSpace(fromFile))
             return NormalizeBaseUrl(fromFile);
-        return DefaultBaseUrl;
+
+        throw new InvalidOperationException(
+            "ApiBaseUrl configuration is missing. Configure 'ApiBaseUrl' in appsettings.json or set the 'ELEMENTUM_API_BASEURL' environment variable.");
     }
 
     private static string LoadBaseUrl()
@@ -44,13 +48,15 @@ public static class CliConfig
             var config = new ConfigurationBuilder()
                 .SetBasePath(baseDir)
                 .AddJsonFile("appsettings.json", optional: true)
+                .AddJsonFile("appsettings.Development.json", optional: true)
                 .AddEnvironmentVariables()
                 .Build();
             fromFile = config["ApiBaseUrl"];
         }
         catch (Exception ex)
         {
-            CliLogging.GetLogger(nameof(CliConfig)).LogWarning(ex, "Failed to load ApiBaseUrl from appsettings.json, using default");
+            CliLogging.GetLogger(nameof(CliConfig)).LogError(ex, "Failed to load ApiBaseUrl from configuration files.");
+            throw;
         }
 
         return ResolveApiBaseUrl(fromEnv, fromFile);
