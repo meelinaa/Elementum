@@ -38,9 +38,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IMetalsApiClient, MetalsApiClient>();
         services.AddSingleton<IDistributedLockProvider, Locking.EfCoreDistributedLockProvider>();
 
-        // Register HTTP client for GoldAPI with Polly transient retry policy
+        // Register HTTP client for GoldAPI with combined Polly resilience policy (Timeout + Exponential Backoff Retry + Circuit Breaker)
         services.AddHttpClient("GoldApi")
-            .AddPolicyHandler(GetRetryPolicy());
+            .AddPolicyHandler(GetResiliencePolicy());
 
         // Register HybridCache (L1 Memory + L2 Redis with Stampede Protection)
         services.AddElementumHybridCaching(redisConnectionString);
@@ -129,11 +129,23 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    private static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
+    private static IAsyncPolicy<HttpResponseMessage> GetResiliencePolicy()
     {
-        return HttpPolicyExtensions
+        var timeoutPolicy = Policy.TimeoutAsync<HttpResponseMessage>(TimeSpan.FromSeconds(10));
+
+        var retryPolicy = HttpPolicyExtensions
             .HandleTransientHttpError()
-            .WaitAndRetryAsync(3, retryAttempt => 
+            .Or<Polly.Timeout.TimeoutRejectedException>()
+            .WaitAndRetryAsync(3, retryAttempt =>
                 TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)) + TimeSpan.FromMilliseconds(Random.Shared.Next(0, 100)));
+
+        var circuitBreakerPolicy = HttpPolicyExtensions
+            .HandleTransientHttpError()
+            .Or<Polly.Timeout.TimeoutRejectedException>()
+            .CircuitBreakerAsync(
+                handledEventsAllowedBeforeBreaking: 5,
+                durationOfBreak: TimeSpan.FromMinutes(1));
+
+        return Policy.WrapAsync(circuitBreakerPolicy, retryPolicy, timeoutPolicy);
     }
 }

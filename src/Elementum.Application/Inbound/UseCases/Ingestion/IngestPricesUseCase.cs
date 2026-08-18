@@ -1,5 +1,7 @@
 using Elementum.Application.Options;
+using Elementum.Domain.Models;
 using Elementum.Domain.Ports.Outbound;
+using FluentValidation;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -7,22 +9,26 @@ namespace Elementum.Application.Inbound.UseCases.Ingestion;
 
 /// <summary>
 /// Interactor / Implementation for ingesting daily precious metal prices.
+/// Defensively validates upstream schemas with FluentValidation before persisting.
 /// </summary>
 public class IngestPricesUseCase : IIngestPricesUseCase
 {
     private readonly IMetalsApiClient _apiClient;
     private readonly IPriceHistoryRepository _repository;
+    private readonly IValidator<EdelmetalleApiResponse> _validator;
     private readonly WorkerScheduleOptions _options;
     private readonly ILogger<IngestPricesUseCase> _logger;
 
     public IngestPricesUseCase(
         IMetalsApiClient apiClient,
         IPriceHistoryRepository repository,
+        IValidator<EdelmetalleApiResponse> validator,
         IOptions<WorkerScheduleOptions> options,
         ILogger<IngestPricesUseCase> logger)
     {
         _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        _validator = validator ?? throw new ArgumentNullException(nameof(validator));
         _options = options?.Value ?? new WorkerScheduleOptions();
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
@@ -34,6 +40,14 @@ public class IngestPricesUseCase : IIngestPricesUseCase
 
         if (edelmetalleData != null)
         {
+            var validationResult = await _validator.ValidateAsync(edelmetalleData, cancellationToken);
+            if (!validationResult.IsValid)
+            {
+                _logger.LogError("Upstream Edelmetalle API data validation failed: {Errors}. Aborting persistence to protect database integrity.",
+                    string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage)));
+                return;
+            }
+
             _logger.LogInformation("Saving hourly precious metal quotes (Gold, Silber, Platin, Palladium in USD & EUR)...");
             await _repository.SaveEdelmetallePricesAsync(edelmetalleData, cancellationToken);
             _logger.LogInformation("Hourly price ingestion completed successfully.");

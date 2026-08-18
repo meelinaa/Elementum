@@ -35,6 +35,7 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
         {
             e.ToTable("price_history");
             e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.MetalId, x.Currency, x.ReferenceTimestamp }).IsUnique();
             e.HasOne(x => x.Metal).WithMany(m => m.PriceHistory).HasForeignKey(x => x.MetalId).OnDelete(DeleteBehavior.Cascade);
 
             e.Property(x => x.MetalId).HasColumnName("metal_id");

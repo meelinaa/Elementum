@@ -83,21 +83,29 @@ public class PriceHistoryRepository : IElementumDbContext
                 (DomainConstants.Currencies.Eur, q.EurPrice)
             ];
 
+            var refTimestamp = data.Timestamp.ToString(CultureInfo.InvariantCulture);
+
             foreach (var (currency, price) in currencyQuotes)
             {
                 if (price <= 0)
                     continue;
 
-                // 1. Add raw hourly tick
-                var tick = Elementum.Domain.Entities.PriceHistory.Create(
-                    metalId: metal.Id,
-                    currency: currency,
-                    entryDate: today,
-                    price: price,
-                    symbol: $"{q.Symbol}{currency}",
-                    referenceTimestamp: data.Timestamp.ToString(CultureInfo.InvariantCulture));
+                // 1. Add raw hourly tick if not already present (idempotent insert)
+                var tickExists = await _db.PriceHistory.AnyAsync(
+                    p => p.MetalId == metal.Id && p.Currency == currency && p.ReferenceTimestamp == refTimestamp, ct);
 
-                _db.PriceHistory.Add(tick);
+                if (!tickExists)
+                {
+                    var tick = Elementum.Domain.Entities.PriceHistory.Create(
+                        metalId: metal.Id,
+                        currency: currency,
+                        entryDate: today,
+                        price: price,
+                        symbol: $"{q.Symbol}{currency}",
+                        referenceTimestamp: refTimestamp);
+
+                    _db.PriceHistory.Add(tick);
+                }
 
                 // 2. Real-time update of DailyPriceSummary candle
                 await _candleAggregator.UpdateSummaryForTickAsync(
