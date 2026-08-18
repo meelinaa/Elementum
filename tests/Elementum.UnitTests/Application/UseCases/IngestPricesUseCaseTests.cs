@@ -1,4 +1,4 @@
-using Elementum.Application.UseCases.Ingestion;
+using Elementum.Application.Inbound.UseCases.Ingestion;
 using Elementum.Domain.Models;
 using Elementum.Domain.Ports.Outbound;
 using Microsoft.Extensions.Logging;

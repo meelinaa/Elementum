@@ -1,6 +1,6 @@
 using Elementum.Application.DTOs;
 
-namespace Elementum.Application.UseCases.Prices;
+namespace Elementum.Application.Inbound.UseCases.Prices;
 
 /// <summary>
 /// Primary / Inbound Port: Queries price history, latest prices, trading data, karat calculations, and aggregations.

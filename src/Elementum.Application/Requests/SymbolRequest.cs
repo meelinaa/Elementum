@@ -6,7 +6,6 @@ namespace Elementum.Application.Requests;
 public record SymbolRequest
 {
     public string Symbol { get; init; } = string.Empty;
-
     public SymbolRequest() { }
     public SymbolRequest(string symbol) => Symbol = symbol;
 }

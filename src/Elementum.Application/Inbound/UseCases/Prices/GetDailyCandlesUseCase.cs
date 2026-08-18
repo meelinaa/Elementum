@@ -4,23 +4,17 @@ using Elementum.Domain.Errors;
 using Elementum.Domain.Ports.Outbound;
 using Microsoft.Extensions.Logging;
 
-namespace Elementum.Application.UseCases.Prices;
+namespace Elementum.Application.Inbound.UseCases.Prices;
 
 /// <summary>
 /// Interactor implementation for querying daily candles (Min/Max/Open/Close at 22:00).
 /// </summary>
-public class GetDailyCandlesUseCase : IGetDailyCandlesUseCase
+public class GetDailyCandlesUseCase(
+    IPriceHistoryRepository repository,
+    ILogger<GetDailyCandlesUseCase> logger) : IGetDailyCandlesUseCase
 {
-    private readonly IPriceHistoryRepository _repository;
-    private readonly ILogger<GetDailyCandlesUseCase> _logger;
-
-    public GetDailyCandlesUseCase(
-        IPriceHistoryRepository repository,
-        ILogger<GetDailyCandlesUseCase> logger)
-    {
-        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
+    private readonly IPriceHistoryRepository _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+    private readonly ILogger<GetDailyCandlesUseCase> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     public async Task<Result<IReadOnlyList<DailyPriceSummaryDto>>> ExecuteAsync(
         string symbol,

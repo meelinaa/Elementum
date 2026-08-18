@@ -1,6 +1,6 @@
-using Elementum.Application.UseCases.Ingestion;
-using Elementum.Application.UseCases.Metals;
-using Elementum.Application.UseCases.Prices;
+using Elementum.Application.Inbound.UseCases.Ingestion;
+using Elementum.Application.Inbound.UseCases.Metals;
+using Elementum.Application.Inbound.UseCases.Prices;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 

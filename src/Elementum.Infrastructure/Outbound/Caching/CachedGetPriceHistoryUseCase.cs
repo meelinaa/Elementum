@@ -1,5 +1,5 @@
 using Elementum.Application.DTOs;
-using Elementum.Application.UseCases.Prices;
+using Elementum.Application.Inbound.UseCases.Prices;
 using Microsoft.Extensions.Caching.Hybrid;
 
 namespace Elementum.Infrastructure.Caching;

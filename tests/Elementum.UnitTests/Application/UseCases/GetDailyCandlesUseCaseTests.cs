@@ -1,4 +1,4 @@
-using Elementum.Application.UseCases.Prices;
+using Elementum.Application.Inbound.UseCases.Prices;
 using Elementum.Domain.Entities;
 using Elementum.Domain.Ports.Outbound;
 using Microsoft.Extensions.Logging;

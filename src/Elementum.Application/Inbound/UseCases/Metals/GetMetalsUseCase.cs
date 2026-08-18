@@ -2,19 +2,14 @@ using Elementum.Application.DTOs;
 using Elementum.Application.Mapping;
 using Elementum.Domain.Ports.Outbound;
 
-namespace Elementum.Application.UseCases.Metals;
+namespace Elementum.Application.Inbound.UseCases.Metals;
 
 /// <summary>
 /// Interactor / Implementation of the metals master data use case.
 /// </summary>
-public class GetMetalsUseCase : IGetMetalsUseCase
+public class GetMetalsUseCase(IPriceHistoryRepository repository) : IGetMetalsUseCase
 {
-    private readonly IPriceHistoryRepository _repository;
-
-    public GetMetalsUseCase(IPriceHistoryRepository repository)
-    {
-        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
-    }
+    private readonly IPriceHistoryRepository _repository = repository ?? throw new ArgumentNullException(nameof(repository));
 
     public async Task<IEnumerable<MetalsDto>> GetAllAsync(CancellationToken ct = default)
     {

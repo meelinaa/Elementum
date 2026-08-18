@@ -8,14 +8,9 @@ namespace Elementum.Api.Filters;
 /// Action filter that automatically runs registered FluentValidation validators for incoming action arguments
 /// and produces RFC 7807 ValidationProblemDetails on validation failures.
 /// </summary>
-public class ValidationFilter : IAsyncActionFilter
+public class ValidationFilter(IServiceProvider serviceProvider) : IAsyncActionFilter
 {
-    private readonly IServiceProvider _serviceProvider;
-
-    public ValidationFilter(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider;
-    }
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
 
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {

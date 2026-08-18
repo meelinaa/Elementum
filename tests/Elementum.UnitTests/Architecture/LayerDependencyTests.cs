@@ -1,3 +1,4 @@
+using Elementum.Api.Inbound.Controllers;
 using NetArchTest.Rules;
 
 namespace Elementum.UnitTests.Architecture;
@@ -90,7 +91,7 @@ public class LayerDependencyTests
     public void ApiControllers_ShouldNot_HaveDirectDependencyOn_DbContext()
     {
         // Controllers in Elementum.Api must consume Application Use Cases, not DbContext directly
-        var result = Types.InAssembly(typeof(Elementum.Api.Controllers.ApiController).Assembly)
+        var result = Types.InAssembly(typeof(ApiController).Assembly)
             .That()
             .ResideInNamespace("Elementum.Api.Controllers")
             .ShouldNot()
@@ -118,7 +119,7 @@ public class LayerDependencyTests
     public void PresentationLayers_ShouldNot_DependOn_EachOther()
     {
         // Api and Worker are independent driving adapters and must never reference each other
-        var apiResult = Types.InAssembly(typeof(Elementum.Api.Controllers.ApiController).Assembly)
+        var apiResult = Types.InAssembly(typeof(ApiController).Assembly)
             .ShouldNot()
             .HaveDependencyOnAny(WorkerNamespace, CliNamespace)
             .GetResult();

@@ -1,6 +1,7 @@
-using Elementum.Application.UseCases.Ingestion;
-using Elementum.Application.UseCases.Metals;
-using Elementum.Application.UseCases.Prices;
+using Elementum.Api.Inbound.Controllers;
+using Elementum.Application.Inbound.UseCases.Ingestion;
+using Elementum.Application.Inbound.UseCases.Metals;
+using Elementum.Application.Inbound.UseCases.Prices;
 using Elementum.Infrastructure.Caching;
 using Microsoft.AspNetCore.Mvc;
 using NetArchTest.Rules;
@@ -15,7 +16,7 @@ public class DesignRuleTests
     [Fact]
     public void ApiControllers_Should_InheritFromControllerBase()
     {
-        var result = Types.InAssembly(typeof(Elementum.Api.Controllers.ApiController).Assembly)
+        var result = Types.InAssembly(typeof(ApiController).Assembly)
             .That()
             .ResideInNamespace("Elementum.Api.Controllers")
             .And()

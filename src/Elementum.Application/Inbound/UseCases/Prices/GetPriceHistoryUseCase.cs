@@ -2,19 +2,14 @@ using Elementum.Application.DTOs;
 using Elementum.Application.Mapping;
 using Elementum.Domain.Ports.Outbound;
 
-namespace Elementum.Application.UseCases.Prices;
+namespace Elementum.Application.Inbound.UseCases.Prices;
 
 /// <summary>
 /// Interactor / Implementation of the price querying use case.
 /// </summary>
-public class GetPriceHistoryUseCase : IGetPriceHistoryUseCase
+public class GetPriceHistoryUseCase(IPriceHistoryRepository repository) : IGetPriceHistoryUseCase
 {
-    private readonly IPriceHistoryRepository _repository;
-
-    public GetPriceHistoryUseCase(IPriceHistoryRepository repository)
-    {
-        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
-    }
+    private readonly IPriceHistoryRepository _repository = repository ?? throw new ArgumentNullException(nameof(repository));
 
     public async Task<IEnumerable<PriceHistoryDto>> GetLatestAllAsync(CancellationToken ct = default)
     {

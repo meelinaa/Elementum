@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Hosting;
 using Serilog;
 
 namespace Elementum.Api.Hosting;
@@ -9,9 +7,7 @@ namespace Elementum.Api.Hosting;
 /// </summary>
 public static class SerilogBootstrap
 {
-    public static LoggerConfiguration CreateBootstrapLoggerConfiguration() =>
-        new LoggerConfiguration()
-            .WriteTo.Console();
+    public static LoggerConfiguration CreateBootstrapLoggerConfiguration() => new LoggerConfiguration().WriteTo.Console();
 
     public static void InitializeGlobalLogger()
     {

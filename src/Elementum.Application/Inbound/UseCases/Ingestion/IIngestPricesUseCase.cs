@@ -1,4 +1,4 @@
-namespace Elementum.Application.UseCases.Ingestion;
+namespace Elementum.Application.Inbound.UseCases.Ingestion;
 
 /// <summary>
 /// Primary / Inbound Port: Use case for ingesting daily precious metal prices.

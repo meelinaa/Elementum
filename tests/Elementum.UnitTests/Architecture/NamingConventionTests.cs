@@ -1,3 +1,5 @@
+using Elementum.Api.Inbound.Controllers;
+using Elementum.Application.Inbound.UseCases.Ingestion;
 using NetArchTest.Rules;
 
 namespace Elementum.UnitTests.Architecture;
@@ -23,7 +25,7 @@ public class NamingConventionTests
     [Fact]
     public void ApplicationInterfaces_Should_StartWithI()
     {
-        var result = Types.InAssembly(typeof(Elementum.Application.UseCases.Ingestion.IIngestPricesUseCase).Assembly)
+        var result = Types.InAssembly(typeof(IIngestPricesUseCase).Assembly)
             .That()
             .AreInterfaces()
             .Should()
@@ -36,7 +38,7 @@ public class NamingConventionTests
     [Fact]
     public void ApiControllers_Should_EndWithController()
     {
-        var result = Types.InAssembly(typeof(Elementum.Api.Controllers.ApiController).Assembly)
+        var result = Types.InAssembly(typeof(ApiController).Assembly)
             .That()
             .ResideInNamespace("Elementum.Api.Controllers")
             .And()
@@ -64,7 +66,7 @@ public class NamingConventionTests
     [Fact]
     public void UseCases_Should_EndWithUseCase()
     {
-        var result = Types.InAssembly(typeof(Elementum.Application.UseCases.Ingestion.IngestPricesUseCase).Assembly)
+        var result = Types.InAssembly(typeof(IngestPricesUseCase).Assembly)
             .That()
             .ResideInNamespaceStartingWith("Elementum.Application.UseCases")
             .And()

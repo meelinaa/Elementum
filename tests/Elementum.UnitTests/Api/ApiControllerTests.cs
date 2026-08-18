@@ -1,8 +1,8 @@
-using Elementum.Api.Controllers;
+using Elementum.Api.Inbound.Controllers;
 using Elementum.Application.DTOs;
+using Elementum.Application.Inbound.UseCases.Metals;
+using Elementum.Application.Inbound.UseCases.Prices;
 using Elementum.Application.Requests;
-using Elementum.Application.UseCases.Metals;
-using Elementum.Application.UseCases.Prices;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;

@@ -1,6 +1,6 @@
 using Elementum.Application.DTOs;
 
-namespace Elementum.Application.UseCases.Metals;
+namespace Elementum.Application.Inbound.UseCases.Metals;
 
 /// <summary>
 /// Primary / Inbound Port: Queries precious metals master data.

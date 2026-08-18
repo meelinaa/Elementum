@@ -17,5 +17,3 @@ app.UseElementumApiPipeline();
 
 Log.Information("Elementum-ServiceApi started");
 app.Run();
-
-public partial class Program { }

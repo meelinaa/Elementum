@@ -1,7 +1,7 @@
 using Elementum.Domain.Ports.Outbound;
 using Microsoft.Extensions.Logging;
 
-namespace Elementum.Application.UseCases.Ingestion;
+namespace Elementum.Application.Inbound.UseCases.Ingestion;
 
 /// <summary>
 /// Interactor / Implementation for ingesting daily precious metal prices.

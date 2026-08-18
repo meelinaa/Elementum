@@ -1,33 +1,22 @@
 using Elementum.Application.DTOs;
+using Elementum.Application.Inbound.UseCases.Metals;
+using Elementum.Application.Inbound.UseCases.Prices;
 using Elementum.Application.Requests;
-using Elementum.Application.UseCases.Metals;
-using Elementum.Application.UseCases.Prices;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Elementum.Api.Controllers;
+namespace Elementum.Api.Inbound.Controllers;
 
 /// <summary>
 /// Driving / Primary Adapter: REST API controller for Elementum (metals list and price history).
 /// </summary>
 [ApiController]
 [Route("api/v1")]
-public class ApiController : ControllerBase
+public class ApiController(IGetPriceHistoryUseCase priceHistoryUseCase, IGetMetalsUseCase metalsUseCase, IGetDailyCandlesUseCase dailyCandlesUseCase) : ControllerBase
 {
-    private readonly IGetPriceHistoryUseCase _priceHistoryUseCase;
-    private readonly IGetMetalsUseCase _metalsUseCase;
-    private readonly IGetDailyCandlesUseCase _dailyCandlesUseCase;
-
-    public ApiController(
-        IGetPriceHistoryUseCase priceHistoryUseCase,
-        IGetMetalsUseCase metalsUseCase,
-        IGetDailyCandlesUseCase dailyCandlesUseCase)
-    {
-        _priceHistoryUseCase = priceHistoryUseCase ?? throw new ArgumentNullException(nameof(priceHistoryUseCase));
-        _metalsUseCase = metalsUseCase ?? throw new ArgumentNullException(nameof(metalsUseCase));
-        _dailyCandlesUseCase = dailyCandlesUseCase ?? throw new ArgumentNullException(nameof(dailyCandlesUseCase));
-    }
+    private readonly IGetPriceHistoryUseCase _priceHistoryUseCase = priceHistoryUseCase ?? throw new ArgumentNullException(nameof(priceHistoryUseCase));
+    private readonly IGetMetalsUseCase _metalsUseCase = metalsUseCase ?? throw new ArgumentNullException(nameof(metalsUseCase));
+    private readonly IGetDailyCandlesUseCase _dailyCandlesUseCase = dailyCandlesUseCase ?? throw new ArgumentNullException(nameof(dailyCandlesUseCase));
 
     /// <summary>GET /api/v1/history/{symbol}/candles — daily candle summaries (Min, Max, Open, Close at 22:00) for charts.</summary>
     [HttpGet("history/{symbol}/candles", Order = 1)]
