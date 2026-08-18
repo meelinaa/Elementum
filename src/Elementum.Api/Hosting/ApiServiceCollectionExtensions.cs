@@ -1,13 +1,19 @@
+using System.Threading.RateLimiting;
 using Elementum.Application;
 using Elementum.Application.Options;
 using Elementum.Infrastructure.Data;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Timeouts;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Elementum.Api.Hosting;
 
 /// <summary>
-/// Registers all API dependencies: database, application use cases, OpenAPI, CORS, health checks, and request timeouts.
+/// Registers all API dependencies: database, application use cases, OpenAPI, CORS, health checks, rate limiting, and request timeouts.
 /// </summary>
 public static class ApiServiceCollectionExtensions
 {
@@ -34,6 +40,11 @@ public static class ApiServiceCollectionExtensions
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        services.AddOptions<RateLimitingOptions>()
+            .BindConfiguration(RateLimitingOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
         // Application: Use Cases and Interactors
         services.AddElementumApplication();
 
@@ -51,6 +62,45 @@ public static class ApiServiceCollectionExtensions
 
         // RFC 7807 ProblemDetails for validation errors and exception handler integration.
         services.AddProblemDetails();
+
+        // Rate Limiting: IP-based partition with 429 ProblemDetails rejection handler
+        services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.OnRejected = async (context, cancellationToken) =>
+            {
+                context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                context.HttpContext.Response.ContentType = "application/problem+json";
+                var problemDetails = new ProblemDetails
+                {
+                    Title = "Too Many Requests",
+                    Status = StatusCodes.Status429TooManyRequests,
+                    Detail = "Rate limit exceeded. Please try again later.",
+                    Instance = $"{context.HttpContext.Request.Method} {context.HttpContext.Request.Path}"
+                };
+                await context.HttpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken: cancellationToken);
+            };
+
+            options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+            {
+                var clientIp = httpContext.Connection.RemoteIpAddress?.ToString()
+                    ?? httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault()
+                    ?? "anonymous";
+
+                var rateLimitConfig = configuration.GetSection(RateLimitingOptions.SectionName).Get<RateLimitingOptions>()
+                    ?? new RateLimitingOptions();
+
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: clientIp,
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = rateLimitConfig.PermitLimit,
+                        Window = TimeSpan.FromSeconds(rateLimitConfig.WindowSeconds),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = rateLimitConfig.QueueLimit
+                    });
+            });
+        });
 
         // CORS
         var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["http://localhost:3000"];

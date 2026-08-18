@@ -6,7 +6,7 @@ using System.Text.Json;
 namespace Elementum.Api.Hosting;
 
 /// <summary>
-/// Configures the HTTP request pipeline: correlation IDs, timeouts, logging, exception handling, CORS, authorization, and health endpoints.
+/// Configures the HTTP request pipeline: correlation IDs, timeouts, logging, exception handling, CORS, rate limiting, authorization, and health endpoints.
 /// </summary>
 public static class ApiApplicationPipelineExtensions
 {
@@ -71,6 +71,9 @@ public static class ApiApplicationPipelineExtensions
             app.UseHttpsRedirection();
             app.UseCors("FrontendPolicy");
         }
+
+        // Apply global IP-based rate limiting
+        app.UseRateLimiter();
 
         app.UseAuthorization();
 

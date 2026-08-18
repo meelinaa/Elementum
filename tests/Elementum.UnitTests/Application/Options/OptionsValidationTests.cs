@@ -133,6 +133,59 @@ public class OptionsValidationTests
     }
 
     [Fact]
+    public void RateLimitingOptions_ValidConfiguration_PassesValidation()
+    {
+        var options = new RateLimitingOptions
+        {
+            PermitLimit = 100,
+            WindowSeconds = 60,
+            QueueLimit = 0
+        };
+
+        var errors = ValidateModel(options);
+
+        Assert.Empty(errors);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(100001)]
+    public void RateLimitingOptions_InvalidPermitLimit_FailsValidation(int invalidLimit)
+    {
+        var options = new RateLimitingOptions
+        {
+            PermitLimit = invalidLimit,
+            WindowSeconds = 60,
+            QueueLimit = 0
+        };
+
+        var errors = ValidateModel(options);
+
+        Assert.NotEmpty(errors);
+        Assert.Contains(errors, e => e.MemberNames.Contains(nameof(RateLimitingOptions.PermitLimit)));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-10)]
+    [InlineData(86401)]
+    public void RateLimitingOptions_InvalidWindowSeconds_FailsValidation(int invalidWindow)
+    {
+        var options = new RateLimitingOptions
+        {
+            PermitLimit = 100,
+            WindowSeconds = invalidWindow,
+            QueueLimit = 0
+        };
+
+        var errors = ValidateModel(options);
+
+        Assert.NotEmpty(errors);
+        Assert.Contains(errors, e => e.MemberNames.Contains(nameof(RateLimitingOptions.WindowSeconds)));
+    }
+
+    [Fact]
     public void CliConfig_ResolveApiBaseUrl_WhenBothMissing_ThrowsInvalidOperationException()
     {
         Assert.Throws<InvalidOperationException>(() => CliConfig.ResolveApiBaseUrl(null, null));

@@ -11,7 +11,7 @@ public static class SerilogBootstrap
 
     public static void InitializeGlobalLogger()
     {
-        Log.Logger = CreateBootstrapLoggerConfiguration().CreateBootstrapLogger();
+        Log.Logger = CreateBootstrapLoggerConfiguration().CreateLogger();
     }
 
     public static ConfigureHostBuilder UseElementumSerilog(this ConfigureHostBuilder host)
@@ -19,7 +19,8 @@ public static class SerilogBootstrap
         host.UseSerilog((context, services, configuration) => configuration
             .ReadFrom.Configuration(context.Configuration)
             .ReadFrom.Services(services)
-            .Enrich.FromLogContext());
+            .Enrich.FromLogContext(),
+            preserveStaticLogger: true);
         return host;
     }
 }
