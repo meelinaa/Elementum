@@ -7,6 +7,7 @@ namespace Elementum.Infrastructure.Caching;
 /// <summary>
 /// Decorator for <see cref="IGetPriceHistoryUseCase"/> providing 2-tier caching (L1 Memory + L2 Distributed Redis)
 /// and automatic Stampede Protection (concurrency lock per key) using .NET HybridCache.
+/// Returns <see cref="ValueTask{TResult}"/> to ensure zero heap allocations on L1 memory cache hits.
 /// </summary>
 public class CachedGetPriceHistoryUseCase : IGetPriceHistoryUseCase
 {
@@ -24,7 +25,7 @@ public class CachedGetPriceHistoryUseCase : IGetPriceHistoryUseCase
         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     }
 
-    public async Task<IEnumerable<PriceHistoryDto>> GetLatestAllAsync(CancellationToken ct = default)
+    public async ValueTask<IEnumerable<PriceHistoryDto>> GetLatestAllAsync(CancellationToken ct = default)
     {
         return await _cache.GetOrCreateAsync(
             "prices:all:latest",
@@ -33,7 +34,7 @@ public class CachedGetPriceHistoryUseCase : IGetPriceHistoryUseCase
             cancellationToken: ct);
     }
 
-    public async Task<IEnumerable<PriceHistoryDto>> GetBySymbolAsync(string symbol, string? currency = null, CancellationToken ct = default)
+    public async ValueTask<IEnumerable<PriceHistoryDto>> GetBySymbolAsync(string symbol, string? currency = null, CancellationToken ct = default)
     {
         var normalized = (symbol ?? string.Empty).Trim().ToUpperInvariant();
         var cur = (currency ?? string.Empty).Trim().ToUpperInvariant();
@@ -46,7 +47,7 @@ public class CachedGetPriceHistoryUseCase : IGetPriceHistoryUseCase
             cancellationToken: ct);
     }
 
-    public async Task<PriceHistoryDto?> GetLatestBySymbolAsync(string symbol, CancellationToken ct = default)
+    public async ValueTask<PriceHistoryDto?> GetLatestBySymbolAsync(string symbol, CancellationToken ct = default)
     {
         var normalized = (symbol ?? string.Empty).Trim().ToUpperInvariant();
         return await _cache.GetOrCreateAsync(
@@ -56,7 +57,7 @@ public class CachedGetPriceHistoryUseCase : IGetPriceHistoryUseCase
             cancellationToken: ct);
     }
 
-    public async Task<TradingPriceDto?> GetTradingLatestAsync(string symbol, CancellationToken ct = default)
+    public async ValueTask<TradingPriceDto?> GetTradingLatestAsync(string symbol, CancellationToken ct = default)
     {
         var normalized = (symbol ?? string.Empty).Trim().ToUpperInvariant();
         return await _cache.GetOrCreateAsync(
@@ -66,12 +67,12 @@ public class CachedGetPriceHistoryUseCase : IGetPriceHistoryUseCase
             cancellationToken: ct);
     }
 
-    public Task<IEnumerable<PriceHistoryDto>> GetByDateRangeAsync(string symbol, DateOnly firstDate, DateOnly lastDate, CancellationToken ct = default)
+    public ValueTask<IEnumerable<PriceHistoryDto>> GetByDateRangeAsync(string symbol, DateOnly firstDate, DateOnly lastDate, CancellationToken ct = default)
     {
         return _inner.GetByDateRangeAsync(symbol, firstDate, lastDate, ct);
     }
 
-    public Task<IEnumerable<PriceHistoryDto>> GetAggregatedAsync(string symbol, string aggregation, int count, CancellationToken ct = default)
+    public ValueTask<IEnumerable<PriceHistoryDto>> GetAggregatedAsync(string symbol, string aggregation, int count, CancellationToken ct = default)
     {
         return _inner.GetAggregatedAsync(symbol, aggregation, count, ct);
     }

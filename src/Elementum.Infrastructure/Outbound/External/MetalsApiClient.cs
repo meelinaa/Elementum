@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+using System.Text.Json;
 using Elementum.Application.Options;
 using Elementum.Domain.Models;
 using Elementum.Domain.Ports.Outbound;
@@ -10,9 +10,15 @@ namespace Elementum.Infrastructure.External;
 /// <summary>
 /// Secondary / Driven Adapter: Client for api.edelmetalle.de.
 /// Fetches precious metal spot prices (Gold, Silver, Platinum, Palladium in USD and EUR) in a single request.
+/// Employs streaming HTTP deserialization (ResponseHeadersRead + ReadAsStreamAsync) for zero string buffering.
 /// </summary>
 public class MetalsApiClient : IMetalsApiClient
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     private readonly ILogger<MetalsApiClient> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly MetalsApiOptions _options;
@@ -36,19 +42,26 @@ public class MetalsApiClient : IMetalsApiClient
 
         try
         {
-            _logger.LogInformation("Fetching precious metal prices from {Url}...", url);
-            var response = await client.GetFromJsonAsync<EdelmetalleApiResponse>(url, cancellationToken);
-            if (response == null)
+            _logger.LogInformation("Streaming precious metal prices from {Url}...", url);
+
+            // Stream directly from HTTP response socket to minimize memory footprint
+            using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            var result = await JsonSerializer.DeserializeAsync<EdelmetalleApiResponse>(stream, JsonOptions, cancellationToken);
+
+            if (result == null)
             {
-                _logger.LogWarning("Empty response received from {Url}", url);
+                _logger.LogWarning("Empty payload received from {Url}", url);
                 return null;
             }
 
             _logger.LogInformation(
                 "Successfully fetched prices: Gold USD={GoldUsd}, EUR={GoldEur}, Silber USD={SilberUsd}, EUR={SilberEur}, Rate={Rate}",
-                response.GoldUsd, response.GoldEur, response.SilberUsd, response.SilberEur, response.WechselkursUsdEur);
+                result.GoldUsd, result.GoldEur, result.SilberUsd, result.SilberEur, result.WechselkursUsdEur);
 
-            return response;
+            return result;
         }
         catch (Exception ex)
         {
