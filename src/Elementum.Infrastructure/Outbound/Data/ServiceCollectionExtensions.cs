@@ -2,7 +2,9 @@ using Elementum.Application.Inbound.UseCases.Prices;
 using Elementum.Domain.Ports.Outbound;
 using Elementum.Infrastructure.Caching;
 using Elementum.Infrastructure.Data.Interfaces;
+using Elementum.Infrastructure.Data.Repositories;
 using Elementum.Infrastructure.Data.Resilience;
+using Elementum.Infrastructure.Data.Services;
 using Elementum.Infrastructure.External;
 using Elementum.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -94,7 +96,7 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registers <see cref="ElementumDbContext"/> and <see cref="IElementumDbContext"/>.
+    /// Registers <see cref="ElementumDbContext"/>, repository, services, and <see cref="IElementumDbContext"/>.
     /// </summary>
     public static IServiceCollection AddElementumDbContext(
         this IServiceCollection services,
@@ -104,12 +106,16 @@ public static class ServiceCollectionExtensions
         services.AddDbContext<ElementumDbContext>(options =>
             options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 36))));
 
+        services.AddScoped<IDailyCandleAggregator, DailyCandleAggregator>();
+        services.AddScoped<IPriceHistoryPruner, PriceHistoryPruner>();
+        services.AddScoped<PriceHistoryRepository>();
+
         if (configureResilience != null)
         {
             services.Configure(configureResilience);
             services.AddScoped<IElementumDbContext>(sp =>
             {
-                var inner = sp.GetRequiredService<ElementumDbContext>();
+                var inner = sp.GetRequiredService<PriceHistoryRepository>();
                 var opts = sp.GetRequiredService<IOptions<ElementumDbContextResilienceOptions>>().Value;
                 var policy = DatabaseResiliencePolicy.BuildRetryPolicy(opts);
                 return new ResilientElementumDbContext(inner, policy);
@@ -117,7 +123,7 @@ public static class ServiceCollectionExtensions
         }
         else
         {
-            services.AddScoped<IElementumDbContext>(sp => sp.GetRequiredService<ElementumDbContext>());
+            services.AddScoped<IElementumDbContext, PriceHistoryRepository>();
         }
 
         return services;

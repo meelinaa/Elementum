@@ -1,0 +1,28 @@
+using Elementum.Domain.Entities;
+using Elementum.Infrastructure.Data;
+
+namespace Elementum.Infrastructure.Data.Services;
+
+/// <summary>
+/// Service responsible for aggregating and updating daily price candles (Min, Max, Open, Close).
+/// </summary>
+public interface IDailyCandleAggregator
+{
+    /// <summary>
+    /// Aggregates hourly price ticks for a given date and persists daily candle summaries (Open, High, Low, Close).
+    /// </summary>
+    Task AggregateDailySummaryAsync(ElementumDbContext db, DateOnly date, CancellationToken ct = default);
+
+    /// <summary>
+    /// Updates or creates a daily candle summary in real-time when a new price tick arrives.
+    /// </summary>
+    Task UpdateSummaryForTickAsync(
+        ElementumDbContext db,
+        int metalId,
+        string currency,
+        DateOnly date,
+        decimal price,
+        decimal exchangeRateUsdEur,
+        bool isCloseHour,
+        CancellationToken ct = default);
+}

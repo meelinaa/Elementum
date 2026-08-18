@@ -1,13 +1,15 @@
 using Elementum.Domain.Entities;
 using Elementum.Domain.Models;
 using Elementum.Infrastructure.Data;
+using Elementum.Infrastructure.Data.Repositories;
+using Elementum.Infrastructure.Data.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace Elementum.Worker.Tests.Services;
 
 public class PriceHistoryRepositoryTests
 {
-    private static ElementumDbContext CreateDbContext()
+    private static (ElementumDbContext Db, PriceHistoryRepository Repo) CreateTestSetup()
     {
         var options = new DbContextOptionsBuilder<ElementumDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -18,14 +20,18 @@ public class PriceHistoryRepositoryTests
         context.Metals.Add(new Metals { Id = 2, Symbol = "XAG", Name = "Silver" });
         context.SaveChanges();
 
-        return context;
+        var aggregator = new DailyCandleAggregator();
+        var pruner = new PriceHistoryPruner();
+        var repo = new PriceHistoryRepository(context, aggregator, pruner);
+
+        return (context, repo);
     }
 
     [Fact]
     public async Task SavePricesAsync_WhenPricesEmpty_DoesNotThrow()
     {
-        await using var db = CreateDbContext();
-        await db.SavePricesAsync(Array.Empty<DailyPrices>());
+        var (db, repo) = CreateTestSetup();
+        await repo.SavePricesAsync(Array.Empty<DailyPrices>());
         var count = await db.PriceHistory.CountAsync();
         Assert.Equal(0, count);
     }
@@ -33,13 +39,13 @@ public class PriceHistoryRepositoryTests
     [Fact]
     public async Task SavePricesAsync_WhenPricesContainValidMetal_InsertsRow()
     {
-        await using var db = CreateDbContext();
+        var (db, repo) = CreateTestSetup();
         var prices = new List<DailyPrices>
         {
             new() { Metal = "XAU", Currency = "USD", Price = 2650.50m, Symbol = "FOREXCOM:XAUUSD" }
         };
 
-        await db.SavePricesAsync(prices);
+        await repo.SavePricesAsync(prices);
 
         var count = await db.PriceHistory.CountAsync();
         Assert.Equal(1, count);
@@ -52,7 +58,7 @@ public class PriceHistoryRepositoryTests
     [Fact]
     public async Task GetPriceHistoryMetalData_Daily_ReturnsBoundedChronologicalRecords()
     {
-        await using var db = CreateDbContext();
+        var (db, repo) = CreateTestSetup();
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         for (int i = 10; i >= 1; i--)
         {
@@ -67,7 +73,7 @@ public class PriceHistoryRepositoryTests
         }
         await db.SaveChangesAsync();
 
-        var result = (await db.GetPriceHistoryMetalData("XAU", "daily", 5, CancellationToken.None)).ToList();
+        var result = (await repo.GetPriceHistoryMetalData("XAU", "daily", 5, CancellationToken.None)).ToList();
 
         Assert.Equal(5, result.Count);
         Assert.True(result[0].EntryDate < result[4].EntryDate); // Chronological order
@@ -77,7 +83,7 @@ public class PriceHistoryRepositoryTests
     [Fact]
     public async Task GetPriceHistoryMetalData_Monthly_ReturnsAggregatedAverages()
     {
-        await using var db = CreateDbContext();
+        var (db, repo) = CreateTestSetup();
         db.PriceHistory.AddRange(
             new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = new DateOnly(2026, 1, 10), Price = 2000m, Symbol = "XAU" },
             new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = new DateOnly(2026, 1, 20), Price = 3000m, Symbol = "XAU" },
@@ -85,7 +91,7 @@ public class PriceHistoryRepositoryTests
         );
         await db.SaveChangesAsync();
 
-        var result = (await db.GetPriceHistoryMetalData("XAU", "monthly", 12, CancellationToken.None)).ToList();
+        var result = (await repo.GetPriceHistoryMetalData("XAU", "monthly", 12, CancellationToken.None)).ToList();
 
         Assert.Equal(2, result.Count);
         Assert.Equal(new DateOnly(2026, 1, 1), result[0].EntryDate);
@@ -97,13 +103,13 @@ public class PriceHistoryRepositoryTests
     [Fact]
     public async Task SavePricesAsync_WhenCalledMultipleTimes_UpdatesExistingRowIdempotently()
     {
-        await using var db = CreateDbContext();
+        var (db, repo) = CreateTestSetup();
         var pricesInitial = new List<DailyPrices>
         {
             new() { Metal = "XAU", Currency = "USD", Price = 2600.00m, Symbol = "FOREXCOM:XAUUSD" }
         };
 
-        await db.SavePricesAsync(pricesInitial);
+        await repo.SavePricesAsync(pricesInitial);
         Assert.Equal(1, await db.PriceHistory.CountAsync());
         Assert.Equal(2600.00m, (await db.PriceHistory.FirstAsync()).Price);
 
@@ -113,7 +119,7 @@ public class PriceHistoryRepositoryTests
             new() { Metal = "XAU", Currency = "USD", Price = 2650.00m, Symbol = "FOREXCOM:XAUUSD" }
         };
 
-        await db.SavePricesAsync(pricesUpdated);
+        await repo.SavePricesAsync(pricesUpdated);
 
         // Count must still be 1, but price updated to 2650.00
         Assert.Equal(1, await db.PriceHistory.CountAsync());
@@ -123,31 +129,31 @@ public class PriceHistoryRepositoryTests
     [Fact]
     public async Task IsDataAlreadyIngestedToday_PartialVsFullIngestion_ChecksAllCatalogMetals()
     {
-        await using var db = CreateDbContext(); // Contains Metal 1 (Gold) and Metal 2 (Silver)
+        var (db, repo) = CreateTestSetup(); // Contains Metal 1 (Gold) and Metal 2 (Silver)
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
         // Initially no prices ingested
-        Assert.False(await db.IsDataAlreadyIngestedToday(CancellationToken.None));
+        Assert.False(await repo.IsDataAlreadyIngestedToday(CancellationToken.None));
 
         // Ingest only Gold (1 of 2 metals)
         db.PriceHistory.Add(new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = today, Price = 2000m, Symbol = "XAU" });
         await db.SaveChangesAsync();
 
         // Must still return false because Silver is missing
-        Assert.False(await db.IsDataAlreadyIngestedToday(CancellationToken.None));
+        Assert.False(await repo.IsDataAlreadyIngestedToday(CancellationToken.None));
 
         // Ingest Silver (2 of 2 metals)
         db.PriceHistory.Add(new PriceHistory { MetalId = 2, Currency = "USD", EntryDate = today, Price = 30m, Symbol = "XAG" });
         await db.SaveChangesAsync();
 
         // Now all metals are ingested -> must return true
-        Assert.True(await db.IsDataAlreadyIngestedToday(CancellationToken.None));
+        Assert.True(await repo.IsDataAlreadyIngestedToday(CancellationToken.None));
     }
 
     [Fact]
     public async Task SaveEdelmetallePricesAsync_SavesHourlyTicksAndUpdatesDailyCandles()
     {
-        await using var db = CreateDbContext();
+        var (db, repo) = CreateTestSetup();
         var data = new EdelmetalleApiResponse
         {
             GoldUsd = 4410.6m,
@@ -162,7 +168,7 @@ public class PriceHistoryRepositoryTests
             WechselkursUsdEur = 1.15m
         };
 
-        await db.SaveEdelmetallePricesAsync(data, CancellationToken.None);
+        await repo.SaveEdelmetallePricesAsync(data, CancellationToken.None);
 
         // Gold & Silver were seeded (metals 1 and 2), each has USD and EUR
         var historyCount = await db.PriceHistory.CountAsync();
@@ -182,7 +188,7 @@ public class PriceHistoryRepositoryTests
     [Fact]
     public async Task PruneHourlyDataOlderThanAsync_DeletesRecordsOlderThan7Days()
     {
-        await using var db = CreateDbContext();
+        var (db, repo) = CreateTestSetup();
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
         // 10 days old record
@@ -196,7 +202,7 @@ public class PriceHistoryRepositoryTests
         await db.SaveChangesAsync();
 
         var threshold = DateTime.UtcNow.AddDays(-7);
-        var deletedCount = await db.PruneHourlyDataOlderThanAsync(threshold, CancellationToken.None);
+        var deletedCount = await repo.PruneHourlyDataOlderThanAsync(threshold, CancellationToken.None);
 
         Assert.Equal(2, deletedCount);
         Assert.Equal(2, await db.PriceHistory.CountAsync());
@@ -205,7 +211,7 @@ public class PriceHistoryRepositoryTests
     [Fact]
     public async Task AggregateDailySummaryAsync_ComputesMinMaxOpenCloseAccurately()
     {
-        await using var db = CreateDbContext();
+        var (db, repo) = CreateTestSetup();
         var date = new DateOnly(2026, 8, 17);
 
         db.PriceHistory.AddRange(
@@ -216,7 +222,7 @@ public class PriceHistoryRepositoryTests
         );
         await db.SaveChangesAsync();
 
-        await db.AggregateDailySummaryAsync(date, CancellationToken.None);
+        await repo.AggregateDailySummaryAsync(date, CancellationToken.None);
 
         var candle = await db.DailyPriceSummaries.FirstOrDefaultAsync(s => s.MetalId == 1 && s.Currency == "USD" && s.EntryDate == date);
         Assert.NotNull(candle);
