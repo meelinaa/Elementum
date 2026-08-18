@@ -54,16 +54,6 @@ public class MoneyTests
     }
 
     [Fact]
-    public void Money_RoundToCash_Uses2Decimals()
-    {
-        var m1 = Money.Eur(2.434m).RoundToCash();
-        Assert.Equal(2.43m, m1.Amount);
-
-        var m2 = Money.Usd(2.436m).RoundToCash();
-        Assert.Equal(2.44m, m2.Amount);
-    }
-
-    [Fact]
     public void Money_BankersRounding_ToEvenDecimals()
     {
         var m = Money.Usd(10.55555m).Round(4);

@@ -79,12 +79,6 @@ public readonly record struct Money : IComparable<Money>, IEquatable<Money>
     public Money Round(int decimals = 4, MidpointRounding mode = MidpointRounding.ToEven) =>
         new(Math.Round(Amount, decimals, mode), Currency);
 
-    /// <summary>
-    /// Rounds to legal cash denominations (uses currency decimal places: 2 decimals for USD and EUR).
-    /// </summary>
-    public Money RoundToCash(MidpointRounding mode = MidpointRounding.ToEven) =>
-        new(Math.Round(Amount, Currency.DecimalPlaces, mode), Currency);
-
     public int CompareTo(Money other)
     {
         EnsureSameCurrency(this, other);

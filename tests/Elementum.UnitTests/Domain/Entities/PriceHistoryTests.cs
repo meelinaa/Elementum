@@ -65,25 +65,6 @@ public class PriceHistoryTests
             PriceHistory.Create(1, "USD", date, 2000m, ask: 1990m, bid: 2010m));
     }
 
-    [Fact]
-    public void CalculatePurityGramPrice_ValidRatio_ComputesAccuratePrice()
-    {
-        var priceHistory = PriceHistory.Create(
-            metalId: 1,
-            currency: "USD",
-            entryDate: new DateOnly(2026, 8, 17),
-            price: 2488.278m,
-            priceGram24k: 80.00m);
-
-        // 18k = 75.0% purity -> 80.00 * 0.75 = 60.00
-        var price18k = priceHistory.CalculatePurityGramPrice(0.750m);
-        Assert.Equal(60.00m, price18k);
-
-        // 14k = 58.5% purity -> 80.00 * 0.585 = 46.80
-        var price14k = priceHistory.CalculatePurityGramPrice(0.585m);
-        Assert.Equal(46.80m, price14k);
-    }
-
     [Theory]
     [InlineData("CHF")]
     [InlineData("GBP")]

@@ -148,18 +148,6 @@ public class PriceHistory
         if (symbol != null) Symbol = symbol;
     }
 
-    /// <summary>
-    /// Calculates price per gram for a specific purity ratio (e.g. 0.750 for 18k) based on 24k fine gold price.
-    /// </summary>
-    public decimal CalculatePurityGramPrice(decimal purityRatio)
-    {
-        if (purityRatio <= 0 || purityRatio > 1.0m)
-            throw new ArgumentOutOfRangeException(nameof(purityRatio), "Purity ratio must be between 0 and 1.0 (e.g. 0.999 for 24k, 0.750 for 18k).");
-
-        var base24kPrice = PriceGram24k ?? (Price / 31.1034768m);
-        return Math.Round(base24kPrice * purityRatio, 4, MidpointRounding.ToEven);
-    }
-
     private static void ValidateInvariants(
         int metalId,
         string currency,
