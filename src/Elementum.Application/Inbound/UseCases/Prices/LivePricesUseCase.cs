@@ -1,39 +1,24 @@
 using Elementum.Application.DTOs;
-using Elementum.Domain.Models;
+using Elementum.Application.Services;
 using Elementum.Domain.Ports.Outbound;
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 
 namespace Elementum.Application.Inbound.UseCases.Prices;
 
 /// <summary>
-/// Interactor: Implements 5-minute cached live price querying and daily trading aggregations.
+/// Interactor: Implements live price querying and daily trading aggregations.
+/// Coordinates live quotes, repository history, and trading metrics calculations.
 /// </summary>
-public class LivePricesUseCase : ILivePricesUseCase
+public class LivePricesUseCase(
+    ILiveQuotesProvider quotesProvider,
+    IPriceHistoryRepository repository) : ILivePricesUseCase
 {
-    private const string CacheKey = "Edelmetalle_LiveQuotes";
-    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
+    private readonly ILiveQuotesProvider _quotesProvider = quotesProvider ?? throw new ArgumentNullException(nameof(quotesProvider));
+    private readonly IPriceHistoryRepository _repository = repository ?? throw new ArgumentNullException(nameof(repository));
 
-    private readonly IMetalsApiClient _apiClient;
-    private readonly IPriceHistoryRepository _repository;
-    private readonly IMemoryCache _cache;
-    private readonly ILogger<LivePricesUseCase> _logger;
-
-    public LivePricesUseCase(
-        IMetalsApiClient apiClient,
-        IPriceHistoryRepository repository,
-        IMemoryCache cache,
-        ILogger<LivePricesUseCase> logger)
-    {
-        _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
-        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
-        _cache = cache ?? throw new ArgumentNullException(nameof(cache));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
-
+    /// <inheritdoc />
     public async Task<LiveMarketOverviewDto> GetLiveMarketOverviewAsync(CancellationToken cancellationToken = default)
     {
-        var quote = await GetOrFetchLiveQuoteAsync(cancellationToken);
+        var quote = await _quotesProvider.GetLiveQuoteAsync(cancellationToken);
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var yesterday = today.AddDays(-1);
 
@@ -110,6 +95,7 @@ public class LivePricesUseCase : ILivePricesUseCase
         };
     }
 
+    /// <inheritdoc />
     public async Task<TradingPriceDto?> GetLiveTradingAnalysisAsync(string symbol, string currency = "EUR", CancellationToken cancellationToken = default)
     {
         var normSymbol = symbol.Trim().ToUpperInvariant();
@@ -129,13 +115,8 @@ public class LivePricesUseCase : ILivePricesUseCase
         decimal lowPrice = (isEur ? metal.LowPriceEur : metal.LowPriceUsd) ?? currentPrice;
         decimal prevClose = (isEur ? metal.PrevCloseEur : metal.PrevCloseUsd) ?? openPrice;
 
-        decimal ch = currentPrice - openPrice;
-        decimal chp = openPrice > 0 ? Math.Round((ch / openPrice) * 100m, 2) : 0m;
-        decimal diffPrevClose = currentPrice - prevClose;
-
-        string status = diffPrevClose >= 0 ? "BULLISH ▲" : "BEARISH ▼";
-        decimal volatilityRange = highPrice - lowPrice;
-        decimal volatilityPct = lowPrice > 0 ? Math.Round((volatilityRange / lowPrice) * 100m, 2) : 0m;
+        var (ch, chp, diffPrevClose, status, volatilityRange, volatilityPct) =
+            TradingAnalysisCalculator.Calculate(currentPrice, openPrice, highPrice, lowPrice, prevClose);
 
         return new TradingPriceDto
         {
@@ -157,43 +138,6 @@ public class LivePricesUseCase : ILivePricesUseCase
             VolatilityPercent = volatilityPct,
             Status = status,
             ExchangeRateUsdEur = overview.ExchangeRateUsdEur
-        };
-    }
-
-    private async Task<EdelmetalleApiResponse> GetOrFetchLiveQuoteAsync(CancellationToken cancellationToken)
-    {
-        if (_cache.TryGetValue(CacheKey, out EdelmetalleApiResponse? cached) && cached != null)
-        {
-            return cached;
-        }
-
-        try
-        {
-            var quote = await _apiClient.GetEdelmetallePricesAsync(cancellationToken);
-            if (quote != null)
-            {
-                _cache.Set(CacheKey, quote, CacheDuration);
-                return quote;
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to fetch live quotes from api.edelmetalle.de; using fallback or defaults.");
-        }
-
-        // Fallback default quote if API unreachable
-        return new EdelmetalleApiResponse
-        {
-            GoldUsd = 4410.60m,
-            GoldEur = 3803.80m,
-            SilberUsd = 65.71m,
-            SilberEur = 56.68m,
-            PlatinUsd = 1773.50m,
-            PlatinEur = 1529.59m,
-            PalladiumUsd = 1334.00m,
-            PalladiumEur = 1150.53m,
-            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-            WechselkursUsdEur = 1.1595m
         };
     }
 }
