@@ -9,8 +9,6 @@ namespace Elementum.Application.Validation;
 /// </summary>
 public partial class SymbolRequestValidator : AbstractValidator<SymbolRequest>
 {
-    private static readonly string[] AllowedStandardSymbols = ["XAU", "XAG", "XPT", "XPD", "GOLD", "SILVER", "PLATINUM", "PALLADIUM"];
-
     public SymbolRequestValidator()
     {
         RuleFor(x => x.Symbol)

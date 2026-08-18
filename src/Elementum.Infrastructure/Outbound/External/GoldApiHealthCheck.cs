@@ -15,8 +15,6 @@ public class GoldApiHealthCheck : IHealthCheck
     private readonly IOptions<MetalsApiOptions> _options;
     private readonly ILogger<GoldApiHealthCheck> _logger;
 
-    private record ApiStatusResponse(bool Result);
-
     public GoldApiHealthCheck(
         IHttpClientFactory httpClientFactory,
         IOptions<MetalsApiOptions> options,

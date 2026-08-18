@@ -179,10 +179,12 @@ public class CliOutputHelper
 
         //RenderTageswerteHeader();
         Console.WriteLine("=================================================================================");
-        Console.WriteLine($"                         ELEMENTUM - METALS DASHBOARD");
+        int titlePadding = Math.Max(0, (81 - CliStrings.MenuTitle.Length) / 2);
+        Console.WriteLine(new string(' ', titlePadding) + CliStrings.MenuTitle);
         Console.WriteLine("=================================================================================");
         Console.WriteLine();
-        Console.WriteLine("                 [↑/↓] Navigate | [Enter/→] Select | [ESC] Exit");
+        int hintPadding = Math.Max(0, (81 - CliStrings.MenuNavigateHint.Length) / 2);
+        Console.WriteLine(new string(' ', hintPadding) + CliStrings.MenuNavigateHint);
         Console.WriteLine();
 
         for (int i = 0; i < app.MenuItems.Count; i++)

@@ -54,11 +54,11 @@ public class ApiControllerTests
         {
             new() { Id = 1, MetalId = 3, Currency = "USD", EntryDate = DateOnly.FromDateTime(DateTime.UtcNow) }
         };
-        _priceHistoryUseCaseMock.Setup(s => s.GetBySymbolAsync("XPT", It.IsAny<CancellationToken>()))
+        _priceHistoryUseCaseMock.Setup(s => s.GetBySymbolAsync("XPT", null, It.IsAny<CancellationToken>()))
                        .ReturnsAsync(history);
 
         // Act
-        var result = await _controller.GetPriceHistoryByMetalSymbol(request, CancellationToken.None);
+        var result = await _controller.GetPriceHistoryByMetalSymbol(request, null, CancellationToken.None);
 
         // Assert
         var ok = Assert.IsType<OkObjectResult>(result.Result);
