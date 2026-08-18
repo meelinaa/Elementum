@@ -1,5 +1,5 @@
 using Elementum.Cli.Navigation;
-using Elementum.Cli.Output;
+using Elementum.Cli.Rendering;
 
 namespace Elementum.Cli.Hosting;
 
@@ -16,7 +16,7 @@ public static class CliApplicationHost
         AppContext.Current = app;
 
         CliNavigation.EnsureValidStartIndex();
-        CliOutputHelper.RenderMenu();
+        MenuRenderer.RenderMenu();
 
         while (app.Running)
             CliNavigation.HandleInput();

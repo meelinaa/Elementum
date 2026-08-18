@@ -1,5 +1,5 @@
 using Elementum.Cli.Enums;
-using Elementum.Cli.Output;
+using Elementum.Cli.Rendering;
 
 namespace Elementum.Cli.Input;
 
@@ -16,7 +16,7 @@ public class HandleInputHelper
         {
             app.State = AppState.Menu;
             app.CurrentDetailView = null;
-            CliOutputHelper.RenderMenu();
+            MenuRenderer.RenderMenu();
         }
     }
 
@@ -42,7 +42,7 @@ public class HandleInputHelper
             {
                 app.State = AppState.Menu;
                 app.CurrentDetailView = null;
-                CliOutputHelper.RenderMenu();
+                MenuRenderer.RenderMenu();
             }
             return;
         }
@@ -51,7 +51,7 @@ public class HandleInputHelper
             app.State = AppState.Menu;
             app.CurrentDetailView = null;
             app.CurrentSelectedMetal = null;
-            CliOutputHelper.RenderMenu();
+            MenuRenderer.RenderMenu();
         }
     }
 }

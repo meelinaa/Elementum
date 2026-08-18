@@ -135,7 +135,7 @@ public class HistoryView : IDetailView
             app.CurrentDetailView = null;
             app.CurrentSelectedMetal = null;
             _selectedPeriod = null;
-            CliOutputHelper.RenderMenu();
+            MenuRenderer.RenderMenu();
         }
     }
 }

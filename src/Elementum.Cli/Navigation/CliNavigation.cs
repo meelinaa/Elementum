@@ -1,16 +1,18 @@
 using Elementum.Cli.Api;
+using Elementum.Cli.Constants;
 using Elementum.Cli.Enums;
+using Elementum.Cli.Rendering;
 using Elementum.Cli.Views;
-using static Elementum.Cli.Output.CliOutputHelper;
 
 namespace Elementum.Cli.Navigation;
 
 /// <summary>
-/// Handles keyboard input for the CLI: menu navigation (↑/↓/Enter/ESC) and delegation to the current detail view. [R] clears cache and re-renders.
+/// Handles keyboard input and view navigation for the CLI: menu navigation (↑/↓/Enter/ESC)
+/// and delegation to the active detail view.
 /// </summary>
-public class CliNavigation
+public static class CliNavigation
 {
-    /// <summary>Reads one key and either updates menu selection, opens a page, exits, or forwards to the current view (including [R] reload).</summary>
+    /// <summary>Reads one key and either updates menu selection, opens a page, exits, or forwards to the current view.</summary>
     public static void HandleInput()
     {
         var app = AppContext.Current!;
@@ -42,8 +44,8 @@ public class CliNavigation
 
             if (previousIndex != app.SelectedIndex)
             {
-                DrawMenuItem(previousIndex, false);
-                DrawMenuItem(app.SelectedIndex, true);
+                MenuRenderer.DrawMenuItem(previousIndex, false);
+                MenuRenderer.DrawMenuItem(app.SelectedIndex, true);
             }
         }
         else if (app.State == AppState.Detail && app.CurrentDetailView.HasValue)
@@ -64,6 +66,25 @@ public class CliNavigation
             }
             view.HandleInput(key);
         }
+    }
+
+    /// <summary>Opens the currently selected menu item (updates app state and triggers async render).</summary>
+    public static void OpenSelectedPage()
+    {
+        var app = AppContext.Current!;
+        var item = app.MenuItems[app.SelectedIndex];
+        if (item.View == null || item.Text == CliStrings.MenuItemExit)
+        {
+            app.Running = false;
+            return;
+        }
+
+        app.State = AppState.Detail;
+        app.CurrentDetailView = item.View;
+        if (ViewRegistry.RequiresMetalSelection(item.View!.Value))
+            app.CurrentSelectedMetal = null;
+        var view = ViewRegistry.Get(item.View.Value);
+        _ = view.RenderAsync();
     }
 
     /// <summary>Moves the menu selection up (wraps to bottom if at top); skips non-selectable items.</summary>
