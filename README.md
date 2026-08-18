@@ -131,7 +131,26 @@ Elementum/
 
 ## Getting Started
 
-### Option A: Docker (Database + API + Worker)
+### Option 1: 1-Click Startup Script (Recommended for Windows)
+
+Start the entire full-stack environment (Docker MySQL & Redis, API, Worker, and CLI Terminal) with a single command:
+
+```powershell
+# Using PowerShell
+.\start-all.ps1
+
+# Or double-click / run the Batch script
+start-all.bat
+```
+
+To stop all services cleanly, simply close the CLI window, press `Q` in the PowerShell runner, or execute:
+```powershell
+.\stop-all.ps1
+```
+
+---
+
+### Option 2: Docker Compose (Containers for DB + API + Worker)
 
 1. Navigate to the `docker/` directory:
    ```bash
@@ -147,9 +166,11 @@ Elementum/
    dotnet run --project src/Elementum.Cli
    ```
 
-### Option B: Local Development
+---
 
-1. Start MySQL (e.g. `docker compose up -d mysql` from `docker/`).
+### Option 3: Manual Local Development
+
+1. Start MySQL & Redis (e.g. `docker compose -f docker/docker-compose.yml up -d mysql redis`).
 2. Run the API:
    ```bash
    dotnet run --project src/Elementum.Api
