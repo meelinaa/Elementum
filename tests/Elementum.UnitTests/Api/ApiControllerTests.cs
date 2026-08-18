@@ -88,4 +88,21 @@ public class ApiControllerTests
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Same(history, ok.Value);
     }
+
+    [Fact]
+    public async Task GetPriceHistoryByMetalSymbol_WithExplicitCurrency_PassesCurrencyToUseCase()
+    {
+        var request = new SymbolRequest { Symbol = "XAU" };
+        var history = new List<PriceHistoryDto>
+        {
+            new() { Id = 2, MetalId = 1, Currency = "EUR", EntryDate = DateOnly.FromDateTime(DateTime.UtcNow) }
+        };
+        _priceHistoryUseCaseMock.Setup(s => s.GetBySymbolAsync("XAU", "EUR", It.IsAny<CancellationToken>()))
+                       .ReturnsAsync(history);
+
+        var result = await _priceHistoryController.GetPriceHistoryByMetalSymbol(request, "EUR", CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Same(history, ok.Value);
+    }
 }
