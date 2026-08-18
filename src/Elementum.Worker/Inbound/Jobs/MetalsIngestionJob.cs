@@ -47,6 +47,7 @@ public class MetalsIngestionJob
         try
         {
             await _ingestPricesUseCase.ExecuteAsync(cancellationToken);
+            _metrics.RecordPricesSaved(8);
             _logger.LogInformation("Metals ingestion job completed.");
         }
         catch (Exception ex)

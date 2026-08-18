@@ -1,3 +1,4 @@
+using Elementum.Api.Extensions;
 using Elementum.Application.DTOs;
 using Elementum.Application.Inbound.UseCases.Prices;
 using Elementum.Application.Requests;
@@ -22,7 +23,7 @@ public class PriceHistoryController(
     /// <summary>GET /api/v1/history/{symbol}/candles — daily candle summaries (Min, Max, Open, Close at 22:00) for charts.</summary>
     [HttpGet("{symbol}/candles", Order = 1)]
     [RequestTimeout("DataCruncher")]
-    public async Task<ActionResult<IEnumerable<DailyPriceSummaryDto>>> GetDailyCandles(
+    public async Task<ActionResult<IReadOnlyList<DailyPriceSummaryDto>>> GetDailyCandles(
         [FromRoute] SymbolRequest symbolRequest,
         [FromQuery] string currency = "USD",
         [FromQuery] string? fromDate = null,
@@ -33,18 +34,7 @@ public class PriceHistoryController(
         DateOnly? to = toDate != null && DateOnly.TryParse(toDate, out var t) ? t : null;
 
         var result = await _dailyCandlesUseCase.ExecuteAsync(symbolRequest.Symbol.Trim(), currency, from, to, cancellationToken);
-        if (result.IsFailure)
-        {
-            return NotFound(new ProblemDetails
-            {
-                Title = "Not Found",
-                Status = StatusCodes.Status404NotFound,
-                Detail = result.Error.Message,
-                Instance = $"{Request.Method} {Request.Path}"
-            });
-        }
-
-        return Ok(result.Value);
+        return result.ToActionResult();
     }
 
     /// <summary>GET /api/v1/history/all/latest — latest per metal as <see cref="PriceHistoryDto"/> for historical queries.</summary>
