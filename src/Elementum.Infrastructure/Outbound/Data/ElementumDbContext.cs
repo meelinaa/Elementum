@@ -39,20 +39,11 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
 
             e.Property(x => x.MetalId).HasColumnName("metal_id");
             e.Property(x => x.ReferenceTimestamp).HasColumnName("reference_timestamp");
-            e.Property(x => x.OpenTime).HasColumnName("open_time");
             e.Property(x => x.EntryDate).HasColumnName("entry_date");
             e.Property(x => x.PrevClosePrice).HasColumnName("prev_close_price");
             e.Property(x => x.OpenPrice).HasColumnName("open_price");
             e.Property(x => x.LowPrice).HasColumnName("low_price");
             e.Property(x => x.HighPrice).HasColumnName("high_price");
-            e.Property(x => x.PriceGram24k).HasColumnName("price_gram_24k");
-            e.Property(x => x.PriceGram22k).HasColumnName("price_gram_22k");
-            e.Property(x => x.PriceGram21k).HasColumnName("price_gram_21k");
-            e.Property(x => x.PriceGram20k).HasColumnName("price_gram_20k");
-            e.Property(x => x.PriceGram18k).HasColumnName("price_gram_18k");
-            e.Property(x => x.PriceGram16k).HasColumnName("price_gram_16k");
-            e.Property(x => x.PriceGram14k).HasColumnName("price_gram_14k");
-            e.Property(x => x.PriceGram10k).HasColumnName("price_gram_10k");
         });
 
         modelBuilder.Entity<DistributedLockEntity>(e =>

@@ -66,16 +66,6 @@ public class CachedGetPriceHistoryUseCase : IGetPriceHistoryUseCase
             cancellationToken: ct);
     }
 
-    public async Task<KaratPricesDto?> GetKaratLatestAsync(string symbol, CancellationToken ct = default)
-    {
-        var normalized = (symbol ?? string.Empty).Trim().ToUpperInvariant();
-        return await _cache.GetOrCreateAsync(
-            $"karat:latest:{normalized}",
-            async token => await _inner.GetKaratLatestAsync(normalized, token),
-            SpotPriceOptions,
-            cancellationToken: ct);
-    }
-
     public Task<IEnumerable<PriceHistoryDto>> GetByDateRangeAsync(string symbol, DateOnly firstDate, DateOnly lastDate, CancellationToken ct = default)
     {
         return _inner.GetByDateRangeAsync(symbol, firstDate, lastDate, ct);

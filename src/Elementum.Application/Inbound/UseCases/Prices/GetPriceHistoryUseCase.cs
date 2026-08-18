@@ -41,12 +41,6 @@ public class GetPriceHistoryUseCase(IPriceHistoryRepository repository) : IGetPr
         return entity?.ToTradingPriceDto();
     }
 
-    public async Task<KaratPricesDto?> GetKaratLatestAsync(string symbol, CancellationToken ct = default)
-    {
-        var entity = await _repository.GetPriceHistoryByMetalSymbolLatest(symbol, ct);
-        return entity?.ToKaratPricesDto();
-    }
-
     public async Task<IEnumerable<PriceHistoryDto>> GetByDateRangeAsync(string symbol, DateOnly firstDate, DateOnly lastDate, CancellationToken ct = default)
     {
         var entities = _repository.QueryPriceHistoryByMetalSymbolAndDateRange(symbol, firstDate, lastDate).ToList();

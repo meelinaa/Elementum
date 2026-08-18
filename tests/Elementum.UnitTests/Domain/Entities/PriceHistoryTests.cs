@@ -14,12 +14,8 @@ public class PriceHistoryTests
             entryDate: date,
             price: 2500.50m,
             symbol: "XAU",
-            exchange: "FOREXCOM",
             highPrice: 2520m,
-            lowPrice: 2490m,
-            ask: 2501m,
-            bid: 2500m,
-            priceGram24k: 80.39m);
+            lowPrice: 2490m);
 
         Assert.Equal(1, priceHistory.MetalId);
         Assert.Equal("USD", priceHistory.Currency); // Normalized
@@ -55,14 +51,6 @@ public class PriceHistoryTests
         var date = new DateOnly(2026, 8, 17);
         Assert.Throws<ArgumentException>(() =>
             PriceHistory.Create(1, "USD", date, 2000m, lowPrice: 2100m, highPrice: 2000m));
-    }
-
-    [Fact]
-    public void Create_WhenBidGreaterThanAsk_ThrowsArgumentException()
-    {
-        var date = new DateOnly(2026, 8, 17);
-        Assert.Throws<ArgumentException>(() =>
-            PriceHistory.Create(1, "USD", date, 2000m, ask: 1990m, bid: 2010m));
     }
 
     [Theory]

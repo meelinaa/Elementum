@@ -1,5 +1,8 @@
 namespace Elementum.Application.DTOs;
 
+/// <summary>
+/// DTO representing technical trading indicators and market analysis for a metal.
+/// </summary>
 public record TradingPriceDto
 {
     public int Id { get; init; }
@@ -9,7 +12,6 @@ public record TradingPriceDto
     public string Currency { get; init; } = "EUR";
     public DateOnly EntryDate { get; init; }
     public long? ReferenceTimestamp { get; init; }
-    public long? OpenTime { get; init; }
     public decimal Price { get; init; }
     public decimal? PrevClosePrice { get; init; }
     public decimal? OpenPrice { get; init; }
@@ -22,6 +24,4 @@ public record TradingPriceDto
     public decimal? VolatilityPercent { get; init; }
     public string Status { get; init; } = "NEUTRAL";
     public decimal? ExchangeRateUsdEur { get; init; }
-    public decimal? Ask { get; init; }
-    public decimal? Bid { get; init; }
 }

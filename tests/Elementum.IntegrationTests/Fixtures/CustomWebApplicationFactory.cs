@@ -73,7 +73,6 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 Id = 1,
                 MetalId = 1,
                 Currency = "USD",
-                Exchange = "FOREX",
                 Symbol = "FOREXCOM:XAUUSD",
                 EntryDate = DateOnly.FromDateTime(DateTime.UtcNow),
                 Price = 2500.50m,
@@ -82,17 +81,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 LowPrice = 2475.00m,
                 HighPrice = 2510.00m,
                 Ch = 20.50m,
-                Chp = 0.82m,
-                Ask = 2501.00m,
-                Bid = 2500.00m,
-                PriceGram24k = 80.40m,
-                PriceGram22k = 73.70m,
-                PriceGram21k = 70.35m,
-                PriceGram20k = 67.00m,
-                PriceGram18k = 60.30m,
-                PriceGram16k = 53.60m,
-                PriceGram14k = 46.90m,
-                PriceGram10k = 33.50m
+                Chp = 0.82m
             });
 
             db.SaveChanges();

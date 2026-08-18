@@ -11,7 +11,7 @@ namespace Elementum.Infrastructure.Data.Repositories;
 
 /// <summary>
 /// Secondary / Driven Outbound Adapter: Implements <see cref="IPriceHistoryRepository"/> and <see cref="IElementumDbContext"/>
-/// for MySQL persistence and querying via Entity Framework Core without magic strings.
+/// for MySQL persistence and querying via Entity Framework Core.
 /// </summary>
 public class PriceHistoryRepository : IElementumDbContext
 {
@@ -95,8 +95,7 @@ public class PriceHistoryRepository : IElementumDbContext
                     entryDate: today,
                     price: price,
                     symbol: $"{q.Symbol}{currency}",
-                    referenceTimestamp: data.Timestamp.ToString(CultureInfo.InvariantCulture),
-                    openTime: DateTime.UtcNow.ToString("HH:mm:ss", CultureInfo.InvariantCulture));
+                    referenceTimestamp: data.Timestamp.ToString(CultureInfo.InvariantCulture));
 
                 _db.PriceHistory.Add(tick);
 
@@ -175,21 +174,9 @@ public class PriceHistoryRepository : IElementumDbContext
                     lowPrice: api.LowPrice,
                     openPrice: api.OpenPrice,
                     prevClosePrice: api.PrevClosePrice,
-                    ask: api.Ask,
-                    bid: api.Bid,
                     ch: api.Ch,
                     chp: api.Chp,
-                    priceGram24k: api.PriceGram24k,
-                    priceGram22k: api.PriceGram22k,
-                    priceGram21k: api.PriceGram21k,
-                    priceGram20k: api.PriceGram20k,
-                    priceGram18k: api.PriceGram18k,
-                    priceGram16k: api.PriceGram16k,
-                    priceGram14k: api.PriceGram14k,
-                    priceGram10k: api.PriceGram10k,
                     referenceTimestamp: api.Timestamp.ToString(CultureInfo.InvariantCulture),
-                    openTime: api.OpenTime.ToString(CultureInfo.InvariantCulture),
-                    exchange: api.Exchange,
                     symbol: api.Symbol);
             }
             else
@@ -200,25 +187,13 @@ public class PriceHistoryRepository : IElementumDbContext
                     entryDate: today,
                     price: api.Price,
                     symbol: api.Symbol,
-                    exchange: api.Exchange,
                     openPrice: api.OpenPrice,
                     highPrice: api.HighPrice,
                     lowPrice: api.LowPrice,
                     prevClosePrice: api.PrevClosePrice,
-                    ask: api.Ask,
-                    bid: api.Bid,
                     ch: api.Ch,
                     chp: api.Chp,
-                    priceGram24k: api.PriceGram24k,
-                    priceGram22k: api.PriceGram22k,
-                    priceGram21k: api.PriceGram21k,
-                    priceGram20k: api.PriceGram20k,
-                    priceGram18k: api.PriceGram18k,
-                    priceGram16k: api.PriceGram16k,
-                    priceGram14k: api.PriceGram14k,
-                    priceGram10k: api.PriceGram10k,
-                    referenceTimestamp: api.Timestamp.ToString(CultureInfo.InvariantCulture),
-                    openTime: api.OpenTime.ToString(CultureInfo.InvariantCulture));
+                    referenceTimestamp: api.Timestamp.ToString(CultureInfo.InvariantCulture));
 
                 _db.PriceHistory.Add(row);
             }
