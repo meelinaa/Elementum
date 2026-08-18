@@ -1,5 +1,7 @@
+using Elementum.Application.Options;
 using Elementum.Domain.Ports.Outbound;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Elementum.Application.Inbound.UseCases.Ingestion;
 
@@ -10,15 +12,18 @@ public class IngestPricesUseCase : IIngestPricesUseCase
 {
     private readonly IMetalsApiClient _apiClient;
     private readonly IPriceHistoryRepository _repository;
+    private readonly WorkerScheduleOptions _options;
     private readonly ILogger<IngestPricesUseCase> _logger;
 
     public IngestPricesUseCase(
         IMetalsApiClient apiClient,
         IPriceHistoryRepository repository,
+        IOptions<WorkerScheduleOptions> options,
         ILogger<IngestPricesUseCase> logger)
     {
         _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        _options = options?.Value ?? new WorkerScheduleOptions();
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -49,15 +54,16 @@ public class IngestPricesUseCase : IIngestPricesUseCase
             }
         }
 
-        // 7-day retention cleanup & daily candle consolidation (runs at close hour >= 22 or daily)
-        if (DateTime.UtcNow.Hour >= 22)
+        // Daily candle consolidation & retention cleanup (runs at close hour >= DailyRollupHour)
+        if (DateTime.UtcNow.Hour >= _options.DailyRollupHour)
         {
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
-            _logger.LogInformation("Aggregating daily 22:00 candle summary for {Today}...", today);
+            _logger.LogInformation("Aggregating daily {RollupHour}:00 candle summary for {Today}...", _options.DailyRollupHour, today);
             await _repository.AggregateDailySummaryAsync(today, cancellationToken);
 
-            var retentionThreshold = DateTime.UtcNow.AddDays(-7);
-            _logger.LogInformation("Pruning hourly raw ticks older than {Threshold} (7-day retention policy)...", retentionThreshold);
+            var retentionDays = _options.RetentionDays <= 0 ? 7 : _options.RetentionDays;
+            var retentionThreshold = DateTime.UtcNow.AddDays(-retentionDays);
+            _logger.LogInformation("Pruning hourly raw ticks older than {Threshold} ({RetentionDays}-day retention policy)...", retentionThreshold, retentionDays);
             var prunedCount = await _repository.PruneHourlyDataOlderThanAsync(retentionThreshold, cancellationToken);
             _logger.LogInformation("Retention cleanup completed: {Count} old hourly records purged.", prunedCount);
         }
