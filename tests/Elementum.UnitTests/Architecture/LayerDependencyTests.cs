@@ -91,7 +91,7 @@ public class LayerDependencyTests
     public void ApiControllers_ShouldNot_HaveDirectDependencyOn_DbContext()
     {
         // Controllers in Elementum.Api must consume Application Use Cases, not DbContext directly
-        var result = Types.InAssembly(typeof(MetalsController).Assembly)
+        var result = Types.InAssembly(typeof(LivePricesController).Assembly)
             .That()
             .ResideInNamespace("Elementum.Api.Controllers")
             .ShouldNot()
@@ -119,7 +119,7 @@ public class LayerDependencyTests
     public void PresentationLayers_ShouldNot_DependOn_EachOther()
     {
         // Api and Worker are independent driving adapters and must never reference each other
-        var apiResult = Types.InAssembly(typeof(MetalsController).Assembly)
+        var apiResult = Types.InAssembly(typeof(LivePricesController).Assembly)
             .ShouldNot()
             .HaveDependencyOnAny(WorkerNamespace, CliNamespace)
             .GetResult();

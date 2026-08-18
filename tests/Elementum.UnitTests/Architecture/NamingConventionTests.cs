@@ -38,7 +38,7 @@ public class NamingConventionTests
     [Fact]
     public void ApiControllers_Should_EndWithController()
     {
-        var result = Types.InAssembly(typeof(MetalsController).Assembly)
+        var result = Types.InAssembly(typeof(LivePricesController).Assembly)
             .That()
             .ResideInNamespace("Elementum.Api.Controllers")
             .And()
