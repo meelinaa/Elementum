@@ -72,13 +72,10 @@ Data flows from an external price API via the `MetalsApiClient` (Driven Adapter)
 
 ```
 Elementum/
-├── docker/                             # Docker Compose (MySQL + API + Worker), init scripts
+├── docker/                             # Docker Compose (MySQL + Redis + API + Worker)
 │   ├── docker-compose.yml
 │   ├── .env.example
-│   ├── README.md
-│   └── init/
-│       ├── README.md
-│       └── 01-schema.sql
+│   └── README.md
 ├── src/                                # .NET source projects
 │   ├── Elementum.Domain/               # Pure domain entities, enums, rules & ports
 │   ├── Elementum.Application/          # Use cases, queries, commands, DTOs & mappings
