@@ -1,3 +1,5 @@
+using Elementum.Domain.Constants;
+
 namespace Elementum.Domain.ValueObjects;
 
 /// <summary>
@@ -5,17 +7,21 @@ namespace Elementum.Domain.ValueObjects;
 /// </summary>
 public readonly record struct Currency : IEquatable<Currency>
 {
+    public const int DefaultDecimalPlaces = 2;
+    public const string UsdSymbol = "$";
+    public const string EurSymbol = "€";
+
     public string Code { get; }
     public int DecimalPlaces { get; }
     public string Symbol { get; }
 
-    public static readonly Currency USD = new("USD", 2, "$");
-    public static readonly Currency EUR = new("EUR", 2, "€");
+    public static readonly Currency USD = new(DomainConstants.Currencies.Usd, DefaultDecimalPlaces, UsdSymbol);
+    public static readonly Currency EUR = new(DomainConstants.Currencies.Eur, DefaultDecimalPlaces, EurSymbol);
 
     private static readonly Dictionary<string, Currency> SupportedCurrencies = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["USD"] = USD,
-        ["EUR"] = EUR
+        [DomainConstants.Currencies.Usd] = USD,
+        [DomainConstants.Currencies.Eur] = EUR
     };
 
     private Currency(string code, int decimalPlaces, string symbol)

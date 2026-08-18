@@ -6,12 +6,12 @@ using Microsoft.Extensions.Logging;
 namespace Elementum.Application.Services;
 
 /// <summary>
-/// Default implementation of <see cref="ILiveQuotesProvider"/> with 5-minute in-memory caching and fallback resilience.
+/// Default implementation of <see cref="ILiveQuotesProvider"/> with in-memory caching and fail-fast resilience.
 /// </summary>
 public class LiveQuotesProvider : ILiveQuotesProvider
 {
     private const string CacheKey = "Edelmetalle_LiveQuotes";
-    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan DefaultCacheDuration = TimeSpan.FromMinutes(5);
 
     private readonly IMetalsApiClient _apiClient;
     private readonly IMemoryCache _cache;
@@ -40,28 +40,16 @@ public class LiveQuotesProvider : ILiveQuotesProvider
             var quote = await _apiClient.GetEdelmetallePricesAsync(cancellationToken);
             if (quote != null)
             {
-                _cache.Set(CacheKey, quote, CacheDuration);
+                _cache.Set(CacheKey, quote, DefaultCacheDuration);
                 return quote;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to fetch live quotes from api.edelmetalle.de; using fallback or defaults.");
+            _logger.LogError(ex, "Failed to fetch live quotes from external metals API.");
+            throw;
         }
 
-        // Fallback default quote if API unreachable
-        return new EdelmetalleApiResponse
-        {
-            GoldUsd = 4410.60m,
-            GoldEur = 3803.80m,
-            SilberUsd = 65.71m,
-            SilberEur = 56.68m,
-            PlatinUsd = 1773.50m,
-            PlatinEur = 1529.59m,
-            PalladiumUsd = 1334.00m,
-            PalladiumEur = 1150.53m,
-            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-            WechselkursUsdEur = 1.1595m
-        };
+        throw new InvalidOperationException("External metals API returned an empty live quote response.");
     }
 }

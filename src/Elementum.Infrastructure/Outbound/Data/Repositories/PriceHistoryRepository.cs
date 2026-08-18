@@ -1,4 +1,5 @@
 using System.Globalization;
+using Elementum.Domain.Constants;
 using Elementum.Domain.Entities;
 using Elementum.Domain.Models;
 using Elementum.Domain.Ports.Outbound;
@@ -10,10 +11,14 @@ namespace Elementum.Infrastructure.Data.Repositories;
 
 /// <summary>
 /// Secondary / Driven Outbound Adapter: Implements <see cref="IPriceHistoryRepository"/> and <see cref="IElementumDbContext"/>
-/// for MySQL persistence and querying via Entity Framework Core.
+/// for MySQL persistence and querying via Entity Framework Core without magic strings.
 /// </summary>
 public class PriceHistoryRepository : IElementumDbContext
 {
+    private const int DefaultAggregationHistoryCount = 30;
+    private const int RoundingPrecision = 4;
+    private const int DaysPerWeekMultiplier = 7;
+
     private readonly ElementumDbContext _db;
     private readonly IDailyCandleAggregator _candleAggregator;
     private readonly IPriceHistoryPruner _pruner;
@@ -57,10 +62,10 @@ public class PriceHistoryRepository : IElementumDbContext
 
         (string Symbol, string Name, decimal UsdPrice, decimal EurPrice)[] quotes =
         [
-            ("XAU", "Gold", data.GoldUsd, data.GoldEur),
-            ("XAG", "Silver", data.SilberUsd, data.SilberEur),
-            ("XPT", "Platinum", data.PlatinUsd, data.PlatinEur),
-            ("XPD", "Palladium", data.PalladiumUsd, data.PalladiumEur)
+            (DomainConstants.Symbols.Gold, DomainConstants.Names.Gold, data.GoldUsd, data.GoldEur),
+            (DomainConstants.Symbols.Silver, DomainConstants.Names.Silver, data.SilberUsd, data.SilberEur),
+            (DomainConstants.Symbols.Platinum, DomainConstants.Names.Platinum, data.PlatinUsd, data.PlatinEur),
+            (DomainConstants.Symbols.Palladium, DomainConstants.Names.Palladium, data.PalladiumUsd, data.PalladiumEur)
         ];
 
         foreach (var q in quotes)
@@ -72,7 +77,11 @@ public class PriceHistoryRepository : IElementumDbContext
             if (metal == null)
                 continue;
 
-            (string Currency, decimal Price)[] currencyQuotes = [("USD", q.UsdPrice), ("EUR", q.EurPrice)];
+            (string Currency, decimal Price)[] currencyQuotes =
+            [
+                (DomainConstants.Currencies.Usd, q.UsdPrice),
+                (DomainConstants.Currencies.Eur, q.EurPrice)
+            ];
 
             foreach (var (currency, price) in currencyQuotes)
             {
@@ -153,7 +162,7 @@ public class PriceHistoryRepository : IElementumDbContext
                 continue;
             }
 
-            var currency = string.IsNullOrEmpty(api.Currency) ? "USD" : api.Currency;
+            var currency = string.IsNullOrEmpty(api.Currency) ? DomainConstants.Currencies.Usd : api.Currency;
 
             var existingRow = await _db.PriceHistory
                 .FirstOrDefaultAsync(x => x.MetalId == metal.Id && x.Currency == currency && x.EntryDate == today, cancellationToken);
@@ -286,7 +295,7 @@ public class PriceHistoryRepository : IElementumDbContext
         if (metal == null)
             return [];
 
-        var effectiveCount = count <= 0 ? 30 : count;
+        var effectiveCount = count <= 0 ? DefaultAggregationHistoryCount : count;
         var agg = (aggregation ?? "daily").Trim().ToLowerInvariant();
 
         if (agg == "daily")
@@ -323,10 +332,10 @@ public class PriceHistoryRepository : IElementumDbContext
             {
                 Id = 0,
                 MetalId = metal.Id,
-                Currency = m.Currency ?? "USD",
+                Currency = m.Currency ?? DomainConstants.Currencies.Usd,
                 Symbol = metalSymbol,
                 EntryDate = new DateOnly(m.Year, m.Month, 1),
-                Price = Math.Round(m.AvgPrice, 4, MidpointRounding.ToEven),
+                Price = Math.Round(m.AvgPrice, RoundingPrecision, MidpointRounding.ToEven),
                 Metal = metal
             }).ToList();
         }
@@ -351,10 +360,10 @@ public class PriceHistoryRepository : IElementumDbContext
             {
                 Id = 0,
                 MetalId = metal.Id,
-                Currency = y.Currency ?? "USD",
+                Currency = y.Currency ?? DomainConstants.Currencies.Usd,
                 Symbol = metalSymbol,
                 EntryDate = new DateOnly(y.Year, 1, 1),
-                Price = Math.Round(y.AvgPrice, 4, MidpointRounding.ToEven),
+                Price = Math.Round(y.AvgPrice, RoundingPrecision, MidpointRounding.ToEven),
                 Metal = metal
             }).ToList();
         }
@@ -363,7 +372,7 @@ public class PriceHistoryRepository : IElementumDbContext
             var recentRows = await _db.PriceHistory
                 .Where(x => x.MetalId == metal.Id)
                 .OrderByDescending(x => x.EntryDate)
-                .Take(effectiveCount * 7)
+                .Take(effectiveCount * DaysPerWeekMultiplier)
                 .ToListAsync(ct);
 
             recentRows.Reverse();
@@ -387,7 +396,7 @@ public class PriceHistoryRepository : IElementumDbContext
                     Currency = g.First().Currency,
                     Symbol = metalSymbol,
                     EntryDate = g.First().EntryDate,
-                    Price = Math.Round(g.Average(p => p.Price), 4, MidpointRounding.ToEven),
+                    Price = Math.Round(g.Average(p => p.Price), RoundingPrecision, MidpointRounding.ToEven),
                     Metal = metal
                 })
                 .ToList();

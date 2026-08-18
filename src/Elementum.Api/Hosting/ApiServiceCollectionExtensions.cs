@@ -1,10 +1,7 @@
 using Elementum.Application;
 using Elementum.Application.Options;
 using Elementum.Infrastructure.Data;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Timeouts;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Elementum.Api.Hosting;

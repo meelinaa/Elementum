@@ -13,6 +13,11 @@ namespace Elementum.Worker;
 /// </summary>
 public class Worker : BackgroundService
 {
+    private const int FullHourIntervalMinutes = 60;
+    private static readonly TimeSpan BufferDelay = TimeSpan.FromMilliseconds(500);
+    private static readonly TimeSpan ErrorRetryDelay = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan MinimumFallbackDelay = TimeSpan.FromSeconds(1);
+
     private readonly ILogger<Worker> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly WorkerScheduleOptions _options;
@@ -21,11 +26,11 @@ public class Worker : BackgroundService
     public Worker(
         ILogger<Worker> logger,
         IServiceScopeFactory scopeFactory,
-        IOptions<WorkerScheduleOptions>? options = null)
+        IOptions<WorkerScheduleOptions> options)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
-        _options = options?.Value ?? new WorkerScheduleOptions();
+        _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
     }
 
     /// <summary>Runs the daemon: executes initial run immediately, then loops according to schedule.</summary>
@@ -48,7 +53,7 @@ public class Worker : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during initial ingestion on startup. Daemon will continue with hourly schedule.");
+            _logger.LogError(ex, "Error during initial ingestion on startup. Daemon will continue with scheduled loop.");
         }
 
         // 2. Loop at scheduled intervals
@@ -77,10 +82,10 @@ public class Worker : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error in worker execution loop. Retrying in 1 minute...");
+                _logger.LogError(ex, "Unexpected error in worker execution loop. Retrying in {Minutes} minute...", ErrorRetryDelay.TotalMinutes);
                 try
                 {
-                    await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+                    await Task.Delay(ErrorRetryDelay, stoppingToken);
                 }
                 catch (OperationCanceledException)
                 {
@@ -92,15 +97,14 @@ public class Worker : BackgroundService
 
     private TimeSpan GetDelayUntilNextRun(out DateTime nextRunUtc)
     {
-        var intervalMinutes = _options.IngestionIntervalMinutes > 0 ? _options.IngestionIntervalMinutes : 60;
-        if (intervalMinutes == 60)
+        if (_options.IngestionIntervalMinutes == FullHourIntervalMinutes)
         {
             return GetDelayUntilNextFullHour(out nextRunUtc);
         }
 
         var now = DateTime.UtcNow;
-        nextRunUtc = now.AddMinutes(intervalMinutes);
-        return TimeSpan.FromMinutes(intervalMinutes);
+        nextRunUtc = now.AddMinutes(_options.IngestionIntervalMinutes);
+        return TimeSpan.FromMinutes(_options.IngestionIntervalMinutes);
     }
 
     /// <summary>Calculates the time span remaining until the next top of the hour (XX:00:00 UTC).</summary>
@@ -109,8 +113,7 @@ public class Worker : BackgroundService
         var now = DateTime.UtcNow;
         nextHourUtc = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0, DateTimeKind.Utc).AddHours(1);
         var delay = nextHourUtc - now;
-        // Add a 500ms safety buffer so we are strictly in the new hour
-        return delay <= TimeSpan.Zero ? TimeSpan.FromSeconds(1) : delay.Add(TimeSpan.FromMilliseconds(500));
+        return delay <= TimeSpan.Zero ? MinimumFallbackDelay : delay.Add(BufferDelay);
     }
 
     /// <summary>

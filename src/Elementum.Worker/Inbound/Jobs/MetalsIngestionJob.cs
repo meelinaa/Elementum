@@ -12,6 +12,9 @@ namespace Elementum.Worker.Jobs;
 public class MetalsIngestionJob
 {
     private const string IngestionLockResource = "lock:job:metals_ingestion";
+    private const int DefaultPricesSavedBatchCount = 8; // 4 metals (Gold, Silver, Platinum, Palladium) * 2 currencies (USD, EUR)
+    private static readonly TimeSpan DistributedLockTimeout = TimeSpan.FromSeconds(30);
+
     private readonly ILogger<MetalsIngestionJob> _logger;
     private readonly IIngestPricesUseCase _ingestPricesUseCase;
     private readonly IngestionMetrics _metrics;
@@ -33,7 +36,7 @@ public class MetalsIngestionJob
     {
         await using var lockHandle = await _lockProvider.TryAcquireLockAsync(
             IngestionLockResource,
-            TimeSpan.FromSeconds(30),
+            DistributedLockTimeout,
             cancellationToken);
 
         if (!lockHandle.IsAcquired)
@@ -47,7 +50,7 @@ public class MetalsIngestionJob
         try
         {
             await _ingestPricesUseCase.ExecuteAsync(cancellationToken);
-            _metrics.RecordPricesSaved(8);
+            _metrics.RecordPricesSaved(DefaultPricesSavedBatchCount);
             _logger.LogInformation("Metals ingestion job completed.");
         }
         catch (Exception ex)

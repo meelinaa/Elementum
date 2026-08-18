@@ -10,10 +10,13 @@ namespace Elementum.Cli.Api;
 
 /// <summary>
 /// Central HTTP client and cache layer for the CLI.
-/// Handles REST API requests to Elementum API with in-memory caching and error resilience.
+/// Handles REST API requests to Elementum API with in-memory caching and error resilience without magic literals.
 /// </summary>
 public class HttpCall
 {
+    private static readonly TimeSpan DefaultHttpTimeout = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan DefaultCacheDuration = TimeSpan.FromMinutes(5);
+
     private static readonly ILogger _log = CliLogging.GetLogger(nameof(HttpCall));
 
     /// <summary>Shared options for JSON (de)serialization.</summary>
@@ -24,7 +27,7 @@ public class HttpCall
         var client = new HttpClient
         {
             BaseAddress = new Uri(CliConfig.ApiBaseUrl),
-            Timeout = TimeSpan.FromSeconds(15)
+            Timeout = DefaultHttpTimeout
         };
         client.DefaultRequestHeaders.Add("Accept", "application/json");
         return client;
@@ -97,7 +100,7 @@ public class HttpCall
             var value = JsonSerializer.Deserialize<T>(json, DefaultJsonOptions)!;
 
             _cacheKeys.TryAdd(endpoint, 0);
-            _cache.Set(endpoint, value, TimeSpan.FromMinutes(5));
+            _cache.Set(endpoint, value, DefaultCacheDuration);
 
             return value;
         }
