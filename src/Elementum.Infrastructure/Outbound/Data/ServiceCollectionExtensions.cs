@@ -32,8 +32,10 @@ public static class ServiceCollectionExtensions
     {
         services.AddElementumDbContext(connectionString, configureResilience);
 
-        // Register Driven / Secondary Ports
+        // Register Driven / Secondary Ports (ISP / CQRS Segregated Interfaces)
         services.AddScoped<IPriceHistoryRepository>(sp => sp.GetRequiredService<IElementumDbContext>());
+        services.AddScoped<IPriceHistoryReadRepository>(sp => sp.GetRequiredService<IElementumDbContext>());
+        services.AddScoped<IPriceHistoryWriteRepository>(sp => sp.GetRequiredService<IElementumDbContext>());
         services.AddSingleton<IDatabaseCheckService, DatabaseCheckService>();
         services.AddSingleton<IMetalsApiClient, MetalsApiClient>();
         services.AddSingleton<IDistributedLockProvider, Locking.EfCoreDistributedLockProvider>();

@@ -11,12 +11,12 @@ namespace Elementum.Application.Inbound.UseCases.Prices;
 /// </summary>
 public class LivePricesUseCase(
     ILiveQuotesProvider quotesProvider,
-    IPriceHistoryRepository repository) : ILivePricesUseCase
+    IPriceHistoryReadRepository repository) : ILivePricesUseCase
 {
     private const string DefaultExchangeName = "EDELMETALLE";
 
     private readonly ILiveQuotesProvider _quotesProvider = quotesProvider ?? throw new ArgumentNullException(nameof(quotesProvider));
-    private readonly IPriceHistoryRepository _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+    private readonly IPriceHistoryReadRepository _repository = repository ?? throw new ArgumentNullException(nameof(repository));
 
     /// <inheritdoc />
     public async Task<LiveMarketOverviewDto> GetLiveMarketOverviewAsync(CancellationToken cancellationToken = default)

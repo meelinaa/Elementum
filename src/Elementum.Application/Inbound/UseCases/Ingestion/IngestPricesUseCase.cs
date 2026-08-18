@@ -14,14 +14,14 @@ namespace Elementum.Application.Inbound.UseCases.Ingestion;
 public class IngestPricesUseCase : IIngestPricesUseCase
 {
     private readonly IMetalsApiClient _apiClient;
-    private readonly IPriceHistoryRepository _repository;
+    private readonly IPriceHistoryWriteRepository _repository;
     private readonly IValidator<EdelmetalleApiResponse> _validator;
     private readonly WorkerScheduleOptions _options;
     private readonly ILogger<IngestPricesUseCase> _logger;
 
     public IngestPricesUseCase(
         IMetalsApiClient apiClient,
-        IPriceHistoryRepository repository,
+        IPriceHistoryWriteRepository repository,
         IValidator<EdelmetalleApiResponse> validator,
         IOptions<WorkerScheduleOptions> options,
         ILogger<IngestPricesUseCase> logger)

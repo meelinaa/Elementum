@@ -12,10 +12,10 @@ namespace Elementum.Application.Inbound.UseCases.Prices;
 /// Uses mapper to decouple database entity structure from external API contract.
 /// </summary>
 public class GetDailyCandlesUseCase(
-    IPriceHistoryRepository repository,
+    IPriceHistoryReadRepository repository,
     ILogger<GetDailyCandlesUseCase> logger) : IGetDailyCandlesUseCase
 {
-    private readonly IPriceHistoryRepository _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+    private readonly IPriceHistoryReadRepository _repository = repository ?? throw new ArgumentNullException(nameof(repository));
     private readonly ILogger<GetDailyCandlesUseCase> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     public async Task<Result<IReadOnlyList<DailyPriceSummaryDto>>> ExecuteAsync(

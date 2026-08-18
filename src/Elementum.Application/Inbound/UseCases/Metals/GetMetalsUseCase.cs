@@ -7,9 +7,9 @@ namespace Elementum.Application.Inbound.UseCases.Metals;
 /// <summary>
 /// Interactor / Implementation of the metals master data use case.
 /// </summary>
-public class GetMetalsUseCase(IPriceHistoryRepository repository) : IGetMetalsUseCase
+public class GetMetalsUseCase(IPriceHistoryReadRepository repository) : IGetMetalsUseCase
 {
-    private readonly IPriceHistoryRepository _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+    private readonly IPriceHistoryReadRepository _repository = repository ?? throw new ArgumentNullException(nameof(repository));
 
     public async Task<IEnumerable<MetalsDto>> GetAllAsync(CancellationToken ct = default)
     {

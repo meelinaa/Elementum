@@ -10,7 +10,7 @@ namespace Elementum.UnitTests.Application.UseCases;
 public class LivePricesUseCaseTests
 {
     private readonly Mock<ILiveQuotesProvider> _quotesProviderMock = new();
-    private readonly Mock<IPriceHistoryRepository> _repositoryMock = new();
+    private readonly Mock<IPriceHistoryReadRepository> _repositoryMock = new();
     private readonly LivePricesUseCase _useCase;
 
     public LivePricesUseCaseTests()

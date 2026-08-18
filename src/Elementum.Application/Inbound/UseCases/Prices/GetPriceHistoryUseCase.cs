@@ -7,9 +7,9 @@ namespace Elementum.Application.Inbound.UseCases.Prices;
 /// <summary>
 /// Interactor / Implementation of the price querying use case.
 /// </summary>
-public class GetPriceHistoryUseCase(IPriceHistoryRepository repository) : IGetPriceHistoryUseCase
+public class GetPriceHistoryUseCase(IPriceHistoryReadRepository repository) : IGetPriceHistoryUseCase
 {
-    private readonly IPriceHistoryRepository _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+    private readonly IPriceHistoryReadRepository _repository = repository ?? throw new ArgumentNullException(nameof(repository));
 
     public async Task<IEnumerable<PriceHistoryDto>> GetLatestAllAsync(CancellationToken ct = default)
     {

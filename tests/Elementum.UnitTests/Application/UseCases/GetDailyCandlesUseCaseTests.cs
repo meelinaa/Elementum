@@ -8,7 +8,7 @@ namespace Elementum.UnitTests.Application.UseCases;
 
 public class GetDailyCandlesUseCaseTests
 {
-    private readonly Mock<IPriceHistoryRepository> _repositoryMock = new();
+    private readonly Mock<IPriceHistoryReadRepository> _repositoryMock = new();
     private readonly Mock<ILogger<GetDailyCandlesUseCase>> _loggerMock = new();
     private readonly GetDailyCandlesUseCase _useCase;
 

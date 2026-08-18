@@ -12,7 +12,7 @@ namespace Elementum.Application.Tests.UseCases;
 public class IngestPricesUseCaseTests
 {
     private readonly Mock<IMetalsApiClient> _apiClientMock = new();
-    private readonly Mock<IPriceHistoryRepository> _repositoryMock = new();
+    private readonly Mock<IPriceHistoryWriteRepository> _repositoryMock = new();
     private readonly Mock<ILogger<IngestPricesUseCase>> _loggerMock = new();
     private readonly WorkerScheduleOptions _options = new() { DailyRollupHour = 0, RetentionDays = 14 };
     private readonly EdelmetalleApiResponseValidator _validator = new();
