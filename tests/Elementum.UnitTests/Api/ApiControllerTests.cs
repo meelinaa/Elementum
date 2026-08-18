@@ -15,20 +15,30 @@ public class ApiControllerTests
     private readonly Mock<IGetMetalsUseCase> _metalsUseCaseMock = new();
     private readonly Mock<IGetDailyCandlesUseCase> _dailyCandlesUseCaseMock = new();
     private readonly Mock<ILivePricesUseCase> _livePricesUseCaseMock = new();
-    private readonly ApiController _controller;
+
+    private readonly MetalsController _metalsController;
+    private readonly LivePricesController _livePricesController;
+    private readonly PriceHistoryController _priceHistoryController;
 
     public ApiControllerTests()
     {
-        _controller = new ApiController(
-            _priceHistoryUseCaseMock.Object,
-            _metalsUseCaseMock.Object,
-            _dailyCandlesUseCaseMock.Object,
-            _livePricesUseCaseMock.Object)
+        var httpContext = new DefaultHttpContext();
+
+        _metalsController = new MetalsController(_metalsUseCaseMock.Object)
         {
-            ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext()
-            }
+            ControllerContext = new ControllerContext { HttpContext = httpContext }
+        };
+
+        _livePricesController = new LivePricesController(_livePricesUseCaseMock.Object)
+        {
+            ControllerContext = new ControllerContext { HttpContext = httpContext }
+        };
+
+        _priceHistoryController = new PriceHistoryController(
+            _priceHistoryUseCaseMock.Object,
+            _dailyCandlesUseCaseMock.Object)
+        {
+            ControllerContext = new ControllerContext { HttpContext = httpContext }
         };
     }
 
@@ -39,16 +49,28 @@ public class ApiControllerTests
         _metalsUseCaseMock.Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
                        .ReturnsAsync(metals);
 
-        var result = await _controller.GetAllMetals(CancellationToken.None);
+        var result = await _metalsController.GetAllMetals(CancellationToken.None);
 
         Assert.Same(metals, result);
         _metalsUseCaseMock.Verify(s => s.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
+    public async Task GetLivePrices_ReturnsOkWithOverview()
+    {
+        var overview = new LiveMarketOverviewDto();
+        _livePricesUseCaseMock.Setup(s => s.GetLiveMarketOverviewAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(overview);
+
+        var result = await _livePricesController.GetLivePrices(CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Same(overview, ok.Value);
+    }
+
+    [Fact]
     public async Task GetPriceHistoryByMetalSymbol_ReturnsOkWithData()
     {
-        // Arrange
         var request = new SymbolRequest { Symbol = "XPT" };
         var history = new List<PriceHistoryDto>
         {
@@ -57,10 +79,8 @@ public class ApiControllerTests
         _priceHistoryUseCaseMock.Setup(s => s.GetBySymbolAsync("XPT", null, It.IsAny<CancellationToken>()))
                        .ReturnsAsync(history);
 
-        // Act
-        var result = await _controller.GetPriceHistoryByMetalSymbol(request, null, CancellationToken.None);
+        var result = await _priceHistoryController.GetPriceHistoryByMetalSymbol(request, null, CancellationToken.None);
 
-        // Assert
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Same(history, ok.Value);
     }
@@ -72,7 +92,7 @@ public class ApiControllerTests
         _priceHistoryUseCaseMock.Setup(s => s.GetLatestBySymbolAsync("XAU", It.IsAny<CancellationToken>()))
                        .ReturnsAsync((PriceHistoryDto?)null);
 
-        var actionResult = await _controller.GetPriceHistoryByMetalSymbolLatest(request, CancellationToken.None);
+        var actionResult = await _priceHistoryController.GetPriceHistoryByMetalSymbolLatest(request, CancellationToken.None);
 
         var notFound = Assert.IsType<NotFoundObjectResult>(actionResult.Result);
         var details = Assert.IsType<ProblemDetails>(notFound.Value);
@@ -87,7 +107,7 @@ public class ApiControllerTests
         _priceHistoryUseCaseMock.Setup(s => s.GetLatestBySymbolAsync("XAG", It.IsAny<CancellationToken>()))
                        .ReturnsAsync(dto);
 
-        var actionResult = await _controller.GetPriceHistoryByMetalSymbolLatest(request, CancellationToken.None);
+        var actionResult = await _priceHistoryController.GetPriceHistoryByMetalSymbolLatest(request, CancellationToken.None);
 
         var ok = Assert.IsType<OkObjectResult>(actionResult.Result);
         Assert.Equal(dto, ok.Value);
@@ -120,7 +140,7 @@ public class ApiControllerTests
             .Setup(u => u.ExecuteAsync("XAU", "USD", null, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Elementum.Domain.Common.Result.Success<IReadOnlyList<DailyPriceSummaryDto>>(list));
 
-        var result = await _controller.GetDailyCandles(request, "USD", null, null, CancellationToken.None);
+        var result = await _priceHistoryController.GetDailyCandles(request, "USD", null, null, CancellationToken.None);
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Same(list, ok.Value);

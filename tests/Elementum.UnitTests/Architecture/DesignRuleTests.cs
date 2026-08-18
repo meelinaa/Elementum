@@ -16,7 +16,7 @@ public class DesignRuleTests
     [Fact]
     public void ApiControllers_Should_InheritFromControllerBase()
     {
-        var result = Types.InAssembly(typeof(ApiController).Assembly)
+        var result = Types.InAssembly(typeof(MetalsController).Assembly)
             .That()
             .ResideInNamespace("Elementum.Api.Controllers")
             .And()
