@@ -1,4 +1,5 @@
 using Elementum.Application.DTOs;
+using Elementum.Application.Mapping;
 using Elementum.Domain.Common;
 using Elementum.Domain.Errors;
 using Elementum.Domain.Ports.Outbound;
@@ -8,6 +9,7 @@ namespace Elementum.Application.Inbound.UseCases.Prices;
 
 /// <summary>
 /// Interactor implementation for querying daily candles (Min/Max/Open/Close at 22:00).
+/// Uses mapper to decouple database entity structure from external API contract.
 /// </summary>
 public class GetDailyCandlesUseCase(
     IPriceHistoryRepository repository,
@@ -32,20 +34,7 @@ public class GetDailyCandlesUseCase(
 
         var summaries = await _repository.GetDailySummariesAsync(symbol, currency, fromDate, toDate, cancellationToken);
 
-        var dtos = summaries.Select(s => new DailyPriceSummaryDto
-        {
-            Id = s.Id,
-            MetalId = s.MetalId,
-            Symbol = metal.Symbol,
-            MetalName = metal.Name,
-            Currency = s.Currency,
-            EntryDate = s.EntryDate,
-            OpenPrice = s.OpenPrice,
-            HighPrice = s.HighPrice,
-            LowPrice = s.LowPrice,
-            ClosePrice = s.ClosePrice,
-            ExchangeRateUsdEur = s.ExchangeRateUsdEur
-        }).ToList();
+        var dtos = summaries.Select(s => s.ToDailyPriceSummaryDto(metal.Symbol, metal.Name)).ToList();
 
         return Result.Success<IReadOnlyList<DailyPriceSummaryDto>>(dtos);
     }

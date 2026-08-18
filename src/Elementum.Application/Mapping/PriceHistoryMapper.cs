@@ -4,7 +4,8 @@ using Elementum.Domain.Entities;
 namespace Elementum.Application.Mapping;
 
 /// <summary>
-/// Maps domain entities to application DTOs.
+/// Central mapper: Transforms domain & persistence entities to application-level DTOs,
+/// ensuring the API contract is decoupled from internal database schema and entity details.
 /// </summary>
 public static class PriceHistoryMapper
 {
@@ -38,6 +39,27 @@ public static class PriceHistoryMapper
                 Price = entity.Price,
                 Chp = entity.Chp,
                 Metal = entity.Metal?.ToDto()
+            };
+    }
+
+    /// <summary>Maps a <see cref="DailyPriceSummary"/> entity to <see cref="DailyPriceSummaryDto"/>.</summary>
+    public static DailyPriceSummaryDto ToDailyPriceSummaryDto(this DailyPriceSummary summary, string? symbol = null, string? metalName = null)
+    {
+        return summary == null
+            ? throw new ArgumentNullException(nameof(summary))
+            : new DailyPriceSummaryDto
+            {
+                Id = summary.Id,
+                MetalId = summary.MetalId,
+                Symbol = symbol ?? summary.Metal?.Symbol ?? string.Empty,
+                MetalName = metalName ?? summary.Metal?.Name ?? string.Empty,
+                Currency = summary.Currency,
+                EntryDate = summary.EntryDate,
+                OpenPrice = summary.OpenPrice,
+                HighPrice = summary.HighPrice,
+                LowPrice = summary.LowPrice,
+                ClosePrice = summary.ClosePrice,
+                ExchangeRateUsdEur = summary.ExchangeRateUsdEur
             };
     }
 
