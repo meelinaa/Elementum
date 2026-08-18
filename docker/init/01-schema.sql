@@ -67,3 +67,34 @@ CREATE TABLE IF NOT EXISTS price_history (
     UNIQUE KEY uk_metal_currency_date (metal_id, currency, entry_date),
     INDEX idx_history_lookup (metal_id, currency, entry_date)
 ) ENGINE=InnoDB;
+
+-- -----------------------------------------------------------------------------
+-- 3. Distributed locking (for multi-instance concurrency coordination)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS distributed_locks (
+    resource VARCHAR(128) PRIMARY KEY,
+    acquired_by VARCHAR(128) NOT NULL,
+    acquired_at_utc DATETIME NOT NULL,
+    expires_at_utc DATETIME NOT NULL
+) ENGINE=InnoDB;
+
+-- -----------------------------------------------------------------------------
+-- 4. Daily price summaries / candlesticks (Min/Max/Open/Close at 22:00)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS daily_price_summaries (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    metal_id INT NOT NULL,
+    currency VARCHAR(3) NOT NULL,
+    entry_date DATE NOT NULL,
+    open_price DECIMAL(18, 4) NOT NULL,
+    high_price DECIMAL(18, 4) NOT NULL,
+    low_price DECIMAL(18, 4) NOT NULL,
+    close_price DECIMAL(18, 4) NOT NULL,
+    exchange_rate_usd_eur DECIMAL(18, 8),
+    created_at_utc DATETIME NOT NULL,
+    updated_at_utc DATETIME NOT NULL,
+    FOREIGN KEY (metal_id) REFERENCES metals(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_candle_metal_currency_date (metal_id, currency, entry_date),
+    INDEX idx_candles_lookup (metal_id, currency, entry_date)
+) ENGINE=InnoDB;
+

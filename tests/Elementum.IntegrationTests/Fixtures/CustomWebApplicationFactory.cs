@@ -64,7 +64,10 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
             db.Metals.AddRange(gold, silver, platinum, palladium);
             db.SaveChanges();
+        }
 
+        if (!db.PriceHistory.Any())
+        {
             db.PriceHistory.Add(new PriceHistory
             {
                 Id = 1,

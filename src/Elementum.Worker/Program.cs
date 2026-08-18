@@ -1,3 +1,4 @@
+using Elementum.Infrastructure.Outbound.Data;
 using Elementum.Worker.Hosting;
 using Elementum.Worker.Jobs;
 using Microsoft.AspNetCore.Builder;
@@ -21,6 +22,8 @@ var app = builder.Build();
 
 try
 {
+    await app.Services.ApplyMigrationsAndSeedAsync();
+
     if (isSingleRun)
     {
         Log.Information("Elementum Worker starting in Single-Run mode (--run-once / --once).");
