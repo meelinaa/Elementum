@@ -53,10 +53,10 @@ public static class CliStrings
     // --- History view ---
     public const string HistoryHeaderPrefix = "HISTORY — ";
     public const string HistorySelectViewTitle = "Select view";
-    public const string HistoryOptionDaily = "  │  [1] Daily       — last 30 days (1 entry per day)                │";
-    public const string HistoryOptionWeekly = "  │  [2] Weekly      — last 52 weeks (1 entry per week)              │";
-    public const string HistoryOptionMonthly = "  │  [3] Monthly     — last 24 months (1 entry per month)            │";
-    public const string HistoryOptionYearly = "  │  [4] Yearly      — Jan & Mid-Year per year                       │";
+    public const string HistoryOptionDaily = "  │  [1] Daily       — 1 day (hourly progression)                    │";
+    public const string HistoryOptionWeekly = "  │  [2] Weekly      — 7 days (morning, midday, evening per day)     │";
+    public const string HistoryOptionMonthly = "  │  [3] Monthly     — 30 days (daily close values)                  │";
+    public const string HistoryOptionYearly = "  │  [4] Yearly      — 12 months (monthly average)                   │";
     public const string HistoryPeriodBoxBottom = "  └──────────────────────────────────────────────────────────────────┘";
     public const string HistoryNoDataMessage = "No history data available for this metal.";
     public const string HistoryNoDataTip = "Tip: Start the daemon worker to collect hourly prices and daily candles.";

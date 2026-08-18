@@ -174,10 +174,85 @@ public class HttpCall
         };
     }
 
+    private static int GetHour(PriceHistoryDto p)
+    {
+        if (long.TryParse(p.ReferenceTimestamp, out long unix) && unix > 0)
+        {
+            return DateTimeOffset.FromUnixTimeSeconds(unix).ToLocalTime().Hour;
+        }
+        return 12;
+    }
+
     private static List<PriceHistoryDto> AggregateByDay(List<PriceHistoryDto> list, int maxCount)
     {
-        // 1 entry per distinct day (latest tick of each day)
+        // Hourly progression of 1 day (the latest available day in history)
+        if (list.Count == 0) return [];
+        var latestDate = list.Max(p => p.EntryDate);
+
         return list
+            .Where(p => p.EntryDate == latestDate)
+            .OrderBy(p => p.Id)
+            .TakeLast(maxCount)
+            .ToList();
+    }
+
+    private static List<PriceHistoryDto> AggregateByWeek(List<PriceHistoryDto> list, int maxCount)
+    {
+        // Last 7 days: Morning (<11h), Midday (11h-16h), Evening (>=17h) per day
+        if (list.Count == 0) return [];
+        var latestDate = list.Max(p => p.EntryDate);
+        var weekStartDate = latestDate.AddDays(-6);
+
+        var weekDays = list
+            .Where(p => p.EntryDate >= weekStartDate && p.EntryDate <= latestDate)
+            .GroupBy(p => p.EntryDate)
+            .OrderBy(g => g.Key);
+
+        var result = new List<PriceHistoryDto>();
+
+        foreach (var dayGroup in weekDays)
+        {
+            var dayTicks = dayGroup.OrderBy(p => p.Id).ToList();
+            if (dayTicks.Count == 0) continue;
+
+            if (dayTicks.Count <= 3)
+            {
+                result.AddRange(dayTicks);
+            }
+            else
+            {
+                // 1. Morning (< 11:00 or first tick)
+                var morning = dayTicks.FirstOrDefault(p => GetHour(p) < 11) ?? dayTicks.First();
+                result.Add(morning);
+
+                // 2. Midday (11:00 - 16:00)
+                var midday = dayTicks.FirstOrDefault(p => GetHour(p) is >= 11 and <= 16);
+                if (midday != null && midday.Id != morning.Id)
+                {
+                    result.Add(midday);
+                }
+
+                // 3. Evening (>= 17:00 or last tick)
+                var evening = dayTicks.Last();
+                if (evening.Id != morning.Id && (midday == null || evening.Id != midday.Id))
+                {
+                    result.Add(evening);
+                }
+            }
+        }
+
+        return result.TakeLast(maxCount).ToList();
+    }
+
+    private static List<PriceHistoryDto> AggregateByMonth(List<PriceHistoryDto> list, int maxCount)
+    {
+        // 1 value per day (end of the day / last tick of each day) for the last 30 days
+        if (list.Count == 0) return [];
+        var latestDate = list.Max(p => p.EntryDate);
+        var startDate = latestDate.AddDays(-29);
+
+        return list
+            .Where(p => p.EntryDate >= startDate)
             .GroupBy(p => p.EntryDate)
             .OrderBy(g => g.Key)
             .Select(g => g.OrderByDescending(p => p.Id).First())
@@ -185,53 +260,19 @@ public class HttpCall
             .ToList();
     }
 
-    private static List<PriceHistoryDto> AggregateByWeek(List<PriceHistoryDto> list, int maxCount)
+    private static List<PriceHistoryDto> AggregateByYear(List<PriceHistoryDto> list, int maxCount)
     {
-        // 1 entry per distinct calendar week
-        return list
-            .GroupBy(p => new { p.EntryDate.Year, Week = ISOWeek.GetWeekOfYear(p.EntryDate.ToDateTime(TimeOnly.MinValue)) })
-            .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Week)
-            .Select(g => g.OrderByDescending(p => p.EntryDate).ThenByDescending(p => p.Id).First())
-            .TakeLast(maxCount)
-            .ToList();
-    }
-
-    private static List<PriceHistoryDto> AggregateByMonth(List<PriceHistoryDto> list, int maxCount)
-    {
-        // 1 entry per distinct month (up to 24 months / 2 years)
+        // 1 value per month: monthly average for up to 12 months
         return list
             .GroupBy(p => new { p.EntryDate.Year, p.EntryDate.Month })
             .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
-            .Select(g => g.OrderByDescending(p => p.EntryDate).ThenByDescending(p => p.Id).First())
+            .Select(g =>
+            {
+                var avg = Math.Round(g.Average(p => p.Price), 2, MidpointRounding.ToEven);
+                var rep = g.OrderByDescending(p => p.Id).First();
+                return rep with { Price = avg };
+            })
             .TakeLast(maxCount)
             .ToList();
-    }
-
-    private static List<PriceHistoryDto> AggregateByYear(List<PriceHistoryDto> list, int maxCount)
-    {
-        // For each year: January (or start of year) and Mid-Year (June/July or mid of year)
-        var result = new List<PriceHistoryDto>();
-
-        var yearGroups = list
-            .GroupBy(p => p.EntryDate.Year)
-            .OrderBy(g => g.Key);
-
-        foreach (var yg in yearGroups)
-        {
-            var orderedYear = yg.OrderBy(p => p.EntryDate).ThenBy(p => p.Id).ToList();
-
-            // 1. January / H1 point (earliest entry in the first half of the year)
-            var janPoint = orderedYear.FirstOrDefault(p => p.EntryDate.Month <= 5) ?? orderedYear.First();
-            result.Add(janPoint);
-
-            // 2. Mid-Year / H2 point (e.g. June/July or earliest in second half, if distinct)
-            var midYearPoint = orderedYear.FirstOrDefault(p => p.EntryDate.Month >= 6);
-            if (midYearPoint != null && midYearPoint.Id != janPoint.Id && midYearPoint.EntryDate != janPoint.EntryDate)
-            {
-                result.Add(midYearPoint);
-            }
-        }
-
-        return result.TakeLast(maxCount).ToList();
     }
 }

@@ -18,10 +18,10 @@ public class HistoryView : IDetailView
     /// <summary>Number of data points per aggregation (passed to API as count).</summary>
     private static readonly Dictionary<HistoryPeriod, int> PeriodCounts = new()
     {
-        { HistoryPeriod.Daily, 30 },
-        { HistoryPeriod.Weekly, 52 },
-        { HistoryPeriod.Monthly, 24 },
-        { HistoryPeriod.Yearly, 20 }
+        { HistoryPeriod.Daily, 24 },
+        { HistoryPeriod.Weekly, 21 },
+        { HistoryPeriod.Monthly, 30 },
+        { HistoryPeriod.Yearly, 12 }
     };
 
     private static readonly Dictionary<HistoryPeriod, string> PeriodLabels = new()
