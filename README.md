@@ -1,97 +1,120 @@
-<img width="1920" height="553" alt="Elementum" src="https://github.com/user-attachments/assets/ea4edcb2-94d2-41b8-8d60-de1f83949946" />
+<div align="center">
+  <img width="100%" alt="Elementum Banner" src="https://github.com/user-attachments/assets/ea4edcb2-94d2-41b8-8d60-de1f83949946" />
 
+  # Elementum
+  
+  **A modern, full-stack .NET application for real-time precious metal price tracking and trading analytics.**
 
-# Elementum
+  [![CI/CD Pipeline](https://github.com/meelinaa/Elementum/actions/workflows/ci.yml/badge.svg)](https://github.com/meelinaa/Elementum/actions/workflows/ci.yml)
+  ![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)
+  ![ASP.NET Core](https://img.shields.io/badge/ASP.NET_Core-10.0-512BD4?logo=dotnet)
+  ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white)
+  ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+  ![License](https://img.shields.io/badge/License-MIT-green.svg)
+</div>
 
-A full-stack .NET application for **precious metal price tracking** (gold, silver, platinum, palladium). It demonstrates a clean separation between data persistence, REST API, background ingestion, and a console client — suitable for portfolio or technical assessment contexts.
+<br />
 
 ---
 
-## Table of contents
+## Table of Contents
 
-- [Project overview](#project-overview)
-- [Tech stack](#tech-stack)
-- [Features](#features)
-- [Architecture](#architecture)
-- [Repository structure](#repository-structure)
+- [Problem & Solution](#problem--solution)
+- [Project Overview](#project-overview)
+- [Tech Stack](#tech-stack)
+- [Architecture & Design](#architecture--design)
+- [Core Features](#core-features)
+- [Repository Structure](#repository-structure)
 - [Prerequisites](#prerequisites)
-- [Getting started](#getting-started)
-- [Running the components](#running-the-components)
+- [Getting Started](#getting-started)
+- [API Reference](#api-reference)
 - [Screenshots](#screenshots)
-- [Related documentation](#related-documentation)
+- [Related Documentation](#related-documentation)
 
 ---
 
-## Project overview
+## Problem & Solution
 
-**Elementum** consists of the following architectural components (Hexagonal / Ports & Adapters):
+> **Problem:** Tracking precious metal spot prices over time (per metal, currency, and historical trends) usually requires manually aggregating fragmented data sources, dealing with API rate limits, and lacking consolidated technical analytics.
+>
+> **Solution:** **Elementum** automates periodic background price ingestion, consolidates daily candle data, and exposes real-time market overviews and technical trading indicators through a high-performance REST API and an interactive Terminal UI (CLI) — powered by a shared MySQL database with Polly resilience, HybridCache L1/L2 caching, distributed locking, and IP-based rate limiting.
+
+- **Stack:** .NET 10 (C# 13), ASP.NET Core, MySQL 8, Entity Framework Core, Docker & Docker Compose.
+- **Key Capabilities:** Versioned endpoints (`/api/v1`), live market overviews (USD & EUR), real-time technical trading metrics (OHLC, spread, volatility %, bullish/bearish indicators), historical tick queries, fail-fast configuration validation, Kubernetes-style health probes (`/health/live`, `/health/ready`), and 1-command Docker Compose deployment.
+
+---
+
+## Project Overview
+
+**Elementum** is structured into decoupled architectural layers:
 
 | Component | Layer | Description |
 |-----------|-------|-------------|
-| **Elementum.Domain** | Domain | Pure enterprise business models (`Metal`, `PriceHistory`), enums, and driven ports (`IPriceHistoryRepository`, `IMetalsApiClient`, `IDatabaseCheckService`). |
-| **Elementum.Application** | Application | Use cases (`IngestPricesUseCase`, `GetPriceHistoryUseCase`, `GetMetalsUseCase`), DTOs, and mappings. |
-| **Elementum.Infrastructure** | Infrastructure (Driven Adapters) | EF Core `ElementumDbContext` (MySQL), Polly resilience decorators, GoldAPI HTTP client adapter. |
-| **Elementum.Api** | Presentation (Driving Adapter) | ASP.NET Core REST API exposing precious metal prices and catalog endpoints. |
-| **Elementum.Worker** | Presentation (Driving Adapter) | Periodic background ingestion worker (schedulable as Windows Service or container). |
-| **Elementum.Cli** | Presentation (Driving Adapter) | Console TUI client providing dashboard, metal list, trading view, karat calculator, and history. |
-| **docker** | Deployment | Docker Compose environment for MySQL, API, and Worker. |
+| **Elementum.Domain** | Domain | Pure enterprise business models (`Metals`, `PriceHistory`, `DailyPriceSummary`), value objects (`Currency`, `Money`), domain constants, and ports (`IPriceHistoryRepository`, `IMetalsApiClient`, `IDistributedLockProvider`). |
+| **Elementum.Application** | Application | Use cases (`IngestPricesUseCase`, `LivePricesUseCase`, `GetPriceHistoryUseCase`, `GetDailyCandlesUseCase`, `GetMetalsUseCase`), DTOs, mappers, and fail-fast options. |
+| **Elementum.Infrastructure** | Infrastructure (Driven Adapters) | EF Core `ElementumDbContext` (MySQL), Polly resilience retry policies, `MetalsApiClient`, HybridCache L1/L2 caching, and distributed locking. |
+| **Elementum.Api** | Presentation (Driving Adapter) | ASP.NET Core REST API exposing live prices, trading indicators, and historical data with IP-based Rate Limiting. |
+| **Elementum.Worker** | Presentation (Driving Adapter) | Background daemon for periodic price ingestion, candle consolidation, retention cleanup, and Prometheus/OpenTelemetry metrics. |
+| **Elementum.Cli** | Presentation (Driving Adapter) | Interactive Console TUI client with real-time dashboard, trading indicators, metal master data, and charts. |
+| **docker** | Deployment | Docker Compose environment for MySQL, API, and Worker services. |
 
 ---
 
-## Tech stack
+## Tech Stack
 
-- **Runtime & framework:** .NET 10 (C#)
+- **Runtime & Framework:** .NET 10 (C# 13)
 - **Architecture:** Hexagonal / Clean Architecture (Ports & Adapters)
-- **API:** ASP.NET Core (REST), OpenAPI, health checks (liveness/readiness), per-request timeouts
-- **Data:** MySQL 8, Entity Framework Core, structured init scripts
-- **Resilience:** Polly (retry policies for MySQL connection drops and external API calls)
-- **Infrastructure:** Docker, Docker Compose
-- **Client:** Console application (CLI) with configurable API base URL
-- **Testing:** Dedicated xUnit & Moq test projects for Domain, Application, Infrastructure, Api, Worker, and CLI
+- **API & Security:** ASP.NET Core (REST), OpenAPI, IP-based Rate Limiting (`Microsoft.AspNetCore.RateLimiting`), RFC 7807 `ProblemDetails`, per-request timeouts
+- **Configuration:** Fail-Fast Options Pattern with DataAnnotations validation (`ValidateDataAnnotations().ValidateOnStart()`)
+- **Data & Persistence:** MySQL 8, Entity Framework Core, structured initialization & migrations
+- **Caching & Concurrency:** Microsoft HybridCache (L1 Memory + L2 Distributed Redis), distributed locking
+- **Resilience:** Polly v8 (retry pipelines with exponential backoff & jitter)
+- **Observability:** Serilog structured logging with `X-Correlation-ID` tracing, health checks (`/health/live`, `/health/ready`), `System.Diagnostics.Metrics`
+- **Testing:** Automated xUnit test suite (Unit Tests, Integration Tests with WebApplicationFactory and Testcontainers)
 
 ---
 
-## Features
+## Architecture & Design
 
-- **REST API** with versioned base path (`/api/v1`), validation, and clear DTOs for metals and price history
-- **Flexible queries:** latest per metal, by symbol, by date range, and aggregated (daily/weekly/monthly/yearly)
-- **Specialized views:** trading (bid/ask, OHLC) and karat (price per gram by purity) endpoints for the CLI
-- **Docker-based deployment:** one Compose file for MySQL, API, and Worker; database init on first run
-- **Background ingestion:** worker with configurable schedule; installable as Windows Service
-- **Console CLI:** keyboard-driven navigation, dashboard, metal selection, and multiple detail views
+```mermaid
+graph TD
+    CLI[Elementum.Cli] -->|REST API HTTP| API[Elementum.Api]
+    WORKER[Elementum.Worker] -->|Ingestion & Consolidation| APP[Elementum.Application]
+    API -->|Use Cases| APP
+    APP -->|Domain Models & Ports| DOMAIN[Elementum.Domain]
+    INFRA[Elementum.Infrastructure] -->|Implements Ports| DOMAIN
+    INFRA -->|EF Core / Polly| DB[(MySQL 8)]
+    INFRA -->|HTTP / Resilience| EXT[External Metals API]
+```
+
+- **Fail-Fast Configuration:** Zero silent fallbacks. Missing connection strings, invalid URLs, or out-of-range intervals immediately abort host startup with descriptive error messages.
+- **Contract Decoupling (DTOs):** Domain and EF entities are never exposed across HTTP boundaries. All responses are projected via `PriceHistoryMapper`.
+- **IP-Based Rate Limiting:** Built-in partition-based rate limiter returns `429 Too Many Requests` with RFC 7807 ProblemDetails when limits are exceeded.
 
 ---
 
-## Architecture (Hexagonal / Ports & Adapters)
-
-Data flows from an external price API via the `MetalsApiClient` (Driven Adapter) into the `IngestPricesUseCase` (Application), which persists data via `IPriceHistoryRepository` (Driven Port) into MySQL. The `Elementum.Api` (Driving Adapter) invokes application use cases to serve REST requests to `Elementum.Cli`. The database schema is seeded via SQL scripts in `docker/init/`.
-
----
-
-## Repository structure
+## Repository Structure
 
 ```
 Elementum/
-├── docker/                             # Docker Compose (MySQL + Redis + API + Worker)
+├── docker/                             # Docker Compose (MySQL + API + Worker)
 │   ├── docker-compose.yml
 │   ├── .env.example
 │   └── README.md
-├── src/                                # .NET source projects
-│   ├── Elementum.Domain/               # Pure domain entities, enums, rules & ports
-│   ├── Elementum.Application/          # Use cases, queries, commands, DTOs & mappings
-│   ├── Elementum.Infrastructure/       # EF Core DbContext, GoldAPI client, Polly resilience
-│   ├── Elementum.Api/                  # ASP.NET Core REST API
+├── src/                                # Source projects
+│   ├── Elementum.Domain/               # Domain entities, value objects, constants & ports
+│   ├── Elementum.Application/          # Use cases, DTOs, mappers & configuration options
+│   ├── Elementum.Infrastructure/       # EF Core, HybridCache, external API client & Polly resilience
+│   ├── Elementum.Api/                  # ASP.NET Core REST API & Rate Limiting
 │   │   ├── README.md
 │   │   └── API-Endpoints.md
-│   ├── Elementum.Worker/               # Price ingestion background worker
+│   ├── Elementum.Worker/               # Background ingestion daemon & metrics
 │   │   └── README.md
-│   └── Elementum.Cli/                  # Console CLI
+│   └── Elementum.Cli/                  # Interactive Console CLI (TUI)
 │       └── README.md
-├── tests/                              # Automated unit and integration tests
-│   ├── Elementum.Application.Tests/
-│   ├── Elementum.Api.Tests/
-│   ├── Elementum.Worker.Tests/
-│   └── Elementum.Cli.Tests/
+├── tests/                              # Test suites
+│   ├── Elementum.UnitTests/            # Domain, Application, and API unit tests
+│   └── Elementum.IntegrationTests/     # E2E API & Rate Limiting integration tests
 ├── Elementum.slnx                      # Central .NET solution
 └── README.md                           # This file
 ```
@@ -100,104 +123,80 @@ Elementum/
 
 ## Prerequisites
 
-- **.NET SDK** (e.g. .NET 10) for building and running the API, Worker, and CLI
-- **Docker and Docker Compose** for running the database and API in containers (see [docker/README.md](docker/README.md))
-- **MySQL** (or the containerized instance) if you run the API or Worker outside Docker
+- **.NET 10 SDK** for building and running the projects
+- **Docker & Docker Compose** for running containerized MySQL, API, and Worker
+- **MySQL 8** (or the containerized instance)
 
 ---
 
-## Getting started
+## Getting Started
 
-### Option A: Docker (database + API)
+### Option A: Docker (Database + API + Worker)
 
-1. From the repository root:
+1. Navigate to the `docker/` directory:
    ```bash
    cd docker
-   cp .env.example .env   # optional: adjust ports and credentials
+   cp .env.example .env
    docker compose up -d
    ```
-2. The API is available at **http://localhost:5000** (or the port defined by `API_PORT` in `.env`).  
-   Health endpoints: `GET /health/live`, `GET /health/ready`.
-3. Run the CLI (requires the API to be running):
+2. The API is available at **http://localhost:5000** (or the configured `API_PORT`).
+   - Liveness Probe: `GET /health/live`
+   - Readiness Probe: `GET /health/ready`
+3. Run the CLI:
    ```bash
    dotnet run --project src/Elementum.Cli
    ```
-   To use a different API base URL, set the environment variable `ELEMENTUM_API_BASEURL` (e.g. `http://localhost:5000/api/v1/`) or configure `ApiBaseUrl` in the CLI’s `appsettings.json`.
 
-For more details (logs, rebuilding after code changes, database-only mode), see [docker/README.md](docker/README.md).
+### Option B: Local Development
 
-### Option B: Local API and MySQL
-
-1. Start MySQL (e.g. `docker compose up -d mysql` from `docker`) or use an existing instance.
-2. Configure the connection string for the API (and Worker) in `appsettings.json` or via environment (e.g. `ConnectionStrings__DefaultConnection`).
-3. Run the API:
+1. Start MySQL (e.g. `docker compose up -d mysql` from `docker/`).
+2. Run the API:
    ```bash
    dotnet run --project src/Elementum.Api
    ```
-   The API listens on the port configured in the project (e.g. 5000). See [src/Elementum.Api/README.md](src/Elementum.Api/README.md).
-4. Run the CLI as in Option A and set the API base URL if needed.
-
-To populate the database with daily prices, run the Worker (or install it as a Windows Service). Details: [src/Elementum.Worker/README.md](src/Elementum.Worker/README.md).
+3. Run the Worker:
+   ```bash
+   dotnet run --project src/Elementum.Worker
+   ```
+4. Run the CLI:
+   ```bash
+   dotnet run --project src/Elementum.Cli
+   ```
 
 ---
 
-## Running the components
+## Running Automated Tests
 
-| Component | Command / location | Documentation |
-|-----------|--------------------|----------------|
-| **Database + API (Docker)** | `cd docker && docker compose up -d` | [docker/README.md](docker/README.md) |
-| **API (local)** | `dotnet run --project src/Elementum.Api` | [src/Elementum.Api/README.md](src/Elementum.Api/README.md) |
-| **API reference** | — | [src/Elementum.Api/API-Endpoints.md](src/Elementum.Api/API-Endpoints.md) |
-| **Worker** | `dotnet run --project src/Elementum.Worker` or install as Windows Service | [src/Elementum.Worker/README.md](src/Elementum.Worker/README.md) |
-| **CLI** | `dotnet run --project src/Elementum.Cli` (API must be running) | [src/Elementum.Cli/README.md](src/Elementum.Cli/README.md) |
+```bash
+# Run all unit and integration tests
+dotnet test Elementum.slnx
+
+# Run in Release configuration
+dotnet test Elementum.slnx --configuration Release
+```
 
 ---
 
 ## Screenshots
 
-### Main menu
-
-*[Screenshot: CLI main menu with options (Dashboard, List metals, Trading, Karat calculator, History, Info).]*
-
-<img width="1008" height="487" alt="image" src="https://github.com/user-attachments/assets/b1d5c4a5-f4fd-4a2e-b925-6cc1038ac9f6" />
+### Main Menu
+<img width="1008" height="487" alt="Main Menu" src="https://github.com/user-attachments/assets/b1d5c4a5-f4fd-4a2e-b925-6cc1038ac9f6" />
 
 ### Dashboard
+<img width="883" height="425" alt="Dashboard" src="https://github.com/user-attachments/assets/1ae8e25b-0cac-494c-8197-5d5f6d8392ce" />
 
-*[Screenshot: Dashboard view with latest prices for all metals.]*
+### Trading View
+<img width="873" height="1033" alt="Trading View" src="https://github.com/user-attachments/assets/b414a7e9-2201-4798-a06b-e1279f1382e4" />
 
-<img width="883" height="425" alt="image" src="https://github.com/user-attachments/assets/1ae8e25b-0cac-494c-8197-5d5f6d8392ce" />
-
-### List metals
-
-*[Screenshot: List metals view (e.g. XAU, XAG, XPT, XPD).]*
-
-<img width="890" height="388" alt="image" src="https://github.com/user-attachments/assets/8e258c89-a9d4-4b1c-a351-064d883e0671" />
-
-### Trading view
-
-*[Screenshot: Trading view for one metal (bid/ask, high/low).]*
-
-<img width="873" height="1033" alt="image" src="https://github.com/user-attachments/assets/b414a7e9-2201-4798-a06b-e1279f1382e4" />
-
-### Karat view
-
-*[Screenshot: Karat view with price per gram by purity.]*
-
-<img width="882" height="719" alt="image" src="https://github.com/user-attachments/assets/f160fae3-de54-40eb-af15-f0c03d87c687" />
-
-### History view
-
-*[Screenshot: History view with price history for a selected metal.]*
-
-<img width="891" height="719" alt="image" src="https://github.com/user-attachments/assets/cd4b6a6c-e794-4e60-a339-f7e126d9d5f5" />
+### History View
+<img width="891" height="719" alt="History View" src="https://github.com/user-attachments/assets/cd4b6a6c-e794-4e60-a339-f7e126d9d5f5" />
 
 ---
 
-## Related documentation
+## Related Documentation
 
-- [src/Elementum.ServiceApi/API-Endpoints.md](src/Elementum.ServiceApi/API-Endpoints.md) — API routes used by the CLI
-- [docker/README.md](docker/README.md) — Docker stack (API + DB + worker)
-- [docker/init/README.md](docker/init/README.md) — Database init scripts
-- [src/Elementum.ServiceApi/README.md](src/Elementum.ServiceApi/README.md) — Running the API locally and with Docker
-- [src/Elementum.WorkerService/README.md](src/Elementum.WorkerService/README.md) — Worker setup and Windows Service installation
-- [src/Elementum.Cli/README.md](src/Elementum.Cli/README.md) — Command-line client (TUI)
+- [API-Endpoints.md](src/Elementum.Api/API-Endpoints.md) — Complete REST API route documentation & DTOs
+- [Elementum.Api README](src/Elementum.Api/README.md) — API architecture, rate limiting & hosting
+- [Elementum.Worker README](src/Elementum.Worker/README.md) — Worker scheduling, daemon mode & metrics
+- [Elementum.Cli README](src/Elementum.Cli/README.md) — Console client navigation & keyboard shortcuts
+- [Docker README](docker/README.md) — Docker Compose configuration & deployment

@@ -1,21 +1,20 @@
-# Elementum-ServiceApi — API Endpoints
+# Elementum.Api — REST API Endpoints
 
 Base URL for all API routes: **`/api/v1`**.  
-All relevant responses are JSON. The API uses DTOs from `Elementum.Shared.DTOs`.
+All business responses are JSON and mapped to dedicated DTOs from `Elementum.Application.DTOs`.
 
 ---
 
-## Health checks
+## Health Checks
 
-Not part of `/api/v1`; use them for liveness/readiness in Docker or Kubernetes.
+Liveness and readiness probes for Docker, Kubernetes, and orchestrators (outside `/api/v1`).
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/health/live` | **Liveness** — always returns healthy (no dependency checks). |
-| GET | `/health/ready` | **Readiness** — checks database connectivity; returns JSON with status and check details. |
+| Method | Path | Purpose | Description |
+|--------|------|---------|-------------|
+| GET | `/health/live` | **Liveness Probe** | Always returns `200 OK` (process is alive). |
+| GET | `/health/ready` | **Readiness Probe** | Verifies database connectivity; returns component health status. |
 
-Example readiness response (200 when DB is OK):
-
+**Example Readiness Response (`200 OK`):**
 ```json
 {
   "Status": "Healthy",
@@ -32,189 +31,149 @@ Example readiness response (200 when DB is OK):
 
 ---
 
-## Metals
+## Live Prices & Trading Endpoints (`LivePricesController`)
 
-### GET `/api/v1/metals/all`
+### 1. GET `/api/v1/prices/live`
 
-Returns all metals (e.g. XAU, XAG, XPT, XPD).
+Retrieves a real-time market overview for all 4 precious metals (Gold, Silver, Platinum, Palladium) in USD and EUR.
 
-**Response:** `200 OK` — array of `MetalsDto`.
+- **Response:** `200 OK` → `LiveMarketOverviewDto`
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | int | Primary key. |
-| `symbol` | string | e.g. `"XAU"`, `"XAG"`. |
-| `name` | string | e.g. `"Gold"`, `"Silver"`. |
+**Payload Schema:**
+```json
+{
+  "items": [
+    {
+      "symbol": "XAU",
+      "name": "Gold",
+      "priceUsd": 2500.50,
+      "priceEur": 2280.30,
+      "openPriceUsd": 2485.00,
+      "openPriceEur": 2270.00,
+      "chpUsd": 0.62,
+      "chpEur": 0.45,
+      "highPriceUsd": 2510.00,
+      "highPriceEur": 2290.00,
+      "lowPriceUsd": 2475.00,
+      "lowPriceEur": 2260.00,
+      "prevCloseUsd": 2480.00,
+      "prevCloseEur": 2265.00
+    }
+  ],
+  "exchangeRateUsdEur": 1.1575,
+  "timestamp": 1723900000,
+  "lastUpdatedAtLocal": "2026-08-18T14:30:00"
+}
+```
 
-Example:
+---
 
+### 2. GET `/api/v1/prices/live/trading/{symbol}?currency={currency}`
+
+Calculates real-time trading metrics and technical indicators (OHLC, spread, volatility, bullish/bearish status) for a given metal.
+
+- **Route Parameter:** `symbol` (e.g. `XAU`, `XAG`, `XPT`, `XPD`)
+- **Query Parameter:** `currency` (optional: `EUR` [default] or `USD`)
+- **Response:**
+  - `200 OK` → `TradingPriceDto`
+  - `404 Not Found` → `ProblemDetails` (when symbol is not recognized)
+
+**Payload Schema:**
+```json
+{
+  "id": 0,
+  "symbol": "XAU",
+  "metalName": "Gold",
+  "exchange": "EDELMETALLE",
+  "currency": "EUR",
+  "entryDate": "2026-08-18",
+  "referenceTimestamp": 1723900000,
+  "price": 2280.30,
+  "prevClosePrice": 2265.00,
+  "openPrice": 2270.00,
+  "lowPrice": 2260.00,
+  "highPrice": 2290.00,
+  "ch": 10.30,
+  "chp": 0.45,
+  "differencePrevClose": 15.30,
+  "volatilityRange": 30.00,
+  "volatilityPercent": 1.33,
+  "status": "BULLISH ▲",
+  "exchangeRateUsdEur": 1.1575
+}
+```
+
+---
+
+## Price History Endpoints (`PriceHistoryController`)
+
+### 3. GET `/api/v1/history/{symbol}?currency={currency}`
+
+Returns the historical price tick series for a specific metal and currency.
+
+- **Route Parameter:** `symbol` (e.g. `XAU`, `XAG`)
+- **Query Parameter:** `currency` (optional, e.g. `USD` or `EUR`)
+- **Timeout Policy:** `DataCruncher` (60s)
+- **Response:** `200 OK` → `List<PriceHistoryDto>`
+
+**Payload Schema:**
 ```json
 [
-  { "id": 1, "symbol": "XAU", "name": "Gold" },
-  { "id": 2, "symbol": "XAG", "name": "Silver" }
+  {
+    "id": 42,
+    "metalId": 1,
+    "currency": "USD",
+    "symbol": "XAUUSD",
+    "referenceTimestamp": "1723900000",
+    "entryDate": "2026-08-18",
+    "price": 2500.50,
+    "chp": 0.62,
+    "metal": {
+      "id": 1,
+      "symbol": "XAU",
+      "name": "Gold"
+    }
+  }
 ]
 ```
 
 ---
 
-## Price history
+## Rate Limiting & Error Responses
 
-### GET `/api/v1/history/all/latest`
+### HTTP 429 Too Many Requests
+If a client IP exceeds the configured request limit (e.g. >100 req / min), the API immediately responds with status `429` and an RFC 7807 `ProblemDetails` document:
 
-Latest price history entry **per metal** (for dashboard-style views).
+```json
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.20",
+  "title": "Too Many Requests",
+  "status": 429,
+  "detail": "Rate limit exceeded. Please try again later.",
+  "instance": "GET /api/v1/prices/live"
+}
+```
 
-**Response:** `200 OK` — array of `PriceHistoryDto`.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | long | Primary key. |
-| `metalId` | int | FK to metals. |
-| `currency` | string | e.g. `"USD"`. |
-| `exchange` | string? | Optional. |
-| `symbol` | string? | Metal symbol. |
-| `referenceTimestamp` | long? | Unix-style timestamp. |
-| `entryDate` | string | Date (e.g. `"2025-03-14"`). |
-| `price` | decimal | Price. |
-| `chp` | decimal? | Change in percent. |
-| `metal` | object? | Nested `MetalsDto` (id, symbol, name). |
-
----
-
-### GET `/api/v1/history/{symbol}`
-
-Full price history for **one metal** by symbol (e.g. `XAU`, `XAG`).  
-Can return a large payload; consider using date range or aggregated endpoints for big ranges.
-
-**Parameters:**
-
-| Name | In | Type | Description |
-|------|-----|------|-------------|
-| `symbol` | path | string | Metal symbol (e.g. `XAU`). Required, non-empty. |
-
-**Response:** `200 OK` — array of `PriceHistoryDto`.  
-**Validation:** `400` if symbol is missing or invalid.
+### HTTP 400 Validation Error
+```json
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "One or more validation errors occurred.",
+  "status": 400,
+  "errors": {
+    "symbol": ["The Symbol field is required."]
+  }
+}
+```
 
 ---
 
-### GET `/api/v1/history/{symbol}/latest`
+## Summary Table
 
-**Latest** price history entry for one metal.
-
-**Parameters:** `symbol` (path) — metal symbol.
-
-**Response:** `200 OK` — single `PriceHistoryDto`.  
-**Not found:** `404` with a problem-details body (e.g. “No price history found for symbol 'XAU'.”).
-
----
-
-### GET `/api/v1/history/{symbol}/latest/trading`
-
-Latest price for one metal in **trading** form (bid/ask, high/low, open, change). Used by the CLI Trading view.
-
-**Parameters:** `symbol` (path).
-
-**Response:** `200 OK` — single `TradingPriceDto`.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | long | Primary key. |
-| `symbol` | string | Metal symbol. |
-| `metalName` | string | e.g. `"Gold"`. |
-| `exchange` | string? | Optional. |
-| `currency` | string | e.g. `"USD"`. |
-| `entryDate` | string | Date. |
-| `referenceTimestamp` | long? | Unix timestamp. |
-| `openTime` | long? | Open time. |
-| `price` | decimal | Current price. |
-| `prevClosePrice` | decimal? | Previous close. |
-| `openPrice` | decimal? | Open. |
-| `lowPrice` | decimal? | Low. |
-| `highPrice` | decimal? | High. |
-| `ch` | decimal? | Absolute change. |
-| `chp` | decimal? | Change in percent. |
-| `ask` | decimal? | Ask price. |
-| `bid` | decimal? | Bid price. |
-
-**Not found:** `404` if no price history for that symbol.
-
----
-
-### GET `/api/v1/history/{symbol}/latest/karat`
-
-Latest price for one metal as **price per gram by purity** (24k down to 10k). Used by the CLI Karat calculator.
-
-**Parameters:** `symbol` (path).
-
-**Response:** `200 OK` — single `KaratPricesDto`.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `symbol` | string | Metal symbol. |
-| `metalName` | string | e.g. `"Gold"`. |
-| `entryDate` | string | Date. |
-| `currency` | string | e.g. `"USD"`. |
-| `priceGram24k` … `priceGram10k` | decimal? | Price per gram for 24k, 22k, 21k, 20k, 18k, 16k, 14k, 10k. |
-
-**Not found:** `404` if no price history for that symbol.
-
----
-
-### GET `/api/v1/history/{symbol}/{firstDate}/{lastDate}`
-
-Price history for **one metal** in a **date range**.  
-Uses a longer timeout (“DataCruncher”) for large ranges.
-
-**Parameters:**
-
-| Name | In | Type | Format / constraints |
-|------|-----|------|------------------------|
-| `symbol` | path | string | Metal symbol. |
-| `firstDate` | path | string | Start date: `yyyy-MM-dd`. |
-| `lastDate` | path | string | End date: `yyyy-MM-dd`; must be ≥ firstDate. |
-
-**Response:** `200 OK` — array of `PriceHistoryDto`.  
-**Validation:** `400` if date format is wrong or start &gt; end.
-
-Example: `GET /api/v1/history/XAU/2025-01-01/2025-03-14`
-
----
-
-### GET `/api/v1/history/{symbol}/aggregated/{aggregation}/{count}`
-
-**Aggregated** price history for one metal.  
-Use this for charts or reduced datasets (e.g. last 12 months, last 52 weeks).
-
-**Parameters:**
-
-| Name | In | Type | Description |
-|------|-----|------|-------------|
-| `symbol` | path | string | Metal symbol. |
-| `aggregation` | path | string | One of: `daily`, `weekly`, `monthly`, `yearly`. |
-| `count` | path | int | Number of data points (0–500). |
-
-**Response:** `200 OK` — array of `PriceHistoryDto`.  
-**Validation:** `400` if aggregation is not one of the four values or count is out of range.
-
-Examples:
-
-- `GET /api/v1/history/XAU/aggregated/monthly/12` — last 12 monthly points for gold.
-- `GET /api/v1/history/XAG/aggregated/weekly/52` — last 52 weekly points for silver.
-
----
-
-## Summary table
-
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| GET | `/health/live` | Liveness probe. |
-| GET | `/health/ready` | Readiness (DB check). |
-| GET | `/api/v1/metals/all` | All metals. |
-| GET | `/api/v1/history/all/latest` | Latest per metal (dashboard). |
-| GET | `/api/v1/history/{symbol}` | Full history for one metal. |
-| GET | `/api/v1/history/{symbol}/latest` | Latest for one metal. |
-| GET | `/api/v1/history/{symbol}/latest/trading` | Latest trading (bid/ask, OHLC). |
-| GET | `/api/v1/history/{symbol}/latest/karat` | Latest karat (price per gram by purity). |
-| GET | `/api/v1/history/{symbol}/{firstDate}/{lastDate}` | History in date range. |
-| GET | `/api/v1/history/{symbol}/aggregated/{aggregation}/{count}` | Aggregated history (daily/weekly/monthly/yearly). |
-
-All `history` endpoints that take `symbol` require a non-empty symbol; invalid or missing parameters return `400` with validation details. Missing data for a valid symbol returns `404` where noted.
+| Method | Route | Controller | Description |
+|--------|-------|------------|-------------|
+| GET | `/health/live` | HealthCheck | Liveness probe (process-up). |
+| GET | `/health/ready` | HealthCheck | Readiness probe (database connectivity). |
+| GET | `/api/v1/prices/live` | `LivePricesController` | Real-time market overview for all metals in USD & EUR. |
+| GET | `/api/v1/prices/live/trading/{symbol}` | `LivePricesController` | Live trading analysis & technical indicators. |
+| GET | `/api/v1/history/{symbol}` | `PriceHistoryController` | Historical price ticks for a metal. |
