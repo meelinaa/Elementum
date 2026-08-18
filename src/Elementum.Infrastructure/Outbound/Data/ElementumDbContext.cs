@@ -84,7 +84,7 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
             e.Property(x => x.ClosePrice).HasColumnName("close_price").IsRequired();
             e.Property(x => x.ExchangeRateUsdEur).HasColumnName("exchange_rate_usd_eur").HasPrecision(18, 8);
             e.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
-            e.Property(x => x.UpdatedAtUtc).HasColumnName("updated_at_utc").IsRequired();
+            e.Property(x => x.UpdatedAtUtc).HasColumnName("updated_at_utc").IsConcurrencyToken().IsRequired();
         });
     }
 }

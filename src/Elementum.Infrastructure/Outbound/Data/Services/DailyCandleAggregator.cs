@@ -6,6 +6,7 @@ namespace Elementum.Infrastructure.Data.Services;
 
 /// <summary>
 /// Service implementation for daily price summary (candle) aggregation and real-time tick updates.
+/// Handles optimistic concurrency conflicts transparently via entity reload and reconciliation.
 /// </summary>
 public class DailyCandleAggregator : IDailyCandleAggregator
 {
@@ -55,7 +56,19 @@ public class DailyCandleAggregator : IDailyCandleAggregator
             }
         }
 
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Optimistic concurrency conflict: reload affected tracked entries and re-save
+            foreach (var entry in db.ChangeTracker.Entries<DailyPriceSummary>())
+            {
+                await entry.ReloadAsync(ct);
+            }
+            await db.SaveChangesAsync(ct);
+        }
     }
 
     /// <inheritdoc />

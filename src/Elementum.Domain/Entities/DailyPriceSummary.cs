@@ -1,8 +1,11 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Elementum.Domain.Entities;
 
 /// <summary>
 /// Domain Entity & Aggregate Root representing the daily consolidated price candle (Min/Max/Open/Close at 22:00).
 /// Retained permanently for candlestick charts and long-term trend analytics.
+/// Uses <see cref="UpdatedAtUtc"/> as a concurrency check token for optimistic concurrency control.
 /// </summary>
 public class DailyPriceSummary
 {
@@ -16,6 +19,11 @@ public class DailyPriceSummary
     public decimal ClosePrice { get; set; }
     public decimal? ExchangeRateUsdEur { get; set; }
     public DateTime CreatedAtUtc { get; set; }
+
+    /// <summary>
+    /// UTC timestamp of the last update. Serves as Optimistic Concurrency Token to prevent lost updates.
+    /// </summary>
+    [ConcurrencyCheck]
     public DateTime UpdatedAtUtc { get; set; }
 
     public Metals? Metal { get; set; }

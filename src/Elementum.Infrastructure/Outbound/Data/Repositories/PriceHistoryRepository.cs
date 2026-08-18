@@ -113,7 +113,18 @@ public class PriceHistoryRepository : IElementumDbContext
             }
         }
 
-        await _db.SaveChangesAsync(ct);
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            foreach (var entry in _db.ChangeTracker.Entries<DailyPriceSummary>())
+            {
+                await entry.ReloadAsync(ct);
+            }
+            await _db.SaveChangesAsync(ct);
+        }
     }
 
     /// <inheritdoc />
