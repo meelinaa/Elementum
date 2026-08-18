@@ -17,11 +17,44 @@ public class ApiController : ControllerBase
 {
     private readonly IGetPriceHistoryUseCase _priceHistoryUseCase;
     private readonly IGetMetalsUseCase _metalsUseCase;
+    private readonly IGetDailyCandlesUseCase _dailyCandlesUseCase;
 
-    public ApiController(IGetPriceHistoryUseCase priceHistoryUseCase, IGetMetalsUseCase metalsUseCase)
+    public ApiController(
+        IGetPriceHistoryUseCase priceHistoryUseCase,
+        IGetMetalsUseCase metalsUseCase,
+        IGetDailyCandlesUseCase dailyCandlesUseCase)
     {
         _priceHistoryUseCase = priceHistoryUseCase ?? throw new ArgumentNullException(nameof(priceHistoryUseCase));
         _metalsUseCase = metalsUseCase ?? throw new ArgumentNullException(nameof(metalsUseCase));
+        _dailyCandlesUseCase = dailyCandlesUseCase ?? throw new ArgumentNullException(nameof(dailyCandlesUseCase));
+    }
+
+    /// <summary>GET /api/v1/history/{symbol}/candles — daily candle summaries (Min, Max, Open, Close at 22:00) for charts.</summary>
+    [HttpGet("history/{symbol}/candles", Order = 1)]
+    [RequestTimeout("DataCruncher")]
+    public async Task<ActionResult<IEnumerable<DailyPriceSummaryDto>>> GetDailyCandles(
+        [FromRoute] SymbolRequest symbolRequest,
+        [FromQuery] string currency = "USD",
+        [FromQuery] string? fromDate = null,
+        [FromQuery] string? toDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        DateOnly? from = fromDate != null && DateOnly.TryParse(fromDate, out var f) ? f : null;
+        DateOnly? to = toDate != null && DateOnly.TryParse(toDate, out var t) ? t : null;
+
+        var result = await _dailyCandlesUseCase.ExecuteAsync(symbolRequest.Symbol.Trim(), currency, from, to, cancellationToken);
+        if (result.IsFailure)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Not Found",
+                Status = StatusCodes.Status404NotFound,
+                Detail = result.Error.Message,
+                Instance = $"{Request.Method} {Request.Path}"
+            });
+        }
+
+        return Ok(result.Value);
     }
 
     /// <summary>GET /api/v1/metals/all — all metals as <see cref="MetalsDto"/>.</summary>

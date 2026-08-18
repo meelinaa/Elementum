@@ -9,4 +9,7 @@ public interface IMetalsApiClient
 {
     /// <summary>Calls the external API and returns a list of today's prices for configured metals.</summary>
     Task<IReadOnlyList<DailyPrices>> GetPricesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Calls api.edelmetalle.de/public.json and returns the structured quote response.</summary>
+    Task<EdelmetalleApiResponse?> GetEdelmetallePricesAsync(CancellationToken cancellationToken = default);
 }

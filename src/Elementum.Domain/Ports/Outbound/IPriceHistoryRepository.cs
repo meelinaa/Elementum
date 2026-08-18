@@ -43,4 +43,16 @@ public interface IPriceHistoryRepository
 
     /// <summary>Returns aggregated price history for a metal (daily/weekly/monthly/yearly) with at most count entries.</summary>
     Task<IEnumerable<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct);
+
+    /// <summary>Saves hourly quotes for all metals in USD & EUR from Edelmetalle API.</summary>
+    Task SaveEdelmetallePricesAsync(EdelmetalleApiResponse data, CancellationToken ct = default);
+
+    /// <summary>Aggregates the daily candle (Open, High, Low, Close at 22:00) into daily_price_summaries for the given date.</summary>
+    Task AggregateDailySummaryAsync(DateOnly date, CancellationToken ct = default);
+
+    /// <summary>Deletes hourly price_history records older than the specified UTC timestamp (7-day retention policy).</summary>
+    Task<int> PruneHourlyDataOlderThanAsync(DateTime thresholdUtc, CancellationToken ct = default);
+
+    /// <summary>Retrieves daily candle summaries (Min/Max/Open/Close) for a metal symbol and currency in a date range.</summary>
+    Task<IReadOnlyList<DailyPriceSummary>> GetDailySummariesAsync(string symbol, string currency, DateOnly? fromDate = null, DateOnly? toDate = null, CancellationToken ct = default);
 }

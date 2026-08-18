@@ -16,6 +16,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IIngestPricesUseCase, IngestPricesUseCase>();
         services.AddScoped<IGetPriceHistoryUseCase, GetPriceHistoryUseCase>();
         services.AddScoped<IGetMetalsUseCase, GetMetalsUseCase>();
+        services.AddScoped<IGetDailyCandlesUseCase, GetDailyCandlesUseCase>();
 
         services.AddValidatorsFromAssembly(typeof(ServiceCollectionExtensions).Assembly);
 

@@ -13,11 +13,15 @@ public class ApiControllerTests
 {
     private readonly Mock<IGetPriceHistoryUseCase> _priceHistoryUseCaseMock = new();
     private readonly Mock<IGetMetalsUseCase> _metalsUseCaseMock = new();
+    private readonly Mock<IGetDailyCandlesUseCase> _dailyCandlesUseCaseMock = new();
     private readonly ApiController _controller;
 
     public ApiControllerTests()
     {
-        _controller = new ApiController(_priceHistoryUseCaseMock.Object, _metalsUseCaseMock.Object)
+        _controller = new ApiController(
+            _priceHistoryUseCaseMock.Object,
+            _metalsUseCaseMock.Object,
+            _dailyCandlesUseCaseMock.Object)
         {
             ControllerContext = new ControllerContext
             {
@@ -86,5 +90,37 @@ public class ApiControllerTests
         var ok = Assert.IsType<OkObjectResult>(actionResult.Result);
         Assert.Equal(dto, ok.Value);
         _priceHistoryUseCaseMock.Verify(s => s.GetLatestBySymbolAsync("XAG", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetDailyCandles_ReturnsOkWithSummaries()
+    {
+        var request = new SymbolRequest { Symbol = "XAU" };
+        var list = new List<DailyPriceSummaryDto>
+        {
+            new()
+            {
+                Id = 1,
+                MetalId = 1,
+                Symbol = "XAU",
+                MetalName = "Gold",
+                Currency = "USD",
+                EntryDate = new DateOnly(2026, 8, 17),
+                OpenPrice = 4400m,
+                HighPrice = 4450m,
+                LowPrice = 4390m,
+                ClosePrice = 4410m,
+                ExchangeRateUsdEur = 1.15m
+            }
+        };
+
+        _dailyCandlesUseCaseMock
+            .Setup(u => u.ExecuteAsync("XAU", "USD", null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Elementum.Domain.Common.Result.Success<IReadOnlyList<DailyPriceSummaryDto>>(list));
+
+        var result = await _controller.GetDailyCandles(request, "USD", null, null, CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Same(list, ok.Value);
     }
 }

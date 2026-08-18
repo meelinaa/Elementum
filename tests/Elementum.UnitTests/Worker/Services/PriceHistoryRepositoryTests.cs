@@ -143,4 +143,86 @@ public class PriceHistoryRepositoryTests
         // Now all metals are ingested -> must return true
         Assert.True(await db.IsDataAlreadyIngestedToday(CancellationToken.None));
     }
+
+    [Fact]
+    public async Task SaveEdelmetallePricesAsync_SavesHourlyTicksAndUpdatesDailyCandles()
+    {
+        await using var db = CreateDbContext();
+        var data = new EdelmetalleApiResponse
+        {
+            GoldUsd = 4410.6m,
+            GoldEur = 3803.8m,
+            SilberUsd = 65.7m,
+            SilberEur = 56.6m,
+            PlatinUsd = 1773.5m,
+            PlatinEur = 1529.59m,
+            PalladiumUsd = 1334m,
+            PalladiumEur = 1150.53m,
+            Timestamp = 1786975085,
+            WechselkursUsdEur = 1.15m
+        };
+
+        await db.SaveEdelmetallePricesAsync(data, CancellationToken.None);
+
+        // Gold & Silver were seeded (metals 1 and 2), each has USD and EUR
+        var historyCount = await db.PriceHistory.CountAsync();
+        Assert.Equal(4, historyCount);
+
+        var candlesCount = await db.DailyPriceSummaries.CountAsync();
+        Assert.Equal(4, candlesCount);
+
+        var goldCandleUsd = await db.DailyPriceSummaries.FirstOrDefaultAsync(s => s.MetalId == 1 && s.Currency == "USD");
+        Assert.NotNull(goldCandleUsd);
+        Assert.Equal(4410.6m, goldCandleUsd.OpenPrice);
+        Assert.Equal(4410.6m, goldCandleUsd.HighPrice);
+        Assert.Equal(4410.6m, goldCandleUsd.LowPrice);
+        Assert.Equal(4410.6m, goldCandleUsd.ClosePrice);
+    }
+
+    [Fact]
+    public async Task PruneHourlyDataOlderThanAsync_DeletesRecordsOlderThan7Days()
+    {
+        await using var db = CreateDbContext();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        // 10 days old record
+        db.PriceHistory.Add(new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = today.AddDays(-10), Price = 2000m, Symbol = "XAU" });
+        // 8 days old record
+        db.PriceHistory.Add(new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = today.AddDays(-8), Price = 2100m, Symbol = "XAU" });
+        // 5 days old record (within 7 days retention)
+        db.PriceHistory.Add(new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = today.AddDays(-5), Price = 2200m, Symbol = "XAU" });
+        // Today record
+        db.PriceHistory.Add(new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = today, Price = 2300m, Symbol = "XAU" });
+        await db.SaveChangesAsync();
+
+        var threshold = DateTime.UtcNow.AddDays(-7);
+        var deletedCount = await db.PruneHourlyDataOlderThanAsync(threshold, CancellationToken.None);
+
+        Assert.Equal(2, deletedCount);
+        Assert.Equal(2, await db.PriceHistory.CountAsync());
+    }
+
+    [Fact]
+    public async Task AggregateDailySummaryAsync_ComputesMinMaxOpenCloseAccurately()
+    {
+        await using var db = CreateDbContext();
+        var date = new DateOnly(2026, 8, 17);
+
+        db.PriceHistory.AddRange(
+            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, Price = 4400m, ReferenceTimestamp = "1000", Symbol = "XAU" },
+            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, Price = 4480m, ReferenceTimestamp = "1001", Symbol = "XAU" }, // High
+            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, Price = 4390m, ReferenceTimestamp = "1002", Symbol = "XAU" }, // Low
+            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, Price = 4420m, ReferenceTimestamp = "1003", Symbol = "XAU" }  // Close
+        );
+        await db.SaveChangesAsync();
+
+        await db.AggregateDailySummaryAsync(date, CancellationToken.None);
+
+        var candle = await db.DailyPriceSummaries.FirstOrDefaultAsync(s => s.MetalId == 1 && s.Currency == "USD" && s.EntryDate == date);
+        Assert.NotNull(candle);
+        Assert.Equal(4400m, candle.OpenPrice);
+        Assert.Equal(4480m, candle.HighPrice);
+        Assert.Equal(4390m, candle.LowPrice);
+        Assert.Equal(4420m, candle.ClosePrice);
+    }
 }

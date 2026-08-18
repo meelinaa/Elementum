@@ -7,15 +7,15 @@ using Microsoft.Extensions.Options;
 namespace Elementum.Worker;
 
 /// <summary>
-/// Hosted background service that runs the metals ingestion job once per day at <see cref="WorkerScheduleOptions.DailyRunTime"/> (local time).
-/// In development, the first run is executed immediately; subsequent runs wait until the next scheduled time.
+/// Hosted background daemon service that runs the metals price ingestion hourly (every <see cref="WorkerScheduleOptions.IngestionIntervalMinutes"/> minutes).
+/// Also performs daily candle consolidation and 7-day retention cleanup.
 /// </summary>
 public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IHostEnvironment _env;
-    private readonly TimeSpan _runTime;
+    private readonly TimeSpan _interval;
     private bool _isFirstRun = true;
 
     /// <summary>Injects logger, scope factory, host environment, and schedule from configuration.</summary>
@@ -25,34 +25,30 @@ public class Worker : BackgroundService
         IHostEnvironment env,
         IOptions<WorkerScheduleOptions> scheduleOptions)
     {
-        _logger = logger;
-        _scopeFactory = scopeFactory;
-        _env = env;
-        _runTime = scheduleOptions.Value.DailyRunTime;
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
+        _env = env ?? throw new ArgumentNullException(nameof(env));
+        _interval = TimeSpan.FromMinutes(Math.Max(1, scheduleOptions.Value.IngestionIntervalMinutes));
     }
 
-    /// <summary>Runs the ingestion loop: in Development runs once immediately, then waits until the configured daily time.</summary>
+    /// <summary>Runs the ingestion daemon loop every hour.</summary>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _logger.LogInformation("Elementum Ingestion Daemon started. Interval: {Interval}", _interval);
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                if (_isFirstRun && _env.IsDevelopment())
+                if (_isFirstRun)
                 {
-                    _logger.LogInformation("Debug mode detected: Start first run immediately...");
+                    _logger.LogInformation("Initial ingestion run starting immediately on boot...");
                     await RunJobAsync(stoppingToken);
                     _isFirstRun = false;
                 }
 
-                var now = DateTime.Now;
-                var nextRun = now.Date.Add(_runTime);
-                if (now > nextRun)
-                    nextRun = nextRun.AddDays(1);
-
-                var delay = nextRun - now;
-                _logger.LogInformation("Next regular run: {NextRun} (DailyRunTime={DailyRunTime})", nextRun, _runTime);
-                await Task.Delay(delay, stoppingToken);
+                _logger.LogInformation("Waiting for next hourly run in {Interval}...", _interval);
+                await Task.Delay(_interval, stoppingToken);
 
                 if (stoppingToken.IsCancellationRequested)
                     break;
@@ -61,7 +57,7 @@ public class Worker : BackgroundService
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
-                _logger.LogInformation("Worker execution loop cancelled due to host shutdown.");
+                _logger.LogInformation("Worker daemon loop cancelled due to host shutdown.");
                 break;
             }
             catch (Exception ex)

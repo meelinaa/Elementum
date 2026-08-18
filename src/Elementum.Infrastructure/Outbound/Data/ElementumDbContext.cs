@@ -21,6 +21,9 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
     /// <summary>DbSet for distributed locking table.</summary>
     public DbSet<DistributedLockEntity> DistributedLocks => Set<DistributedLockEntity>();
 
+    /// <summary>DbSet for consolidated daily price summaries / candles (22:00 Close, Min, Max, Open).</summary>
+    public DbSet<DailyPriceSummary> DailyPriceSummaries => Set<DailyPriceSummary>();
+
     /// <summary>Returns true if all configured metals in the catalog have price history entries for today (UTC).</summary>
     public async Task<bool> IsDataAlreadyIngestedToday(CancellationToken ct)
     {
@@ -36,6 +39,176 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
             .CountAsync(ct);
 
         return ingestedMetalsCountToday >= totalMetalsCount;
+    }
+
+    /// <summary>Saves hourly quotes for all metals in USD & EUR from Edelmetalle API.</summary>
+    public async Task SaveEdelmetallePricesAsync(EdelmetalleApiResponse data, CancellationToken ct = default)
+    {
+        if (data == null)
+            return;
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var isCloseHour = DateTime.UtcNow.Hour >= 22;
+        var allMetals = await Metals.ToListAsync(ct);
+
+        (string Symbol, string Name, decimal UsdPrice, decimal EurPrice)[] quotes =
+        [
+            ("XAU", "Gold", data.GoldUsd, data.GoldEur),
+            ("XAG", "Silver", data.SilberUsd, data.SilberEur),
+            ("XPT", "Platinum", data.PlatinUsd, data.PlatinEur),
+            ("XPD", "Palladium", data.PalladiumUsd, data.PalladiumEur)
+        ];
+
+        foreach (var q in quotes)
+        {
+            var metal = allMetals.FirstOrDefault(m =>
+                string.Equals(m.Symbol, q.Symbol, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(m.Name, q.Name, StringComparison.OrdinalIgnoreCase));
+
+            if (metal == null)
+                continue;
+
+            // Ingest USD and EUR price ticks
+            (string Currency, decimal Price)[] currencyQuotes = [("USD", q.UsdPrice), ("EUR", q.EurPrice)];
+
+            foreach (var (currency, price) in currencyQuotes)
+            {
+                if (price <= 0)
+                    continue;
+
+                // 1. Add raw hourly tick
+                var tick = Elementum.Domain.Entities.PriceHistory.Create(
+                    metalId: metal.Id,
+                    currency: currency,
+                    entryDate: today,
+                    price: price,
+                    symbol: $"{q.Symbol}{currency}",
+                    referenceTimestamp: data.Timestamp.ToString(CultureInfo.InvariantCulture),
+                    openTime: DateTime.UtcNow.ToString("HH:mm:ss", CultureInfo.InvariantCulture));
+
+                PriceHistory.Add(tick);
+
+                // 2. Real-time update of DailyPriceSummary candle
+                var dailySummary = await DailyPriceSummaries
+                    .FirstOrDefaultAsync(s => s.MetalId == metal.Id && s.Currency == currency && s.EntryDate == today, ct);
+
+                if (dailySummary == null)
+                {
+                    dailySummary = DailyPriceSummary.Create(
+                        metalId: metal.Id,
+                        currency: currency,
+                        entryDate: today,
+                        openPrice: price,
+                        highPrice: price,
+                        lowPrice: price,
+                        closePrice: price,
+                        exchangeRateUsdEur: data.WechselkursUsdEur);
+
+                    DailyPriceSummaries.Add(dailySummary);
+                }
+                else
+                {
+                    dailySummary.ApplyPriceTick(price, data.WechselkursUsdEur, isClosePrice: isCloseHour);
+                }
+            }
+        }
+
+        await SaveChangesAsync(ct);
+    }
+
+    /// <summary>Aggregates the daily candle (Open, High, Low, Close at 22:00) into daily_price_summaries for the given date.</summary>
+    public async Task AggregateDailySummaryAsync(DateOnly date, CancellationToken ct = default)
+    {
+        var dayTicks = await PriceHistory
+            .Where(p => p.EntryDate == date)
+            .OrderBy(p => p.ReferenceTimestamp)
+            .ToListAsync(ct);
+
+        if (dayTicks.Count == 0)
+            return;
+
+        var groups = dayTicks.GroupBy(p => new { p.MetalId, p.Currency });
+
+        foreach (var g in groups)
+        {
+            var openPrice = g.First().Price;
+            var highPrice = g.Max(p => p.Price);
+            var lowPrice = g.Min(p => p.Price);
+            var closePrice = g.Last().Price;
+
+            var existing = await DailyPriceSummaries
+                .FirstOrDefaultAsync(s => s.MetalId == g.Key.MetalId && s.Currency == g.Key.Currency && s.EntryDate == date, ct);
+
+            if (existing == null)
+            {
+                var summary = DailyPriceSummary.Create(
+                    metalId: g.Key.MetalId,
+                    currency: g.Key.Currency,
+                    entryDate: date,
+                    openPrice: openPrice,
+                    highPrice: highPrice,
+                    lowPrice: lowPrice,
+                    closePrice: closePrice);
+
+                DailyPriceSummaries.Add(summary);
+            }
+            else
+            {
+                existing.OpenPrice = openPrice;
+                existing.HighPrice = highPrice;
+                existing.LowPrice = lowPrice;
+                existing.ClosePrice = closePrice;
+                existing.UpdatedAtUtc = DateTime.UtcNow;
+            }
+        }
+
+        await SaveChangesAsync(ct);
+    }
+
+    /// <summary>Deletes hourly price_history records older than the specified UTC timestamp (7-day retention policy).</summary>
+    public async Task<int> PruneHourlyDataOlderThanAsync(DateTime thresholdUtc, CancellationToken ct = default)
+    {
+        var thresholdDate = DateOnly.FromDateTime(thresholdUtc);
+
+        var staleRecords = await PriceHistory
+            .Where(p => p.EntryDate < thresholdDate)
+            .ToListAsync(ct);
+
+        if (staleRecords.Count == 0)
+            return 0;
+
+        PriceHistory.RemoveRange(staleRecords);
+        await SaveChangesAsync(ct);
+        return staleRecords.Count;
+    }
+
+    /// <summary>Retrieves daily candle summaries (Min/Max/Open/Close) for a metal symbol and currency in a date range.</summary>
+    public async Task<IReadOnlyList<DailyPriceSummary>> GetDailySummariesAsync(
+        string symbol,
+        string currency,
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default)
+    {
+        var metal = await GetMetalBySymbol(symbol, ct);
+        if (metal == null)
+            return Array.Empty<DailyPriceSummary>();
+
+        var normalizedCurrency = currency.Trim().ToUpperInvariant();
+
+        var query = DailyPriceSummaries
+            .Include(s => s.Metal)
+            .Where(s => s.MetalId == metal.Id && s.Currency == normalizedCurrency);
+
+        if (fromDate.HasValue)
+            query = query.Where(s => s.EntryDate >= fromDate.Value);
+
+        if (toDate.HasValue)
+            query = query.Where(s => s.EntryDate <= toDate.Value);
+
+        return await query
+            .OrderBy(s => s.EntryDate)
+            .ToListAsync(ct);
     }
 
     /// <summary>Saves incoming daily prices from external sources to the database using idempotent upsert.</summary>
@@ -348,6 +521,25 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
             e.Property(x => x.AcquiredBy).HasColumnName("acquired_by").HasMaxLength(128).IsRequired();
             e.Property(x => x.AcquiredAtUtc).HasColumnName("acquired_at_utc").IsRequired();
             e.Property(x => x.ExpiresAtUtc).HasColumnName("expires_at_utc").IsConcurrencyToken().IsRequired();
+        });
+
+        modelBuilder.Entity<DailyPriceSummary>(e =>
+        {
+            e.ToTable("daily_price_summaries");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.MetalId, x.Currency, x.EntryDate }).IsUnique();
+            e.HasOne(x => x.Metal).WithMany(m => m.DailySummaries).HasForeignKey(x => x.MetalId).OnDelete(DeleteBehavior.Cascade);
+
+            e.Property(x => x.MetalId).HasColumnName("metal_id").IsRequired();
+            e.Property(x => x.Currency).HasColumnName("currency").HasMaxLength(3).IsRequired();
+            e.Property(x => x.EntryDate).HasColumnName("entry_date").IsRequired();
+            e.Property(x => x.OpenPrice).HasColumnName("open_price").HasPrecision(18, 4).IsRequired();
+            e.Property(x => x.HighPrice).HasColumnName("high_price").HasPrecision(18, 4).IsRequired();
+            e.Property(x => x.LowPrice).HasColumnName("low_price").HasPrecision(18, 4).IsRequired();
+            e.Property(x => x.ClosePrice).HasColumnName("close_price").HasPrecision(18, 4).IsRequired();
+            e.Property(x => x.ExchangeRateUsdEur).HasColumnName("exchange_rate_usd_eur").HasPrecision(18, 8);
+            e.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
+            e.Property(x => x.UpdatedAtUtc).HasColumnName("updated_at_utc").IsRequired();
         });
     }
 }

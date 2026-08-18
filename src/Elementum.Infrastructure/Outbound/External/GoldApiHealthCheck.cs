@@ -34,32 +34,25 @@ public class GoldApiHealthCheck : IHealthCheck
         var opt = _options.Value;
         if (string.IsNullOrWhiteSpace(opt.BaseUrl))
         {
-            return HealthCheckResult.Degraded("GoldAPI BaseUrl is not configured.");
+            return HealthCheckResult.Degraded("Metals API BaseUrl is not configured.");
         }
 
         try
         {
             var client = _httpClientFactory.CreateClient("GoldApi");
-            var uri = new Uri(opt.BaseUrl.TrimEnd('/') + "/status");
-            using var response = await client.GetAsync(uri, cancellationToken);
+            using var response = await client.GetAsync(opt.BaseUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
-            if (!response.IsSuccessStatusCode)
+            if (response.IsSuccessStatusCode)
             {
-                return HealthCheckResult.Degraded($"GoldAPI returned status {response.StatusCode}.");
+                return HealthCheckResult.Healthy("Edelmetalle API is available.");
             }
 
-            var body = await response.Content.ReadFromJsonAsync<ApiStatusResponse>(cancellationToken: cancellationToken);
-            if (body?.Result == true)
-            {
-                return HealthCheckResult.Healthy("GoldAPI is available.");
-            }
-
-            return HealthCheckResult.Degraded("GoldAPI status returned result=false.");
+            return HealthCheckResult.Degraded($"Edelmetalle API returned status {response.StatusCode}.");
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "GoldAPI health check failed.");
-            return HealthCheckResult.Unhealthy("GoldAPI is unreachable.", ex);
+            _logger.LogWarning(ex, "Edelmetalle API health check failed.");
+            return HealthCheckResult.Unhealthy("Edelmetalle API is unreachable.", ex);
         }
     }
 }

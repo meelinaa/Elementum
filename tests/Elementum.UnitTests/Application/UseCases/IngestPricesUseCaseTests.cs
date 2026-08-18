@@ -19,33 +19,42 @@ public class IngestPricesUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_WhenAlreadyIngestedToday_DoesNotFetchOrSave()
+    public async Task ExecuteAsync_WhenEdelmetalleReturnsData_SavesEdelmetallePrices()
     {
-        _repositoryMock.Setup(r => r.IsDataAlreadyIngestedToday(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+        var response = new EdelmetalleApiResponse
+        {
+            GoldUsd = 4410.6m,
+            GoldEur = 3803.8m,
+            SilberUsd = 65.7m,
+            SilberEur = 56.6m,
+            Timestamp = 1786975085,
+            WechselkursUsdEur = 1.15m
+        };
+
+        _apiClientMock.Setup(c => c.GetEdelmetallePricesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(response);
 
         await _useCase.ExecuteAsync(CancellationToken.None);
 
-        _apiClientMock.Verify(c => c.GetPricesAsync(It.IsAny<CancellationToken>()), Times.Never);
-        _repositoryMock.Verify(r => r.SavePricesAsync(It.IsAny<IReadOnlyList<DailyPrices>>(), It.IsAny<CancellationToken>()), Times.Never);
+        _repositoryMock.Verify(r => r.SaveEdelmetallePricesAsync(response, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task ExecuteAsync_WhenNotIngestedToday_FetchesAndSavesPrices()
+    public async Task ExecuteAsync_WhenEdelmetalleNull_FallsBackToGetPricesAsync()
     {
-        _repositoryMock.Setup(r => r.IsDataAlreadyIngestedToday(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
+        _apiClientMock.Setup(c => c.GetEdelmetallePricesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((EdelmetalleApiResponse?)null);
 
-        var prices = new List<DailyPrices>
+        var fallbackPrices = new List<DailyPrices>
         {
             new() { Metal = "Gold", Price = 2500m, Symbol = "XAU" }
         };
 
         _apiClientMock.Setup(c => c.GetPricesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(prices);
+            .ReturnsAsync(fallbackPrices);
 
         await _useCase.ExecuteAsync(CancellationToken.None);
 
-        _repositoryMock.Verify(r => r.SavePricesAsync(prices, It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(r => r.SavePricesAsync(fallbackPrices, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

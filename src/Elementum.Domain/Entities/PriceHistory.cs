@@ -175,6 +175,9 @@ public class PriceHistory
         if (string.IsNullOrWhiteSpace(currency))
             throw new ArgumentException("Currency must not be null or whitespace.", nameof(currency));
 
+        // Enforce supported currencies (EUR, USD)
+        ValueObjects.Currency.FromCode(currency);
+
         if (price <= 0)
             throw new ArgumentOutOfRangeException(nameof(price), "Price must be strictly positive (> 0).");
 

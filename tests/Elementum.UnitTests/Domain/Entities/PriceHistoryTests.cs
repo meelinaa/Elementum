@@ -83,4 +83,16 @@ public class PriceHistoryTests
         var price14k = priceHistory.CalculatePurityGramPrice(0.585m);
         Assert.Equal(46.80m, price14k);
     }
+
+    [Theory]
+    [InlineData("CHF")]
+    [InlineData("GBP")]
+    [InlineData("JPY")]
+    [InlineData("XYZ")]
+    public void Create_WithUnsupportedCurrency_ThrowsArgumentException(string unsupportedCurrency)
+    {
+        var date = new DateOnly(2026, 8, 17);
+        Assert.Throws<ArgumentException>(() =>
+            PriceHistory.Create(1, unsupportedCurrency, date, 2000m));
+    }
 }

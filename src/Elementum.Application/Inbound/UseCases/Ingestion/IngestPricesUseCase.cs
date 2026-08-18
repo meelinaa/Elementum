@@ -24,25 +24,42 @@ public class IngestPricesUseCase : IIngestPricesUseCase
 
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Checking if prices were already ingested today...");
+        _logger.LogInformation("Fetching precious metal prices from Edelmetalle API...");
+        var edelmetalleData = await _apiClient.GetEdelmetallePricesAsync(cancellationToken);
 
-        if (await _repository.IsDataAlreadyIngestedToday(cancellationToken))
+        if (edelmetalleData != null)
         {
-            _logger.LogInformation("Data already ingested today. Skipping ingestion.");
-            return;
+            _logger.LogInformation("Saving hourly precious metal quotes (Gold, Silber, Platin, Palladium in USD & EUR)...");
+            await _repository.SaveEdelmetallePricesAsync(edelmetalleData, cancellationToken);
+            _logger.LogInformation("Hourly price ingestion completed successfully.");
+        }
+        else
+        {
+            // Fallback to general GetPricesAsync
+            var prices = await _apiClient.GetPricesAsync(cancellationToken);
+            if (prices != null && prices.Count > 0)
+            {
+                _logger.LogInformation("Saving {Count} price records from fallback API...", prices.Count);
+                await _repository.SavePricesAsync(prices, cancellationToken);
+            }
+            else
+            {
+                _logger.LogWarning("No price data returned from external metals API.");
+                return;
+            }
         }
 
-        _logger.LogInformation("Fetching daily prices from metals API...");
-        var prices = await _apiClient.GetPricesAsync(cancellationToken);
-
-        if (prices == null || prices.Count == 0)
+        // 7-day retention cleanup & daily candle consolidation (runs at close hour >= 22 or daily)
+        if (DateTime.UtcNow.Hour >= 22)
         {
-            _logger.LogWarning("No price data returned from external API.");
-            return;
-        }
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            _logger.LogInformation("Aggregating daily 22:00 candle summary for {Today}...", today);
+            await _repository.AggregateDailySummaryAsync(today, cancellationToken);
 
-        _logger.LogInformation("Saving {Count} metal price records...", prices.Count);
-        await _repository.SavePricesAsync(prices, cancellationToken);
-        _logger.LogInformation("Price ingestion completed successfully.");
+            var retentionThreshold = DateTime.UtcNow.AddDays(-7);
+            _logger.LogInformation("Pruning hourly raw ticks older than {Threshold} (7-day retention policy)...", retentionThreshold);
+            var prunedCount = await _repository.PruneHourlyDataOlderThanAsync(retentionThreshold, cancellationToken);
+            _logger.LogInformation("Retention cleanup completed: {Count} old hourly records purged.", prunedCount);
+        }
     }
 }

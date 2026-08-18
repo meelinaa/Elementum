@@ -1,9 +1,10 @@
 namespace Elementum.Domain.Enums;
 
+/// <summary>
+/// Supported currency types (USD and EUR only).
+/// </summary>
 public enum CurrencyTypes
 {
     USD = 1,
-    EUR = 2,
-    CHF = 3,
-    GBP = 4
+    EUR = 2
 }

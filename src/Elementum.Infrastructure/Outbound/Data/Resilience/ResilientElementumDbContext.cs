@@ -54,6 +54,18 @@ public sealed class ResilientElementumDbContext : IElementumDbContext
     public Task SavePricesAsync(IReadOnlyList<DailyPrices> prices, CancellationToken cancellationToken = default) =>
         ExecuteAsync(innerCt => _inner.SavePricesAsync(prices, innerCt), cancellationToken);
 
+    public Task SaveEdelmetallePricesAsync(EdelmetalleApiResponse data, CancellationToken ct = default) =>
+        ExecuteAsync(innerCt => _inner.SaveEdelmetallePricesAsync(data, innerCt), ct);
+
+    public Task AggregateDailySummaryAsync(DateOnly date, CancellationToken ct = default) =>
+        ExecuteAsync(innerCt => _inner.AggregateDailySummaryAsync(date, innerCt), ct);
+
+    public Task<int> PruneHourlyDataOlderThanAsync(DateTime thresholdUtc, CancellationToken ct = default) =>
+        ExecuteAsync(innerCt => _inner.PruneHourlyDataOlderThanAsync(thresholdUtc, innerCt), ct);
+
+    public Task<IReadOnlyList<DailyPriceSummary>> GetDailySummariesAsync(string symbol, string currency, DateOnly? fromDate = null, DateOnly? toDate = null, CancellationToken ct = default) =>
+        ExecuteAsync(innerCt => _inner.GetDailySummariesAsync(symbol, currency, fromDate, toDate, innerCt), ct);
+
     private Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> action, CancellationToken ct) =>
         _policy.ExecuteAsync(action, ct);
 
