@@ -31,62 +31,77 @@ public class EfCoreDistributedLockProviderTests
             NullLogger<EfCoreDistributedLockProvider>.Instance);
     }
 
+    // [R]IGHT-BICEP: Verifies that an unheld resource lock is successfully acquired
     [Fact]
     public async Task TryAcquireLockAsync_WhenNoExistingLock_AcquiresLockSuccessfully()
     {
+        // Arrange & Act
         await using var handle = await _lockProvider.TryAcquireLockAsync("resource_1", TimeSpan.FromMinutes(5));
 
+        // Assert
         Assert.True(handle.IsAcquired);
     }
 
+    // [E]RROR / CONCURRENCY: Verifies that acquiring an active lock returns an unacquired handle
     [Fact]
     public async Task TryAcquireLockAsync_WhenLockAlreadyActive_ReturnsUnacquired()
     {
+        // Arrange & Act
         await using var handle1 = await _lockProvider.TryAcquireLockAsync("resource_2", TimeSpan.FromMinutes(5));
-        Assert.True(handle1.IsAcquired);
-
         await using var handle2 = await _lockProvider.TryAcquireLockAsync("resource_2", TimeSpan.FromMinutes(5));
+
+        // Assert
+        Assert.True(handle1.IsAcquired);
         Assert.False(handle2.IsAcquired);
     }
 
+    // [E]RROR / RESILIENCE: Verifies that expired/stale locks are reclaimed by new callers
     [Fact]
     public async Task TryAcquireLockAsync_WhenLockExpired_TakesOverLock()
     {
-        // Acquire lock with expired duration (0ms)
+        // Arrange
         await using (var handle1 = await _lockProvider.TryAcquireLockAsync("resource_3", TimeSpan.FromMilliseconds(-100)))
         {
             Assert.True(handle1.IsAcquired);
         }
 
-        // Another instance attempts to acquire the expired lock -> must succeed
+        // Act - Another instance attempts to acquire the expired lock
         await using var handle2 = await _lockProvider.TryAcquireLockAsync("resource_3", TimeSpan.FromMinutes(5));
+
+        // Assert
         Assert.True(handle2.IsAcquired);
     }
 
+    // [I]NVERSE: Verifies that disposing/releasing a lock makes the resource immediately available again
     [Fact]
     public async Task DisposeAsync_ReleasesLockForOtherInstances()
     {
+        // Arrange
         var handle1 = await _lockProvider.TryAcquireLockAsync("resource_4", TimeSpan.FromMinutes(5));
         Assert.True(handle1.IsAcquired);
 
-        // Release lock
+        // Act - Release lock
         await handle1.DisposeAsync();
 
-        // New acquisition should now succeed
+        // Assert - New acquisition must now succeed
         await using var handle2 = await _lockProvider.TryAcquireLockAsync("resource_4", TimeSpan.FromMinutes(5));
         Assert.True(handle2.IsAcquired);
     }
 
+    // [P]ERFORMANCE / STRESS: Verifies that under concurrent parallel attempts, exactly one lock is granted
     [Fact]
     public async Task TryAcquireLockAsync_ParallelAttempts_OnlyOneAcquiresLock()
     {
+        // Arrange
         var tasks = Enumerable.Range(0, 10)
             .Select(_ => _lockProvider.TryAcquireLockAsync("resource_parallel", TimeSpan.FromMinutes(5)))
             .ToList();
 
+        // Act
         var handles = await Task.WhenAll(tasks);
         var acquiredCount = handles.Count(h => h.IsAcquired);
 
+        // Assert
         Assert.Equal(1, acquiredCount);
 
         foreach (var handle in handles)
@@ -95,20 +110,22 @@ public class EfCoreDistributedLockProviderTests
         }
     }
 
+    // [R]IGHT-BICEP: Verifies that the internal heartbeat extends lock expiration before timeout
     [Fact]
     public async Task TryAcquireLockAsync_Heartbeat_ExtendsLockExpiration()
     {
-        // Acquire with short TTL (1000ms -> heartbeat fires at 500ms)
+        // Arrange - acquire with short TTL (1000ms -> heartbeat fires at 500ms)
         await using var handle = await _lockProvider.TryAcquireLockAsync("resource_heartbeat", TimeSpan.FromMilliseconds(1000));
         Assert.True(handle.IsAcquired);
 
-        // Wait 700ms (heartbeat should have fired at ~500ms and extended expiration)
+        // Act - Wait 700ms (heartbeat should have fired at ~500ms and extended expiration)
         await Task.Delay(700);
 
         using var scope = _serviceProvider.GetRequiredService<IServiceScopeFactory>().CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ElementumDbContext>();
         var lockRecord = await db.DistributedLocks.FirstOrDefaultAsync(l => l.Resource == "resource_heartbeat");
 
+        // Assert
         Assert.NotNull(lockRecord);
         Assert.True(lockRecord.ExpiresAtUtc > DateTime.UtcNow);
     }

@@ -15,11 +15,14 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         _client = factory.CreateClient();
     }
 
+    // [R]IGHT-BICEP: Verifies that the live prices HTTP endpoint responds with HTTP 200 and market overview
     [Fact]
     public async Task GetLivePrices_ReturnsOk_WithMarketOverview()
     {
+        // Arrange & Act
         var response = await _client.GetAsync("/api/v1/prices/live");
 
+        // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var overview = await response.Content.ReadFromJsonAsync<LiveMarketOverviewDto>();
         Assert.NotNull(overview);
@@ -28,11 +31,14 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         Assert.Contains(overview.Items, m => m.Symbol == "XAU");
     }
 
+    // [R]IGHT-BICEP: Verifies that the live trading analysis HTTP endpoint responds with calculated technical indicators
     [Fact]
     public async Task GetLiveTradingAnalysis_WhenValidSymbol_ReturnsTradingPrice()
     {
+        // Arrange & Act
         var response = await _client.GetAsync("/api/v1/prices/live/trading/XAU?currency=EUR");
 
+        // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var dto = await response.Content.ReadFromJsonAsync<TradingPriceDto>();
         Assert.NotNull(dto);
@@ -41,22 +47,28 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         Assert.True(dto.Price > 0);
     }
 
+    // [R]IGHT-BICEP: Verifies that the history query endpoint returns historical prices
     [Fact]
     public async Task GetPriceHistoryByMetalSymbol_WhenExists_ReturnsHistoryList()
     {
+        // Arrange & Act
         var response = await _client.GetAsync("/api/v1/history/XAU?currency=USD");
 
+        // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var list = await response.Content.ReadFromJsonAsync<List<PriceHistoryDto>>();
         Assert.NotNull(list);
         Assert.NotEmpty(list);
     }
 
+    // [E]RROR: Verifies that querying a non-existent metal symbol returns HTTP 404 ProblemDetails
     [Fact]
     public async Task GetLiveTradingAnalysis_WhenNotFound_Returns404ProblemDetails()
     {
+        // Arrange & Act
         var response = await _client.GetAsync("/api/v1/prices/live/trading/NONEXISTENT");
 
+        // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
         Assert.NotNull(problem);

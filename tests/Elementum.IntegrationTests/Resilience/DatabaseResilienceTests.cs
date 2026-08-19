@@ -8,13 +8,14 @@ namespace Elementum.IntegrationTests.Resilience;
 
 public class DatabaseResilienceTests
 {
+    // [R]IGHT-BICEP & [E]RROR: Verifies that transient network/socket exceptions trigger configured Polly retry policies and recover
     [Fact]
     public async Task ResilientDbContext_WhenTransientExceptionOccurs_RetriesAndSucceeds()
     {
+        // Arrange
         var attempts = 0;
         var innerMock = new Mock<IElementumDbContext>();
         var list = new List<PriceHistory> { new() { Id = 1, MetalId = 1, Price = 2500m } };
-
         var transientEx = new SocketException((int)SocketError.ConnectionReset);
 
         innerMock.Setup(x => x.GetPriceHistoryAllLatest(It.IsAny<CancellationToken>()))
@@ -37,16 +38,20 @@ public class DatabaseResilienceTests
         var policy = DatabaseResiliencePolicy.BuildRetryPolicy(options);
         var resilientContext = new ResilientElementumDbContext(innerMock.Object, policy);
 
+        // Act
         var result = await resilientContext.GetPriceHistoryAllLatest(CancellationToken.None);
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal(3, attempts);
         Assert.Single(result);
     }
 
+    // [E]RROR: Verifies that exceeding maximum retry attempts propagates the underlying exception to caller
     [Fact]
     public async Task ResilientDbContext_WhenMaxRetriesExceeded_PropagatesException()
     {
+        // Arrange
         var innerMock = new Mock<IElementumDbContext>();
         var transientEx = new SocketException((int)SocketError.ConnectionReset);
 
@@ -62,6 +67,7 @@ public class DatabaseResilienceTests
         var policy = DatabaseResiliencePolicy.BuildRetryPolicy(options);
         var resilientContext = new ResilientElementumDbContext(innerMock.Object, policy);
 
+        // Act & Assert
         await Assert.ThrowsAsync<SocketException>(() => resilientContext.GetPriceHistoryAllLatest(CancellationToken.None));
     }
 }

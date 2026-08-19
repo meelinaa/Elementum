@@ -28,9 +28,11 @@ public class IngestPricesUseCaseTests
             _loggerMock.Object);
     }
 
+    // [R]IGHT-BICEP: Verifies that valid metal quotes from the primary API endpoint are saved to repository
     [Fact]
     public async Task ExecuteAsync_WhenEdelmetalleReturnsValidData_SavesEdelmetallePrices()
     {
+        // Arrange
         var response = new EdelmetalleApiResponse
         {
             GoldUsd = 2500.6m,
@@ -48,15 +50,18 @@ public class IngestPricesUseCaseTests
         _apiClientMock.Setup(c => c.GetEdelmetallePricesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
+        // Act
         await _useCase.ExecuteAsync(CancellationToken.None);
 
+        // Assert
         _repositoryMock.Verify(r => r.SaveEdelmetallePricesAsync(response, It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    // [E]RROR: Verifies that validation failure on corrupted payload aborts persistence
     [Fact]
     public async Task ExecuteAsync_WhenEdelmetalleReturnsInvalidData_AbortsAndDoesNotSave()
     {
-        // Invalid data: price <= 0 and timestamp = 0
+        // Arrange
         var invalidResponse = new EdelmetalleApiResponse
         {
             GoldUsd = -100m,
@@ -67,15 +72,18 @@ public class IngestPricesUseCaseTests
         _apiClientMock.Setup(c => c.GetEdelmetallePricesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(invalidResponse);
 
+        // Act
         await _useCase.ExecuteAsync(CancellationToken.None);
 
-        // Must NOT save invalid data
+        // Assert
         _repositoryMock.Verify(r => r.SaveEdelmetallePricesAsync(It.IsAny<EdelmetalleApiResponse>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    // [B]OUNDARY / FALLBACK: Verifies that null primary payload triggers fallback to secondary GetPricesAsync
     [Fact]
     public async Task ExecuteAsync_WhenEdelmetalleNull_FallsBackToGetPricesAsync()
     {
+        // Arrange
         _apiClientMock.Setup(c => c.GetEdelmetallePricesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync((EdelmetalleApiResponse?)null);
 
@@ -87,14 +95,18 @@ public class IngestPricesUseCaseTests
         _apiClientMock.Setup(c => c.GetPricesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(fallbackPrices);
 
+        // Act
         await _useCase.ExecuteAsync(CancellationToken.None);
 
+        // Assert
         _repositoryMock.Verify(r => r.SavePricesAsync(fallbackPrices, It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    // [R]IGHT-BICEP: Verifies that the daily rollup and retention pruning trigger at configured threshold hour
     [Fact]
     public async Task ExecuteAsync_WhenHourExceedsDailyRollupHour_PerformsRollupAndRetentionPruning()
     {
+        // Arrange
         var response = new EdelmetalleApiResponse
         {
             GoldUsd = 2500m,
@@ -112,8 +124,10 @@ public class IngestPricesUseCaseTests
         _apiClientMock.Setup(c => c.GetEdelmetallePricesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
+        // Act
         await _useCase.ExecuteAsync(CancellationToken.None);
 
+        // Assert
         _repositoryMock.Verify(r => r.AggregateDailySummaryAsync(It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()), Times.Once);
         _repositoryMock.Verify(r => r.PruneHourlyDataOlderThanAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Once);
     }

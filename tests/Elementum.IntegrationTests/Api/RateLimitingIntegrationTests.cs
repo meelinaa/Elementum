@@ -16,9 +16,11 @@ public class RateLimitingIntegrationTests : IClassFixture<CustomWebApplicationFa
         _factory = factory;
     }
 
+    // [B]OUNDARY / [E]RROR: Verifies that exceeding the IP rate limit boundary returns HTTP 429 Too Many Requests
     [Fact]
     public async Task RateLimiter_WhenPermitLimitExceeded_Returns429TooManyRequests()
     {
+        // Arrange
         var client = _factory.WithWebHostBuilder(builder =>
         {
             builder.ConfigureAppConfiguration((_, config) =>
@@ -32,16 +34,18 @@ public class RateLimitingIntegrationTests : IClassFixture<CustomWebApplicationFa
             });
         }).CreateClient();
 
-        // 1st request -> 200 OK
+        // Act - 1st request (200 OK)
         var res1 = await client.GetAsync("/api/v1/prices/live");
-        Assert.Equal(HttpStatusCode.OK, res1.StatusCode);
 
-        // 2nd request -> 200 OK
+        // Act - 2nd request (200 OK)
         var res2 = await client.GetAsync("/api/v1/prices/live");
-        Assert.Equal(HttpStatusCode.OK, res2.StatusCode);
 
-        // 3rd request -> 429 Too Many Requests
+        // Act - 3rd request (429 Rate Limited)
         var res3 = await client.GetAsync("/api/v1/prices/live");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, res1.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, res2.StatusCode);
         Assert.Equal(HttpStatusCode.TooManyRequests, res3.StatusCode);
 
         var problem = await res3.Content.ReadFromJsonAsync<ProblemDetails>();

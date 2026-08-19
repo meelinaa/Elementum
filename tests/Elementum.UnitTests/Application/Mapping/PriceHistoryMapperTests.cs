@@ -5,21 +5,27 @@ namespace Elementum.UnitTests.Application.Mapping;
 
 public class PriceHistoryMapperTests
 {
+    // [R]IGHT-BICEP: Verifies that Metals entity correctly maps to MetalDto
     [Fact]
     public void ToDto_MapsMetalsCorrectly()
     {
+        // Arrange
         var entity = new Metals { Id = 1, Symbol = "XAU", Name = "Gold" };
 
+        // Act
         var dto = entity.ToDto();
 
+        // Assert
         Assert.Equal(1, dto.Id);
         Assert.Equal("XAU", dto.Symbol);
         Assert.Equal("Gold", dto.Name);
     }
 
+    // [R]IGHT-BICEP: Verifies that PriceHistory entity maps to PriceHistoryDto with normalized properties
     [Fact]
     public void ToPriceHistoryDto_MapsPriceHistoryCorrectly()
     {
+        // Arrange
         var entity = new PriceHistory
         {
             Id = 42,
@@ -33,8 +39,10 @@ public class PriceHistoryMapperTests
             Metal = new Metals { Id = 1, Symbol = "XAU", Name = "Gold" }
         };
 
+        // Act
         var dto = entity.ToPriceHistoryDto();
 
+        // Assert
         Assert.Equal(42, dto.Id);
         Assert.Equal(1, dto.MetalId);
         Assert.Equal("USD", dto.Currency);
@@ -45,9 +53,11 @@ public class PriceHistoryMapperTests
         Assert.Equal("Gold", dto.Metal.Name);
     }
 
+    // [R]IGHT-BICEP: Verifies that DailyPriceSummary maps to DailyPriceSummaryDto including OHLC candles
     [Fact]
     public void ToDailyPriceSummaryDto_MapsSummaryCorrectly()
     {
+        // Arrange
         var summary = DailyPriceSummary.Create(
             metalId: 1,
             currency: "USD",
@@ -58,8 +68,10 @@ public class PriceHistoryMapperTests
             closePrice: 2420m,
             exchangeRateUsdEur: 1.15m);
 
+        // Act
         var dto = summary.ToDailyPriceSummaryDto("XAU", "Gold");
 
+        // Assert
         Assert.Equal(1, dto.MetalId);
         Assert.Equal("XAU", dto.Symbol);
         Assert.Equal("Gold", dto.MetalName);
@@ -71,9 +83,11 @@ public class PriceHistoryMapperTests
         Assert.Equal(1.15m, dto.ExchangeRateUsdEur);
     }
 
+    // [R]IGHT-BICEP: Verifies that PriceHistory entity maps to TradingPriceDto with technical indicator metrics
     [Fact]
     public void ToTradingPriceDto_MapsPriceHistoryCorrectly()
     {
+        // Arrange
         var entity = new PriceHistory
         {
             Id = 10,
@@ -91,8 +105,10 @@ public class PriceHistoryMapperTests
             Metal = new Metals { Id = 1, Symbol = "XAU", Name = "Gold" }
         };
 
+        // Act
         var dto = entity.ToTradingPriceDto();
 
+        // Assert
         Assert.Equal(10, dto.Id);
         Assert.Equal("XAU", dto.Symbol);
         Assert.Equal("Gold", dto.MetalName);
@@ -100,5 +116,13 @@ public class PriceHistoryMapperTests
         Assert.Equal(2500m, dto.Price);
         Assert.Equal(20m, dto.Ch);
         Assert.Equal(0.81m, dto.Chp);
+    }
+
+    // [B]OUNDARY / [E]RROR: Verifies that null entity arguments throw ArgumentNullException
+    [Fact]
+    public void ToPriceHistoryDto_WhenEntityNull_ThrowsArgumentNullException()
+    {
+        // Arrange, Act & Assert
+        Assert.Throws<ArgumentNullException>(() => ((PriceHistory)null!).ToPriceHistoryDto());
     }
 }

@@ -27,26 +27,36 @@ public class PriceHistoryRepositoryTests
         return (context, repo);
     }
 
+    // [B]OUNDARY: Verifies that saving an empty list of prices handles the boundary without exceptions or mutations
     [Fact]
     public async Task SavePricesAsync_WhenPricesEmpty_DoesNotThrow()
     {
+        // Arrange
         var (db, repo) = CreateTestSetup();
+
+        // Act
         await repo.SavePricesAsync(Array.Empty<DailyPrices>());
         var count = await db.PriceHistory.CountAsync();
+
+        // Assert
         Assert.Equal(0, count);
     }
 
+    // [R]IGHT-BICEP: Verifies that saving valid metal prices inserts a new row with accurate fields
     [Fact]
     public async Task SavePricesAsync_WhenPricesContainValidMetal_InsertsRow()
     {
+        // Arrange
         var (db, repo) = CreateTestSetup();
         var prices = new List<DailyPrices>
         {
             new() { Metal = "XAU", Currency = "USD", Price = 2650.50m, Symbol = "FOREXCOM:XAUUSD" }
         };
 
+        // Act
         await repo.SavePricesAsync(prices);
 
+        // Assert
         var count = await db.PriceHistory.CountAsync();
         Assert.Equal(1, count);
         var row = await db.PriceHistory.FirstAsync();
@@ -55,9 +65,11 @@ public class PriceHistoryRepositoryTests
         Assert.Equal("USD", row.Currency);
     }
 
+    // [R]IGHT-BICEP: Verifies that daily price history queries return bounded and chronologically sorted records
     [Fact]
     public async Task GetPriceHistoryMetalData_Daily_ReturnsBoundedChronologicalRecords()
     {
+        // Arrange
         var (db, repo) = CreateTestSetup();
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         for (int i = 10; i >= 1; i--)
@@ -73,16 +85,20 @@ public class PriceHistoryRepositoryTests
         }
         await db.SaveChangesAsync();
 
+        // Act
         var result = (await repo.GetPriceHistoryMetalData("XAU", "daily", 5, CancellationToken.None)).ToList();
 
+        // Assert
         Assert.Equal(5, result.Count);
         Assert.True(result[0].EntryDate < result[4].EntryDate); // Chronological order
         Assert.Equal(today.AddDays(-1), result[4].EntryDate);
     }
 
+    // [R]IGHT-BICEP: Verifies that monthly queries compute and return aggregated monthly averages
     [Fact]
     public async Task GetPriceHistoryMetalData_Monthly_ReturnsAggregatedAverages()
     {
+        // Arrange
         var (db, repo) = CreateTestSetup();
         db.PriceHistory.AddRange(
             new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = new DateOnly(2026, 1, 10), Price = 2000m, Symbol = "XAU" },
@@ -91,8 +107,10 @@ public class PriceHistoryRepositoryTests
         );
         await db.SaveChangesAsync();
 
+        // Act
         var result = (await repo.GetPriceHistoryMetalData("XAU", "monthly", 12, CancellationToken.None)).ToList();
 
+        // Assert
         Assert.Equal(2, result.Count);
         Assert.Equal(new DateOnly(2026, 1, 1), result[0].EntryDate);
         Assert.Equal(2500m, result[0].Price); // Average of 2000 and 3000
@@ -100,59 +118,61 @@ public class PriceHistoryRepositoryTests
         Assert.Equal(4000m, result[1].Price);
     }
 
+    // [I]NVERSE / IDEMPOTENCY: Verifies that repeated saves on the same day update existing records idempotently
     [Fact]
     public async Task SavePricesAsync_WhenCalledMultipleTimes_UpdatesExistingRowIdempotently()
     {
+        // Arrange
         var (db, repo) = CreateTestSetup();
         var pricesInitial = new List<DailyPrices>
         {
             new() { Metal = "XAU", Currency = "USD", Price = 2600.00m, Symbol = "FOREXCOM:XAUUSD" }
         };
 
+        // Act - Initial save
         await repo.SavePricesAsync(pricesInitial);
         Assert.Equal(1, await db.PriceHistory.CountAsync());
         Assert.Equal(2600.00m, (await db.PriceHistory.FirstAsync()).Price);
 
-        // Second run with updated price on same day
+        // Act - Second save with updated quote on the same day
         var pricesUpdated = new List<DailyPrices>
         {
             new() { Metal = "XAU", Currency = "USD", Price = 2650.00m, Symbol = "FOREXCOM:XAUUSD" }
         };
-
         await repo.SavePricesAsync(pricesUpdated);
 
-        // Count must still be 1, but price updated to 2650.00
+        // Assert - Count must remain strictly 1, price updated to 2650.00
         Assert.Equal(1, await db.PriceHistory.CountAsync());
         Assert.Equal(2650.00m, (await db.PriceHistory.FirstAsync()).Price);
     }
 
+    // [B]OUNDARY: Verifies partial versus full metal catalog ingestion boundaries for today's check
     [Fact]
     public async Task IsDataAlreadyIngestedToday_PartialVsFullIngestion_ChecksAllCatalogMetals()
     {
+        // Arrange
         var (db, repo) = CreateTestSetup(); // Contains Metal 1 (Gold) and Metal 2 (Silver)
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        // Initially no prices ingested
+        // Act & Assert - Initially no prices ingested
         Assert.False(await repo.IsDataAlreadyIngestedToday(CancellationToken.None));
 
-        // Ingest only Gold (1 of 2 metals)
+        // Act & Assert - Ingest only Gold (1 of 2 metals)
         db.PriceHistory.Add(new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = today, Price = 2000m, Symbol = "XAU" });
         await db.SaveChangesAsync();
-
-        // Must still return false because Silver is missing
         Assert.False(await repo.IsDataAlreadyIngestedToday(CancellationToken.None));
 
-        // Ingest Silver (2 of 2 metals)
+        // Act & Assert - Ingest Silver (2 of 2 metals)
         db.PriceHistory.Add(new PriceHistory { MetalId = 2, Currency = "USD", EntryDate = today, Price = 30m, Symbol = "XAG" });
         await db.SaveChangesAsync();
-
-        // Now all metals are ingested -> must return true
         Assert.True(await repo.IsDataAlreadyIngestedToday(CancellationToken.None));
     }
 
+    // [R]IGHT-BICEP: Verifies that saving live tick responses creates price history ticks and updates daily candles
     [Fact]
     public async Task SaveEdelmetallePricesAsync_SavesHourlyTicksAndUpdatesDailyCandles()
     {
+        // Arrange
         var (db, repo) = CreateTestSetup();
         var data = new EdelmetalleApiResponse
         {
@@ -168,9 +188,10 @@ public class PriceHistoryRepositoryTests
             WechselkursUsdEur = 1.15m
         };
 
+        // Act
         await repo.SaveEdelmetallePricesAsync(data, CancellationToken.None);
 
-        // Gold & Silver were seeded (metals 1 and 2), each has USD and EUR
+        // Assert - Gold & Silver were seeded (metals 1 and 2), each has USD and EUR
         var historyCount = await db.PriceHistory.CountAsync();
         Assert.Equal(4, historyCount);
 
@@ -185,32 +206,34 @@ public class PriceHistoryRepositoryTests
         Assert.Equal(4410.6m, goldCandleUsd.ClosePrice);
     }
 
+    // [R]IGHT-BICEP: Verifies that retention pruning removes hourly ticks older than the threshold
     [Fact]
     public async Task PruneHourlyDataOlderThanAsync_DeletesRecordsOlderThan7Days()
     {
+        // Arrange
         var (db, repo) = CreateTestSetup();
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        // 10 days old record
         db.PriceHistory.Add(new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = today.AddDays(-10), Price = 2000m, Symbol = "XAU" });
-        // 8 days old record
         db.PriceHistory.Add(new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = today.AddDays(-8), Price = 2100m, Symbol = "XAU" });
-        // 5 days old record (within 7 days retention)
         db.PriceHistory.Add(new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = today.AddDays(-5), Price = 2200m, Symbol = "XAU" });
-        // Today record
         db.PriceHistory.Add(new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = today, Price = 2300m, Symbol = "XAU" });
         await db.SaveChangesAsync();
 
+        // Act
         var threshold = DateTime.UtcNow.AddDays(-7);
         var deletedCount = await repo.PruneHourlyDataOlderThanAsync(threshold, CancellationToken.None);
 
+        // Assert
         Assert.Equal(2, deletedCount);
         Assert.Equal(2, await db.PriceHistory.CountAsync());
     }
 
+    // [C]ROSS-CHECK: Cross-checks aggregate daily summary output against independently calculated tick extrema
     [Fact]
     public async Task AggregateDailySummaryAsync_ComputesMinMaxOpenCloseAccurately()
     {
+        // Arrange
         var (db, repo) = CreateTestSetup();
         var date = new DateOnly(2026, 8, 17);
 
@@ -222,13 +245,29 @@ public class PriceHistoryRepositoryTests
         );
         await db.SaveChangesAsync();
 
+        // Act
         await repo.AggregateDailySummaryAsync(date, CancellationToken.None);
 
+        // Assert
         var candle = await db.DailyPriceSummaries.FirstOrDefaultAsync(s => s.MetalId == 1 && s.Currency == "USD" && s.EntryDate == date);
         Assert.NotNull(candle);
         Assert.Equal(4400m, candle.OpenPrice);
         Assert.Equal(4480m, candle.HighPrice);
         Assert.Equal(4390m, candle.LowPrice);
         Assert.Equal(4420m, candle.ClosePrice);
+    }
+
+    // [E]RROR: Verifies that querying price history for an unknown metal symbol returns empty collection
+    [Fact]
+    public async Task GetPriceHistoryMetalData_WhenMetalNotFound_ReturnsEmpty()
+    {
+        // Arrange
+        var (_, repo) = CreateTestSetup();
+
+        // Act
+        var result = await repo.GetPriceHistoryMetalData("NON_EXISTENT", "daily", 10, CancellationToken.None);
+
+        // Assert
+        Assert.Empty(result);
     }
 }

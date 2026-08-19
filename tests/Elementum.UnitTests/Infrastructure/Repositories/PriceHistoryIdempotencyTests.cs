@@ -31,9 +31,11 @@ public class PriceHistoryIdempotencyTests
         return db;
     }
 
+    // [I]NVERSE / IDEMPOTENCY: Verifies that saving the identical timestamped tick payload multiple times is strictly idempotent
     [Fact]
     public async Task SaveEdelmetallePricesAsync_WhenRunTwiceWithSameTimestamp_DoesNotCreateDuplicateTicks()
     {
+        // Arrange
         var db = CreateInMemoryDbContext("IdempotencyTest_" + Guid.NewGuid());
         var aggregator = new DailyCandleAggregator();
         var pruner = new PriceHistoryPruner();
@@ -53,16 +55,16 @@ public class PriceHistoryIdempotencyTests
             Timestamp = 1723900000
         };
 
-        // 1st execution
+        // Act - 1st execution
         await repository.SaveEdelmetallePricesAsync(payload);
-
         var countAfterFirstRun = await db.PriceHistory.CountAsync();
-        Assert.Equal(8, countAfterFirstRun); // 4 metals * 2 currencies (USD & EUR)
 
-        // 2nd execution with exact same timestamp (e.g. worker retry or crash recovery)
+        // Act - 2nd execution with exact same timestamp (e.g. worker retry or recovery)
         await repository.SaveEdelmetallePricesAsync(payload);
-
         var countAfterSecondRun = await db.PriceHistory.CountAsync();
-        Assert.Equal(8, countAfterSecondRun); // Must still be 8, no duplicates!
+
+        // Assert
+        Assert.Equal(8, countAfterFirstRun); // 4 metals * 2 currencies (USD & EUR)
+        Assert.Equal(8, countAfterSecondRun); // Must remain strictly 8 with no duplicates
     }
 }
