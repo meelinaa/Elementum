@@ -14,7 +14,6 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddElementumApplication(this IServiceCollection services)
     {
-        services.AddMemoryCache();
         services.AddScoped<ILiveQuotesProvider, LiveQuotesProvider>();
         services.AddScoped<IIngestPricesUseCase, IngestPricesUseCase>();
         services.AddScoped<IGetPriceHistoryUseCase, GetPriceHistoryUseCase>();

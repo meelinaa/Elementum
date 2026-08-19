@@ -1,7 +1,6 @@
 using System.Globalization;
 using Elementum.Domain.Constants;
 using Elementum.Domain.Entities;
-using Elementum.Domain.Models;
 using Elementum.Domain.Ports.Outbound;
 using Elementum.Infrastructure.Data.Interfaces;
 using Elementum.Infrastructure.Data.Services;
@@ -55,79 +54,56 @@ public class PriceHistoryRepository : IElementumDbContext
     }
 
     /// <inheritdoc />
-    public async Task SaveEdelmetallePricesAsync(EdelmetalleApiResponse data, CancellationToken ct = default)
+    public async Task SavePricesAsync(IReadOnlyList<PriceHistory> prices, CancellationToken cancellationToken = default)
     {
-        if (data == null)
+        if (prices == null || prices.Count == 0)
             return;
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var isCloseHour = DateTime.UtcNow.Hour >= 22;
-        var allMetals = await _db.Metals.ToListAsync(ct);
 
-        (string Symbol, string Name, decimal UsdPrice, decimal EurPrice)[] quotes =
-        [
-            (DomainConstants.Symbols.Gold, DomainConstants.Names.Gold, data.GoldUsd, data.GoldEur),
-            (DomainConstants.Symbols.Silver, DomainConstants.Names.Silver, data.SilberUsd, data.SilberEur),
-            (DomainConstants.Symbols.Platinum, DomainConstants.Names.Platinum, data.PlatinUsd, data.PlatinEur),
-            (DomainConstants.Symbols.Palladium, DomainConstants.Names.Palladium, data.PalladiumUsd, data.PalladiumEur)
-        ];
-
-        foreach (var q in quotes)
+        foreach (var price in prices)
         {
-            var metal = allMetals.FirstOrDefault(m =>
-                string.Equals(m.Symbol, q.Symbol, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(m.Name, q.Name, StringComparison.OrdinalIgnoreCase));
-
-            if (metal == null)
+            if (price == null || price.MetalId <= 0 || price.Price <= 0)
                 continue;
 
-            (string Currency, decimal Price)[] currencyQuotes =
-            [
-                (DomainConstants.Currencies.Usd, q.UsdPrice),
-                (DomainConstants.Currencies.Eur, q.EurPrice)
-            ];
+            var existingRow = await _db.PriceHistory
+                .FirstOrDefaultAsync(x => x.MetalId == price.MetalId && x.Currency == price.Currency && x.ReferenceTimestamp == price.ReferenceTimestamp, cancellationToken);
 
-            var refTimestamp = data.Timestamp;
-
-            foreach (var (currency, price) in currencyQuotes)
+            if (existingRow != null)
             {
-                if (price <= 0)
-                    continue;
-
-                // 1. Add raw hourly tick if not already present (idempotent insert)
-                var tickExists = await _db.PriceHistory.AnyAsync(
-                    p => p.MetalId == metal.Id && p.Currency == currency && p.ReferenceTimestamp == refTimestamp, ct);
-
-                if (!tickExists)
-                {
-                    var tick = Elementum.Domain.Entities.PriceHistory.Create(
-                        metalId: metal.Id,
-                        currency: currency,
-                        entryDate: today,
-                        price: price,
-                        symbol: $"{q.Symbol}{currency}",
-                        referenceTimestamp: refTimestamp);
-
-                    _db.PriceHistory.Add(tick);
-                }
-
-                // 2. Real-time update of DailyPriceSummary candle
-                await _candleAggregator.UpdateSummaryForTickAsync(
-                    _db, metal.Id, currency, today, price, data.WechselkursUsdEur, isCloseHour, ct);
+                existingRow.UpdatePrices(
+                    price: price.Price,
+                    highPrice: price.HighPrice,
+                    lowPrice: price.LowPrice,
+                    openPrice: price.OpenPrice,
+                    prevClosePrice: price.PrevClosePrice,
+                    ch: price.Ch,
+                    chp: price.Chp,
+                    referenceTimestamp: price.ReferenceTimestamp,
+                    symbol: price.Symbol);
             }
+            else
+            {
+                _db.PriceHistory.Add(price);
+            }
+
+            // Real-time update of DailyPriceSummary candle
+            await _candleAggregator.UpdateSummaryForTickAsync(
+                _db, price.MetalId, price.Currency, price.EntryDate, price.Price, 1.0m, isCloseHour, cancellationToken);
         }
 
         try
         {
-            await _db.SaveChangesAsync(ct);
+            await _db.SaveChangesAsync(cancellationToken);
         }
         catch (DbUpdateConcurrencyException)
         {
             foreach (var entry in _db.ChangeTracker.Entries<DailyPriceSummary>())
             {
-                await entry.ReloadAsync(ct);
+                await entry.ReloadAsync(cancellationToken);
             }
-            await _db.SaveChangesAsync(ct);
+            await _db.SaveChangesAsync(cancellationToken);
         }
     }
 
@@ -166,63 +142,6 @@ public class PriceHistoryRepository : IElementumDbContext
         return await query
             .OrderBy(s => s.EntryDate)
             .ToListAsync(ct);
-    }
-
-    /// <inheritdoc />
-    public async Task SavePricesAsync(IReadOnlyList<DailyPrices> prices, CancellationToken cancellationToken = default)
-    {
-        if (prices.Count == 0)
-            return;
-
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var metalsBySymbol = await _db.Metals.ToDictionaryAsync(m => m.Symbol, StringComparer.OrdinalIgnoreCase, cancellationToken);
-
-        foreach (var api in prices)
-        {
-            if (string.IsNullOrEmpty(api.Metal) || !metalsBySymbol.TryGetValue(api.Metal, out var metal))
-            {
-                continue;
-            }
-
-            var currency = string.IsNullOrEmpty(api.Currency) ? DomainConstants.Currencies.Usd : api.Currency;
-
-            var existingRow = await _db.PriceHistory
-                .FirstOrDefaultAsync(x => x.MetalId == metal.Id && x.Currency == currency && x.EntryDate == today, cancellationToken);
-
-            if (existingRow != null)
-            {
-                existingRow.UpdatePrices(
-                    price: api.Price,
-                    highPrice: api.HighPrice,
-                    lowPrice: api.LowPrice,
-                    openPrice: api.OpenPrice,
-                    prevClosePrice: api.PrevClosePrice,
-                    ch: api.Ch,
-                    chp: api.Chp,
-                    referenceTimestamp: api.Timestamp,
-                    symbol: api.Symbol);
-            }
-            else
-            {
-                var row = Elementum.Domain.Entities.PriceHistory.Create(
-                    metalId: metal.Id,
-                    currency: currency,
-                    entryDate: today,
-                    price: api.Price,
-                    symbol: api.Symbol,
-                    openPrice: api.OpenPrice,
-                    highPrice: api.HighPrice,
-                    lowPrice: api.LowPrice,
-                    prevClosePrice: api.PrevClosePrice,
-                    ch: api.Ch,
-                    chp: api.Chp,
-                    referenceTimestamp: api.Timestamp);
-
-                _db.PriceHistory.Add(row);
-            }
-        }
-
-        await _db.SaveChangesAsync(cancellationToken);
     }
 
     /// <inheritdoc />

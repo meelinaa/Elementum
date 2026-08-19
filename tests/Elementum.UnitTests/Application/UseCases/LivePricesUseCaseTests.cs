@@ -1,7 +1,7 @@
 using Elementum.Application.Inbound.UseCases.Prices;
+using Elementum.Application.Models;
 using Elementum.Application.Services;
 using Elementum.Domain.Entities;
-using Elementum.Domain.Models;
 using Elementum.Domain.Ports.Outbound;
 using Moq;
 

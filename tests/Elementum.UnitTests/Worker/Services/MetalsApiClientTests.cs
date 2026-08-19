@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using Elementum.Application.Models;
 using Elementum.Application.Options;
 using Elementum.Infrastructure.External;
 using Microsoft.Extensions.Logging;

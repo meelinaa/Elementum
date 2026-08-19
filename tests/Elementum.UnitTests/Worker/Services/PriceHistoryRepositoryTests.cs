@@ -1,5 +1,6 @@
+using Elementum.Application.Mapping;
+using Elementum.Application.Models;
 using Elementum.Domain.Entities;
-using Elementum.Domain.Models;
 using Elementum.Infrastructure.Data;
 using Elementum.Infrastructure.Data.Repositories;
 using Elementum.Infrastructure.Data.Services;
@@ -35,7 +36,7 @@ public class PriceHistoryRepositoryTests
         var (db, repo) = CreateTestSetup();
 
         // Act
-        await repo.SavePricesAsync(Array.Empty<DailyPrices>());
+        await repo.SavePricesAsync(Array.Empty<PriceHistory>());
         var count = await db.PriceHistory.CountAsync();
 
         // Assert
@@ -48,9 +49,10 @@ public class PriceHistoryRepositoryTests
     {
         // Arrange
         var (db, repo) = CreateTestSetup();
-        var prices = new List<DailyPrices>
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var prices = new List<PriceHistory>
         {
-            new() { Metal = "XAU", Currency = "USD", Price = 2650.50m, Symbol = "FOREXCOM:XAUUSD" }
+            PriceHistory.Create(metalId: 1, currency: "USD", entryDate: today, price: 2650.50m, symbol: "XAUUSD", referenceTimestamp: 100L)
         };
 
         // Act
@@ -118,28 +120,29 @@ public class PriceHistoryRepositoryTests
         Assert.Equal(4000m, result[1].Price);
     }
 
-    // [I]NVERSE / IDEMPOTENCY: Verifies that repeated saves on the same day update existing records idempotently
+    // [I]NVERSE / IDEMPOTENCY: Verifies that repeated saves with identical timestamp update existing records idempotently
     [Fact]
     public async Task SavePricesAsync_WhenCalledMultipleTimes_UpdatesExistingRowIdempotently()
     {
         // Arrange
         var (db, repo) = CreateTestSetup();
-        var pricesInitial = new List<DailyPrices>
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var initialPrices = new List<PriceHistory>
         {
-            new() { Metal = "XAU", Currency = "USD", Price = 2600.00m, Symbol = "FOREXCOM:XAUUSD" }
+            PriceHistory.Create(metalId: 1, currency: "USD", entryDate: today, price: 2600.00m, symbol: "XAUUSD", referenceTimestamp: 1000L)
         };
 
         // Act - Initial save
-        await repo.SavePricesAsync(pricesInitial);
+        await repo.SavePricesAsync(initialPrices);
         Assert.Equal(1, await db.PriceHistory.CountAsync());
         Assert.Equal(2600.00m, (await db.PriceHistory.FirstAsync()).Price);
 
-        // Act - Second save with updated quote on the same day
-        var pricesUpdated = new List<DailyPrices>
+        // Act - Second save with updated quote on the same timestamp
+        var updatedPrices = new List<PriceHistory>
         {
-            new() { Metal = "XAU", Currency = "USD", Price = 2650.00m, Symbol = "FOREXCOM:XAUUSD" }
+            PriceHistory.Create(metalId: 1, currency: "USD", entryDate: today, price: 2650.00m, symbol: "XAUUSD", referenceTimestamp: 1000L)
         };
-        await repo.SavePricesAsync(pricesUpdated);
+        await repo.SavePricesAsync(updatedPrices);
 
         // Assert - Count must remain strictly 1, price updated to 2650.00
         Assert.Equal(1, await db.PriceHistory.CountAsync());
@@ -170,7 +173,7 @@ public class PriceHistoryRepositoryTests
 
     // [R]IGHT-BICEP: Verifies that saving live tick responses creates price history ticks and updates daily candles
     [Fact]
-    public async Task SaveEdelmetallePricesAsync_SavesHourlyTicksAndUpdatesDailyCandles()
+    public async Task SavePricesAsync_SavesHourlyTicksAndUpdatesDailyCandles()
     {
         // Arrange
         var (db, repo) = CreateTestSetup();
@@ -188,8 +191,11 @@ public class PriceHistoryRepositoryTests
             WechselkursUsdEur = 1.15m
         };
 
+        var metalsMap = db.Metals.ToDictionary(m => m.Symbol, m => m.Id);
+        var entities = data.ToPriceHistoryEntities(metalsMap, DateOnly.FromDateTime(DateTime.UtcNow));
+
         // Act
-        await repo.SaveEdelmetallePricesAsync(data, CancellationToken.None);
+        await repo.SavePricesAsync(entities, CancellationToken.None);
 
         // Assert - Gold & Silver were seeded (metals 1 and 2), each has USD and EUR
         var historyCount = await db.PriceHistory.CountAsync();

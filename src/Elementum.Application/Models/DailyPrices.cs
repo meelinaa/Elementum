@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Elementum.Domain.Models;
+namespace Elementum.Application.Models;
 
 /// <summary>
 /// Model for daily price responses from external metals API (e.g. GoldAPI).

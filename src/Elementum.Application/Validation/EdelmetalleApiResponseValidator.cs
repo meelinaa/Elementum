@@ -1,4 +1,4 @@
-using Elementum.Domain.Models;
+using Elementum.Application.Models;
 using FluentValidation;
 
 namespace Elementum.Application.Validation;

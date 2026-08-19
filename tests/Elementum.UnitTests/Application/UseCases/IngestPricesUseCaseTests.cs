@@ -1,7 +1,9 @@
 using Elementum.Application.Inbound.UseCases.Ingestion;
+using Elementum.Application.Models;
 using Elementum.Application.Options;
+using Elementum.Application.Ports.Outbound;
 using Elementum.Application.Validation;
-using Elementum.Domain.Models;
+using Elementum.Domain.Entities;
 using Elementum.Domain.Ports.Outbound;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -12,7 +14,8 @@ namespace Elementum.Application.Tests.UseCases;
 public class IngestPricesUseCaseTests
 {
     private readonly Mock<IMetalsApiClient> _apiClientMock = new();
-    private readonly Mock<IPriceHistoryWriteRepository> _repositoryMock = new();
+    private readonly Mock<IPriceHistoryWriteRepository> _writeRepositoryMock = new();
+    private readonly Mock<IPriceHistoryReadRepository> _readRepositoryMock = new();
     private readonly Mock<ILogger<IngestPricesUseCase>> _loggerMock = new();
     private readonly WorkerScheduleOptions _options = new() { DailyRollupHour = 0, RetentionDays = 14 };
     private readonly EdelmetalleApiResponseValidator _validator = new();
@@ -20,15 +23,26 @@ public class IngestPricesUseCaseTests
 
     public IngestPricesUseCaseTests()
     {
+        var metals = new List<Metals>
+        {
+            new() { Id = 1, Symbol = "XAU", Name = "Gold" },
+            new() { Id = 2, Symbol = "XAG", Name = "Silver" },
+            new() { Id = 3, Symbol = "XPT", Name = "Platinum" },
+            new() { Id = 4, Symbol = "XPD", Name = "Palladium" }
+        }.AsQueryable();
+
+        _readRepositoryMock.Setup(r => r.QueryMetals()).Returns(metals);
+
         _useCase = new IngestPricesUseCase(
             _apiClientMock.Object,
-            _repositoryMock.Object,
+            _writeRepositoryMock.Object,
+            _readRepositoryMock.Object,
             _validator,
             Microsoft.Extensions.Options.Options.Create(_options),
             _loggerMock.Object);
     }
 
-    // [R]IGHT-BICEP: Verifies that valid metal quotes from the primary API endpoint are saved to repository
+    // [R]IGHT-BICEP: Verifies that valid metal quotes from the primary API endpoint are mapped and saved to repository
     [Fact]
     public async Task ExecuteAsync_WhenEdelmetalleReturnsValidData_SavesEdelmetallePrices()
     {
@@ -54,7 +68,7 @@ public class IngestPricesUseCaseTests
         await _useCase.ExecuteAsync(CancellationToken.None);
 
         // Assert
-        _repositoryMock.Verify(r => r.SaveEdelmetallePricesAsync(response, It.IsAny<CancellationToken>()), Times.Once);
+        _writeRepositoryMock.Verify(r => r.SavePricesAsync(It.Is<IReadOnlyList<PriceHistory>>(l => l.Count == 8), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // [E]RROR: Verifies that validation failure on corrupted payload aborts persistence
@@ -76,7 +90,7 @@ public class IngestPricesUseCaseTests
         await _useCase.ExecuteAsync(CancellationToken.None);
 
         // Assert
-        _repositoryMock.Verify(r => r.SaveEdelmetallePricesAsync(It.IsAny<EdelmetalleApiResponse>(), It.IsAny<CancellationToken>()), Times.Never);
+        _writeRepositoryMock.Verify(r => r.SavePricesAsync(It.IsAny<IReadOnlyList<PriceHistory>>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     // [B]OUNDARY / FALLBACK: Verifies that null primary payload triggers fallback to secondary GetPricesAsync
@@ -99,7 +113,7 @@ public class IngestPricesUseCaseTests
         await _useCase.ExecuteAsync(CancellationToken.None);
 
         // Assert
-        _repositoryMock.Verify(r => r.SavePricesAsync(fallbackPrices, It.IsAny<CancellationToken>()), Times.Once);
+        _writeRepositoryMock.Verify(r => r.SavePricesAsync(It.Is<IReadOnlyList<PriceHistory>>(l => l.Count == 1), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // [R]IGHT-BICEP: Verifies that the daily rollup and retention pruning trigger at configured threshold hour
@@ -128,7 +142,7 @@ public class IngestPricesUseCaseTests
         await _useCase.ExecuteAsync(CancellationToken.None);
 
         // Assert
-        _repositoryMock.Verify(r => r.AggregateDailySummaryAsync(It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()), Times.Once);
-        _repositoryMock.Verify(r => r.PruneHourlyDataOlderThanAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Once);
+        _writeRepositoryMock.Verify(r => r.AggregateDailySummaryAsync(It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()), Times.Once);
+        _writeRepositoryMock.Verify(r => r.PruneHourlyDataOlderThanAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

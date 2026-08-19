@@ -1,5 +1,4 @@
 using Elementum.Domain.Entities;
-using Elementum.Domain.Models;
 
 namespace Elementum.Domain.Ports.Outbound;
 
@@ -9,11 +8,8 @@ namespace Elementum.Domain.Ports.Outbound;
 /// </summary>
 public interface IPriceHistoryWriteRepository
 {
-    /// <summary>Saves incoming daily prices from external sources to the database.</summary>
-    Task SavePricesAsync(IReadOnlyList<DailyPrices> prices, CancellationToken cancellationToken = default);
-
-    /// <summary>Saves hourly quotes for all metals in USD & EUR from Edelmetalle API.</summary>
-    Task SaveEdelmetallePricesAsync(EdelmetalleApiResponse data, CancellationToken ct = default);
+    /// <summary>Saves price history records to the database and updates daily candles.</summary>
+    Task SavePricesAsync(IReadOnlyList<PriceHistory> prices, CancellationToken cancellationToken = default);
 
     /// <summary>Aggregates the daily candle (Open, High, Low, Close at 22:00) into daily_price_summaries for the given date.</summary>
     Task AggregateDailySummaryAsync(DateOnly date, CancellationToken ct = default);

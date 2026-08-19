@@ -1,9 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Elementum.Domain.Entities;
+namespace Elementum.Infrastructure.Data.Entities;
 
 /// <summary>
-/// Domain entity representing a distributed lock record managed via Entity Framework Core.
+/// Infrastructure persistence entity representing a distributed lock record managed via Entity Framework Core.
 /// </summary>
 public class DistributedLockEntity
 {

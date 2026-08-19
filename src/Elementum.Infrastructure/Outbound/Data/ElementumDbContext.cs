@@ -1,4 +1,5 @@
 using Elementum.Domain.Entities;
+using Elementum.Infrastructure.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Elementum.Infrastructure.Data;

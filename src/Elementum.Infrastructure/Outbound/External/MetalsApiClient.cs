@@ -1,7 +1,7 @@
 using System.Text.Json;
+using Elementum.Application.Models;
 using Elementum.Application.Options;
-using Elementum.Domain.Models;
-using Elementum.Domain.Ports.Outbound;
+using Elementum.Application.Ports.Outbound;
 using Elementum.Infrastructure.External.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

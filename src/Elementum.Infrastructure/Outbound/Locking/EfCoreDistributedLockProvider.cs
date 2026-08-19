@@ -1,6 +1,6 @@
-using Elementum.Domain.Entities;
 using Elementum.Domain.Ports.Outbound;
 using Elementum.Infrastructure.Data;
+using Elementum.Infrastructure.Data.Entities;
 using Elementum.Infrastructure.Locking.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

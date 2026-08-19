@@ -1,5 +1,4 @@
 using Elementum.Domain.Entities;
-using Elementum.Domain.Models;
 using Elementum.Domain.Ports.Outbound;
 
 namespace Elementum.Infrastructure.Data.Interfaces;

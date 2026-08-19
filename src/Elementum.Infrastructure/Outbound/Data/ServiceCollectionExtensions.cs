@@ -1,4 +1,6 @@
 using Elementum.Application.Inbound.UseCases.Prices;
+using Elementum.Application.Ports.Outbound;
+using Elementum.Application.Services;
 using Elementum.Domain.Ports.Outbound;
 using Elementum.Infrastructure.Caching;
 using Elementum.Infrastructure.Data.Interfaces;
@@ -6,9 +8,11 @@ using Elementum.Infrastructure.Data.Repositories;
 using Elementum.Infrastructure.Data.Resilience;
 using Elementum.Infrastructure.Data.Services;
 using Elementum.Infrastructure.External;
+using Elementum.Infrastructure.Outbound.Caching;
 using Elementum.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Polly;
@@ -39,6 +43,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IDatabaseCheckService, DatabaseCheckService>();
         services.AddSingleton<IMetalsApiClient, MetalsApiClient>();
         services.AddSingleton<IDistributedLockProvider, Locking.EfCoreDistributedLockProvider>();
+
+        services.AddMemoryCache();
 
         // Register HTTP client for GoldAPI with combined Polly resilience policy (Timeout + Exponential Backoff Retry + Circuit Breaker)
         services.AddHttpClient("GoldApi")
@@ -91,6 +97,24 @@ public static class ServiceCollectionExtensions
                 var inner = sp.GetRequiredService<GetPriceHistoryUseCase>();
                 var cache = sp.GetRequiredService<HybridCache>();
                 return new CachedGetPriceHistoryUseCase(inner, cache);
+            });
+        }
+
+        // Decorate ILiveQuotesProvider with CachedLiveQuotesProvider
+        var liveQuotesDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(ILiveQuotesProvider));
+        if (liveQuotesDescriptor != null)
+        {
+            services.Remove(liveQuotesDescriptor);
+            services.Add(new ServiceDescriptor(
+                typeof(LiveQuotesProvider),
+                liveQuotesDescriptor.ImplementationType ?? typeof(LiveQuotesProvider),
+                liveQuotesDescriptor.Lifetime));
+
+            services.AddScoped<ILiveQuotesProvider>(sp =>
+            {
+                var inner = sp.GetRequiredService<LiveQuotesProvider>();
+                var cache = sp.GetRequiredService<IMemoryCache>();
+                return new CachedLiveQuotesProvider(inner, cache);
             });
         }
 

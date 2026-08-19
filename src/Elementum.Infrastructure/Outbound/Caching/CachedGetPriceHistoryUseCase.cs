@@ -2,7 +2,7 @@ using Elementum.Application.DTOs;
 using Elementum.Application.Inbound.UseCases.Prices;
 using Microsoft.Extensions.Caching.Hybrid;
 
-namespace Elementum.Infrastructure.Caching;
+namespace Elementum.Infrastructure.Outbound.Caching;
 
 /// <summary>
 /// Decorator for <see cref="IGetPriceHistoryUseCase"/> providing 2-tier caching (L1 Memory + L2 Distributed Redis)

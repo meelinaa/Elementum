@@ -1,6 +1,6 @@
 using Elementum.Application.DTOs;
 using Elementum.Application.Inbound.UseCases.Prices;
-using Elementum.Infrastructure.Caching;
+using Elementum.Infrastructure.Outbound.Caching;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;

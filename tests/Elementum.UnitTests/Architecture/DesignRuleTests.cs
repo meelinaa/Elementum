@@ -2,7 +2,7 @@ using Elementum.Api.Inbound.Controllers;
 using Elementum.Application.Inbound.UseCases.Ingestion;
 using Elementum.Application.Inbound.UseCases.Metals;
 using Elementum.Application.Inbound.UseCases.Prices;
-using Elementum.Infrastructure.Caching;
+using Elementum.Infrastructure.Outbound.Caching;
 using Microsoft.AspNetCore.Mvc;
 using NetArchTest.Rules;
 
@@ -100,7 +100,7 @@ public class DesignRuleTests
     [Fact]
     public void CachedGetPriceHistoryUseCase_Should_Implement_IGetPriceHistoryUseCase()
     {
-        var result = Types.InAssembly(typeof(Elementum.Infrastructure.Caching.CachedGetPriceHistoryUseCase).Assembly)
+        var result = Types.InAssembly(typeof(CachedGetPriceHistoryUseCase).Assembly)
             .That()
             .HaveName("CachedGetPriceHistoryUseCase")
             .Should()

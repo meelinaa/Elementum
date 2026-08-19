@@ -1,5 +1,6 @@
+using Elementum.Application.Mapping;
+using Elementum.Application.Models;
 using Elementum.Domain.Entities;
-using Elementum.Domain.Models;
 using Elementum.Infrastructure.Data;
 using Elementum.Infrastructure.Data.Repositories;
 using Elementum.Infrastructure.Data.Services;
@@ -33,7 +34,7 @@ public class PriceHistoryIdempotencyTests
 
     // [I]NVERSE / IDEMPOTENCY: Verifies that saving the identical timestamped tick payload multiple times is strictly idempotent
     [Fact]
-    public async Task SaveEdelmetallePricesAsync_WhenRunTwiceWithSameTimestamp_DoesNotCreateDuplicateTicks()
+    public async Task SavePricesAsync_WhenRunTwiceWithSameTimestamp_DoesNotCreateDuplicateTicks()
     {
         // Arrange
         var db = CreateInMemoryDbContext("IdempotencyTest_" + Guid.NewGuid());
@@ -55,12 +56,15 @@ public class PriceHistoryIdempotencyTests
             Timestamp = 1723900000
         };
 
+        var metalsMap = db.Metals.ToDictionary(m => m.Symbol, m => m.Id);
+        var entities = payload.ToPriceHistoryEntities(metalsMap, DateOnly.FromDateTime(DateTime.UtcNow));
+
         // Act - 1st execution
-        await repository.SaveEdelmetallePricesAsync(payload);
+        await repository.SavePricesAsync(entities);
         var countAfterFirstRun = await db.PriceHistory.CountAsync();
 
         // Act - 2nd execution with exact same timestamp (e.g. worker retry or recovery)
-        await repository.SaveEdelmetallePricesAsync(payload);
+        await repository.SavePricesAsync(entities);
         var countAfterSecondRun = await db.PriceHistory.CountAsync();
 
         // Assert

@@ -1,5 +1,4 @@
 using Elementum.Domain.Entities;
-using Elementum.Domain.Models;
 using Elementum.Infrastructure.Data.Interfaces;
 using Polly;
 
@@ -54,11 +53,8 @@ public sealed class ResilientElementumDbContext : IElementumDbContext
     public Task<IEnumerable<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct) =>
         ExecuteAsync(innerCt => _inner.GetPriceHistoryMetalData(metalSymbol, aggregation, count, innerCt), ct);
 
-    public Task SavePricesAsync(IReadOnlyList<DailyPrices> prices, CancellationToken cancellationToken = default) =>
+    public Task SavePricesAsync(IReadOnlyList<PriceHistory> prices, CancellationToken cancellationToken = default) =>
         ExecuteAsync(innerCt => _inner.SavePricesAsync(prices, innerCt), cancellationToken);
-
-    public Task SaveEdelmetallePricesAsync(EdelmetalleApiResponse data, CancellationToken ct = default) =>
-        ExecuteAsync(innerCt => _inner.SaveEdelmetallePricesAsync(data, innerCt), ct);
 
     public Task AggregateDailySummaryAsync(DateOnly date, CancellationToken ct = default) =>
         ExecuteAsync(innerCt => _inner.AggregateDailySummaryAsync(date, innerCt), ct);

@@ -1,5 +1,5 @@
+using Elementum.Application.Models;
 using Elementum.Application.Validation;
-using Elementum.Domain.Models;
 using FluentValidation.TestHelper;
 
 namespace Elementum.UnitTests.Application.Validation;

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Elementum.Domain.Models;
+namespace Elementum.Application.Models;
 
 /// <summary>
 /// Response model for https://api.edelmetalle.de/public.json
