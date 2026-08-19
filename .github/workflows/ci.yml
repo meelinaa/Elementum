@@ -1,14 +1,36 @@
-name: CI/CD Pipeline
+name: CI
 
 on:
   push:
-    branches: [ "**" ]
+    branches: ["**"]
   pull_request:
-    branches: [ "**" ]
+    branches: ["**"]
+
+permissions:
+  contents: read
+  checks: write
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build-and-test:
-    name: Build & Test
+  secrets:
+    name: Secret scan (blocking)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-test-security:
+    name: Build, Test & Security (blocking)
     runs-on: ubuntu-latest
 
     steps:
@@ -18,7 +40,7 @@ jobs:
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: "10.0.x"
 
       - name: Cache NuGet Packages
         uses: actions/cache@v4
@@ -28,15 +50,112 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
+      # --- 1. Restore & Build (blocking) ---
       - name: Restore Dependencies
         run: dotnet restore Elementum.slnx
 
-      - name: Code Formatting Check (Warnings Non-Blocking)
-        run: dotnet format --verify-no-changes --severity error
-        continue-on-error: true
-
       - name: Build Solution (Release)
         run: dotnet build Elementum.slnx --configuration Release --no-restore
+        # Blocking: compile errors fail here. Warnings are advisory unless
+        # TreatWarningsAsErrors is enabled in a project (currently it is not).
 
+      # --- 2. Tests (blocking; includes NetArchTest architecture rules) ---
       - name: Run Test Suite
-        run: dotnet test Elementum.slnx --configuration Release --no-build --verbosity normal
+        run: >
+          dotnet test Elementum.slnx
+          --configuration Release
+          --no-build
+          --verbosity normal
+          --logger "trx;LogFileName=test-results.trx"
+          --results-directory "${{ runner.temp }}/test-results"
+          --collect:"XPlat Code Coverage"
+        # Blocking: any failing test (functional, integration, architecture) fails CI.
+
+      - name: Publish Test Results
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Test Results
+          path: "${{ runner.temp }}/test-results/**/*.trx"
+          reporter: dotnet-trx
+          fail-on-error: true
+
+      - name: Upload Coverage Artifact
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage
+          path: "${{ runner.temp }}/test-results/**/coverage.cobertura.xml"
+          if-no-files-found: ignore
+        # Advisory: coverage is collected and uploaded; no regression gate configured.
+
+      # --- 5. Security — vulnerable packages (blocking on High/Critical) ---
+      - name: Check NuGet Vulnerabilities
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Scanning for vulnerable NuGet packages..."
+          output="$(dotnet list Elementum.slnx package --vulnerable --include-transitive 2>&1 || true)"
+          echo "$output"
+
+          if echo "$output" | grep -qE '>\s+\S+\s+\S+\s+(High|Critical)\s'; then
+            echo "::error::Blocking: High or Critical vulnerable NuGet packages detected. Update or replace affected dependencies."
+            exit 1
+          fi
+
+          if echo "$output" | grep -qE '>\s+\S+\s+\S+\s+(Moderate|Low)\s'; then
+            echo "::warning::Non-blocking: Moderate or Low severity NuGet vulnerabilities detected."
+          fi
+
+  code-quality:
+    name: Code Quality (advisory)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore Dependencies
+        run: dotnet restore Elementum.slnx
+
+      # --- 3. Formatting (advisory — must never block merge) ---
+      - name: Code Formatting Check
+        id: format
+        continue-on-error: true
+        run: dotnet format Elementum.slnx --verify-no-changes --verbosity minimal
+        # Advisory: whitespace, indentation, line breaks, dotnet format deviations.
+
+      - name: Report Formatting Deviations
+        if: steps.format.outcome == 'failure'
+        run: |
+          echo "::warning title=Code Formatting::Formatting deviations detected. Run 'dotnet format Elementum.slnx' locally. This check is advisory and does not block the pipeline."
+
+      # --- 4. Analyzer/style suggestions (advisory) ---
+      - name: Analyzer and Style Suggestions
+        id: analyzers
+        continue-on-error: true
+        run: dotnet format Elementum.slnx analyzers --verify-no-changes --verbosity minimal
+        # Advisory: IDE suggestions, naming hints, and other non-functional analyzer findings.
+
+      - name: Report Analyzer Deviations
+        if: steps.analyzers.outcome == 'failure'
+        run: |
+          echo "::warning title=Analyzer Suggestions::Analyzer/style deviations detected. Run 'dotnet format Elementum.slnx analyzers' locally. This check is advisory and does not block the pipeline."
+
+      - name: Code Quality Summary
+        if: always()
+        run: |
+          {
+            echo "## Code Quality (advisory)"
+            echo ""
+            echo "| Check | Result | Blocks merge |"
+            echo "|-------|--------|--------------|"
+            echo "| Code formatting | ${{ steps.format.outcome }} | no |"
+            echo "| Analyzer/style | ${{ steps.analyzers.outcome }} | no |"
+          } >> "$GITHUB_STEP_SUMMARY"
