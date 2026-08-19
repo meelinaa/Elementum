@@ -145,4 +145,95 @@ public class IngestPricesUseCaseTests
         _writeRepositoryMock.Verify(r => r.AggregateDailySummaryAsync(It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()), Times.Once);
         _writeRepositoryMock.Verify(r => r.PruneHourlyDataOlderThanAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    // [B]OUNDARY RIGHT-BICEP: DailyRollupHour above 23 skips rollup/prune even after successful tick save (crash-between-steps scenario)
+    [Fact]
+    public async Task ExecuteAsync_WhenRollupHourNotReached_SavesTicksWithoutRollupOrPrune()
+    {
+        // Arrange
+        var response = new EdelmetalleApiResponse
+        {
+            GoldUsd = 2500m,
+            GoldEur = 2280m,
+            SilberUsd = 30m,
+            SilberEur = 28m,
+            PlatinUsd = 1000m,
+            PlatinEur = 910m,
+            PalladiumUsd = 1050m,
+            PalladiumEur = 960m,
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+            WechselkursUsdEur = 1.095m
+        };
+
+        _apiClientMock.Setup(c => c.GetEdelmetallePricesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(response);
+
+        var skipRollupOptions = Microsoft.Extensions.Options.Options.Create(new WorkerScheduleOptions
+        {
+            DailyRollupHour = 99,
+            RetentionDays = 14
+        });
+
+        var useCaseWithoutRollup = new IngestPricesUseCase(
+            _apiClientMock.Object,
+            _writeRepositoryMock.Object,
+            _readRepositoryMock.Object,
+            _validator,
+            skipRollupOptions,
+            _loggerMock.Object);
+
+        // Act
+        await useCaseWithoutRollup.ExecuteAsync(CancellationToken.None);
+
+        // Assert
+        _writeRepositoryMock.Verify(r => r.SavePricesAsync(It.IsAny<IReadOnlyList<PriceHistory>>(), It.IsAny<CancellationToken>()), Times.Once);
+        _writeRepositoryMock.Verify(r => r.AggregateDailySummaryAsync(It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()), Times.Never);
+        _writeRepositoryMock.Verify(r => r.PruneHourlyDataOlderThanAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // [I]NVERSE RIGHT-BICEP: after a partial run (ticks saved, rollup skipped), the next run completes rollup and prune
+    [Fact]
+    public async Task ExecuteAsync_WhenPriorRunSavedTicksOnly_SubsequentRunCompletesRollupAndPrune()
+    {
+        // Arrange
+        var response = new EdelmetalleApiResponse
+        {
+            GoldUsd = 2500m,
+            GoldEur = 2280m,
+            SilberUsd = 30m,
+            SilberEur = 28m,
+            PlatinUsd = 1000m,
+            PlatinEur = 910m,
+            PalladiumUsd = 1050m,
+            PalladiumEur = 960m,
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+            WechselkursUsdEur = 1.095m
+        };
+
+        _apiClientMock.Setup(c => c.GetEdelmetallePricesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(response);
+
+        var skipRollupOptions = Microsoft.Extensions.Options.Options.Create(new WorkerScheduleOptions
+        {
+            DailyRollupHour = 99,
+            RetentionDays = 14
+        });
+
+        var useCaseWithoutRollup = new IngestPricesUseCase(
+            _apiClientMock.Object,
+            _writeRepositoryMock.Object,
+            _readRepositoryMock.Object,
+            _validator,
+            skipRollupOptions,
+            _loggerMock.Object);
+
+        await useCaseWithoutRollup.ExecuteAsync(CancellationToken.None);
+
+        // Act
+        await _useCase.ExecuteAsync(CancellationToken.None);
+
+        // Assert
+        _writeRepositoryMock.Verify(r => r.AggregateDailySummaryAsync(It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()), Times.Once);
+        _writeRepositoryMock.Verify(r => r.PruneHourlyDataOlderThanAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

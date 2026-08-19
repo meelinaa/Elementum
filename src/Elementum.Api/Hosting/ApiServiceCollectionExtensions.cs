@@ -1,4 +1,5 @@
 using System.Threading.RateLimiting;
+using Elementum.Api.Exceptions;
 using Elementum.Application;
 using Elementum.Application.Options;
 using Elementum.Infrastructure.Data;
@@ -62,6 +63,7 @@ public static class ApiServiceCollectionExtensions
 
         // RFC 7807 ProblemDetails for validation errors and exception handler integration.
         services.AddProblemDetails();
+        services.AddExceptionHandler<GlobalExceptionHandler>();
 
         // Rate Limiting: IP-based partition with 429 ProblemDetails rejection handler
         services.AddRateLimiter(options =>

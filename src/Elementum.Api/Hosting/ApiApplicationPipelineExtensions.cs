@@ -33,38 +33,11 @@ public static class ApiApplicationPipelineExtensions
             };
         });
 
-        // Map unhandled exceptions to ProblemDetails (JSON); hides exception message in non-development environments.
-        app.UseExceptionHandler(exceptionHandlerApp =>
-        {
-            exceptionHandlerApp.Run(async context =>
-            {
-                var problemDetailsService = context.RequestServices.GetRequiredService<IProblemDetailsService>();
-                var exceptionHandlerFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
-                if (exceptionHandlerFeature?.Error != null)
-                {
-                    var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("Elementum.Api.ExceptionHandler");
-                    Elementum.Api.Logging.ApiLogMessages.UnhandledExceptionOccurred(logger, context.Request.Method, context.Request.Path, exceptionHandlerFeature.Error);
-
-                    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                    context.Response.ContentType = "application/problem+json";
-                    await problemDetailsService.WriteAsync(new ProblemDetailsContext
-                    {
-                        HttpContext = context,
-                        ProblemDetails = new Microsoft.AspNetCore.Mvc.ProblemDetails
-                        {
-                            Title = "An error occurred",
-                            Status = StatusCodes.Status500InternalServerError,
-                            Detail = app.Environment.IsDevelopment() ? exceptionHandlerFeature.Error.Message : null,
-                            Instance = $"{context.Request.Method} {context.Request.Path}"
-                        }
-                    });
-                }
-            });
-        });
+        // Map unhandled exceptions to ProblemDetails via registered IExceptionHandler.
+        app.UseExceptionHandler();
 
         if (app.Environment.IsDevelopment())
         {
-            app.UseDeveloperExceptionPage();
             app.MapOpenApi();
             // Permissive CORS for local frontend tooling; production uses FrontendPolicy below.
             app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());

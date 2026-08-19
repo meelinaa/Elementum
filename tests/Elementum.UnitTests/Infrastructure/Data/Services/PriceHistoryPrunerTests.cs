@@ -18,9 +18,9 @@ public class PriceHistoryPrunerTests
         return db;
     }
 
-    // [R]IGHT-BICEP: Verifies that records strictly older than the cutoff threshold are deleted and count is returned
+    // [B]OUNDARY RIGHT-BICEP: EntryDate equal to cutoff is retained; only strictly older rows are deleted (off-by-one)
     [Fact]
-    public async Task PruneHourlyDataOlderThanAsync_DeletesStaleRecords()
+    public async Task PruneHourlyDataOlderThanAsync_WhenEntryDateEqualsCutoff_RetainsRecordAndDeletesOnlyOlder()
     {
         // Arrange
         using var db = CreateInMemoryDbContext();
@@ -45,7 +45,7 @@ public class PriceHistoryPrunerTests
         Assert.Equal(2, await db.PriceHistory.CountAsync());
     }
 
-    // [B]OUNDARY: Verifies that when no records precede the cutoff date, 0 is returned and table is untouched
+    // [B]OUNDARY RIGHT-BICEP: when all records are on or after cutoff date, zero deletions and unchanged row count
     [Fact]
     public async Task PruneHourlyDataOlderThanAsync_WhenNoStaleRecords_ReturnsZero()
     {
@@ -65,5 +65,41 @@ public class PriceHistoryPrunerTests
         // Assert
         Assert.Equal(0, deletedCount);
         Assert.Equal(1, await db.PriceHistory.CountAsync());
+    }
+
+    // [I]NVERSE RIGHT-BICEP: after partial manual deletion, re-run pruner removes exactly the remaining stale rows
+    [Fact]
+    public async Task PruneHourlyDataOlderThanAsync_WhenPartiallyDeleted_ReRunRemovesRemainingStaleRows()
+    {
+        // Arrange
+        using var db = CreateInMemoryDbContext();
+        var cutoff = DateTime.UtcNow.AddDays(-7);
+        var cutoffDate = DateOnly.FromDateTime(cutoff);
+
+        var staleRecords = Enumerable.Range(0, 5)
+            .Select(i => new PriceHistory
+            {
+                MetalId = 1,
+                Currency = "USD",
+                EntryDate = cutoffDate.AddDays(-(i + 1)),
+                Price = 2000m + i,
+                Symbol = "XAU"
+            })
+            .ToList();
+
+        db.PriceHistory.AddRange(staleRecords);
+        await db.SaveChangesAsync();
+
+        db.PriceHistory.RemoveRange(staleRecords.Take(2));
+        await db.SaveChangesAsync();
+
+        var pruner = new PriceHistoryPruner();
+
+        // Act
+        var deletedCount = await pruner.PruneHourlyDataOlderThanAsync(db, cutoff, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(3, deletedCount);
+        Assert.Equal(0, await db.PriceHistory.CountAsync());
     }
 }

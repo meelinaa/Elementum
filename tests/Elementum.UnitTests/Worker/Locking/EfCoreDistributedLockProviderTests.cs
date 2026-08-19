@@ -129,4 +129,31 @@ public class EfCoreDistributedLockProviderTests
         Assert.NotNull(lockRecord);
         Assert.True(lockRecord.ExpiresAtUtc > DateTime.UtcNow);
     }
+
+    // [E]RROR RIGHT-BICEP: concurrent takeover attempts on an expired lock must grant exactly one handle (DbUpdateConcurrency safety)
+    [Fact]
+    public async Task TryAcquireLockAsync_ParallelExpiredLockTakeover_OnlyOneAcquiresLock()
+    {
+        // Arrange
+        await using (var expiredHandle = await _lockProvider.TryAcquireLockAsync("resource_expired_takeover", TimeSpan.FromMilliseconds(-100)))
+        {
+            Assert.True(expiredHandle.IsAcquired);
+        }
+
+        var tasks = Enumerable.Range(0, 10)
+            .Select(_ => _lockProvider.TryAcquireLockAsync("resource_expired_takeover", TimeSpan.FromMinutes(5)))
+            .ToList();
+
+        // Act
+        var handles = await Task.WhenAll(tasks);
+        var acquiredCount = handles.Count(h => h.IsAcquired);
+
+        // Assert
+        Assert.Equal(1, acquiredCount);
+
+        foreach (var handle in handles)
+        {
+            await handle.DisposeAsync();
+        }
+    }
 }

@@ -1,0 +1,251 @@
+using Elementum.Api.Exceptions;
+using Elementum.Api.Extensions;
+using Elementum.Application.Exceptions;
+using Elementum.Domain.Common;
+using Elementum.Domain.Exceptions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Elementum.UnitTests.Api;
+
+public class ExceptionStatusMapperTests
+{
+    // [R]IGHT-BICEP: domain invariant violations are semantic 422 client errors with unprocessable-entity metadata
+    [Fact]
+    public void Map_WhenDomainInvariantViolated_Returns422WithUnprocessableEntityTypeUri()
+    {
+        // Arrange
+        var exception = DomainValidationException.NullOrWhitespace("symbol");
+
+        // Act
+        var mapping = ExceptionStatusMapper.Map(exception);
+
+        // Assert
+        Assert.Equal(422, mapping.StatusCode);
+        Assert.Equal("Domain validation error", mapping.Title);
+        Assert.Equal("https://tools.ietf.org/html/rfc4918#section-11.2", mapping.TypeUri);
+    }
+
+    // [R]IGHT-BICEP: CurrencyMismatchException maps via its own switch arm to 422
+    [Fact]
+    public void Map_WhenCurrencyMismatch_Returns422WithDomainValidationTitle()
+    {
+        // Arrange
+        var exception = CurrencyMismatchException.For("USD", "EUR");
+
+        // Act
+        var mapping = ExceptionStatusMapper.Map(exception);
+
+        // Assert
+        Assert.Equal(422, mapping.StatusCode);
+        Assert.Equal("Domain validation error", mapping.Title);
+        Assert.Equal("https://tools.ietf.org/html/rfc4918#section-11.2", mapping.TypeUri);
+    }
+
+    // [R]IGHT-BICEP: ArgumentOutOfRangeException arm maps invalid numeric input to 400 bad request
+    [Fact]
+    public void Map_WhenArgumentOutOfRange_Returns400WithBadRequestTypeUri()
+    {
+        // Arrange
+        var exception = InvalidPriceException.MustBePositive("price", 0m);
+
+        // Act
+        var mapping = ExceptionStatusMapper.Map(exception);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status400BadRequest, mapping.StatusCode);
+        Assert.Equal("Invalid request", mapping.Title);
+        Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.5.1", mapping.TypeUri);
+    }
+
+    // [R]IGHT-BICEP: ArgumentException arm (separate switch branch) maps format errors to 400 bad request
+    [Fact]
+    public void Map_WhenArgumentException_Returns400WithBadRequestTypeUri()
+    {
+        // Arrange
+        var exception = UnsupportedCurrencyException.ForCode("GBP");
+
+        // Act
+        var mapping = ExceptionStatusMapper.Map(exception);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status400BadRequest, mapping.StatusCode);
+        Assert.Equal("Invalid request", mapping.Title);
+        Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.5.1", mapping.TypeUri);
+    }
+
+    // [R]IGHT-BICEP: missing resources map to 404 not found with RFC 7231 section 6.5.4 type URI
+    [Fact]
+    public void Map_WhenResourceNotFound_Returns404WithNotFoundTypeUri()
+    {
+        // Arrange
+        var exception = new KeyNotFoundException("metal symbol");
+
+        // Act
+        var mapping = ExceptionStatusMapper.Map(exception);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status404NotFound, mapping.StatusCode);
+        Assert.Equal("Resource not found", mapping.Title);
+        Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.5.4", mapping.TypeUri);
+    }
+
+    // [R]IGHT-BICEP: empty upstream live quote maps to 502 bad gateway for the primary live-price failure path
+    [Fact]
+    public void Map_WhenExternalApiReturnsEmpty_Returns502WithBadGatewayTypeUri()
+    {
+        // Arrange
+        var exception = ExternalApiException.EmptyLiveQuoteResponse();
+
+        // Act
+        var mapping = ExceptionStatusMapper.Map(exception);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status502BadGateway, mapping.StatusCode);
+        Assert.Equal("Upstream service error", mapping.Title);
+        Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.6.3", mapping.TypeUri);
+    }
+
+    // [R]IGHT-BICEP: HTTP transport failures map to 502 so clients can distinguish upstream from internal errors
+    [Fact]
+    public void Map_WhenHttpRequestFails_Returns502WithBadGatewayTypeUri()
+    {
+        // Arrange
+        var exception = new HttpRequestException("connection refused");
+
+        // Act
+        var mapping = ExceptionStatusMapper.Map(exception);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status502BadGateway, mapping.StatusCode);
+        Assert.Equal("Upstream service error", mapping.Title);
+        Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.6.3", mapping.TypeUri);
+    }
+
+    // [R]IGHT-BICEP: timeout exceptions map to 504 gateway timeout with RFC 7231 section 6.6.5 type URI
+    [Fact]
+    public void Map_WhenTimeoutOccurs_Returns504WithGatewayTimeoutTypeUri()
+    {
+        // Arrange
+        var exception = new TimeoutException();
+
+        // Act
+        var mapping = ExceptionStatusMapper.Map(exception);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status504GatewayTimeout, mapping.StatusCode);
+        Assert.Equal("Gateway timeout", mapping.Title);
+        Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.6.5", mapping.TypeUri);
+    }
+
+    // [B]OUNDARY RIGHT-BICEP: client cancellation uses non-RFC status 499 and intentionally omits a type URI
+    [Fact]
+    public void Map_WhenClientCancelled_Returns499WithoutTypeUri()
+    {
+        // Arrange
+        var exception = new OperationCanceledException();
+
+        // Act
+        var mapping = ExceptionStatusMapper.Map(exception);
+
+        // Assert
+        Assert.Equal(499, mapping.StatusCode);
+        Assert.Equal("Request cancelled", mapping.Title);
+        Assert.Null(mapping.TypeUri);
+    }
+
+    // [E]RROR RIGHT-BICEP: unmapped exceptions must fall through to 500 default, not client-error statuses
+    [Fact]
+    public void Map_WhenExceptionIsUnknown_Returns500WithInternalErrorMetadata()
+    {
+        // Arrange
+        var exception = new Exception("unexpected failure");
+
+        // Act
+        var mapping = ExceptionStatusMapper.Map(exception);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status500InternalServerError, mapping.StatusCode);
+        Assert.Equal("An error occurred", mapping.Title);
+        Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.6.1", mapping.TypeUri);
+    }
+
+    // [E]RROR RIGHT-BICEP: ResultException is a programming error and must not inherit 422 from InvalidOperationException handling
+    [Fact]
+    public void Map_WhenResultAccessedOnFailure_Returns500Not422()
+    {
+        // Arrange
+        var exception = ResultException.CannotAccessValueOfFailure();
+
+        // Act
+        var mapping = ExceptionStatusMapper.Map(exception);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status500InternalServerError, mapping.StatusCode);
+        Assert.Equal("An error occurred", mapping.Title);
+        Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.6.1", mapping.TypeUri);
+    }
+
+    // [E]RROR RIGHT-BICEP: ConfigurationException must map to 500 before the generic ApplicationException 502 arm
+    [Fact]
+    public void Map_WhenConfigurationMissing_Returns500Not502()
+    {
+        // Arrange
+        var exception = ConfigurationException.MissingConnectionString("DefaultConnection");
+
+        // Act
+        var mapping = ExceptionStatusMapper.Map(exception);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status500InternalServerError, mapping.StatusCode);
+        Assert.Equal("An error occurred", mapping.Title);
+        Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.6.1", mapping.TypeUri);
+    }
+
+    // [E]RROR RIGHT-BICEP: TaskCanceledException must match its dedicated switch arm before OperationCanceledException
+    [Fact]
+    public void Map_WhenTaskCancelled_Returns499ViaTaskCanceledArm()
+    {
+        // Arrange
+        var exception = new TaskCanceledException();
+
+        // Act
+        var mapping = ExceptionStatusMapper.Map(exception);
+
+        // Assert
+        Assert.Equal(499, mapping.StatusCode);
+        Assert.Equal("Request cancelled", mapping.Title);
+        Assert.Null(mapping.TypeUri);
+    }
+
+    // [C]ROSS-CHECK RIGHT-BICEP: KeyNotFound mapping aligns with ResultExtensions not-found ProblemDetails type URI and status
+    [Fact]
+    public void Map_WhenResourceNotFound_MatchesResultExtensionsNotFoundProblemDetails()
+    {
+        // Arrange
+        var resultProblem = (ObjectResult)Result.Failure(new Error("Metals.NotFoundBySymbol", "not found")).ToActionResult();
+        var resultDetails = Assert.IsType<ProblemDetails>(resultProblem.Value);
+
+        // Act
+        var mapping = ExceptionStatusMapper.Map(new KeyNotFoundException("metal symbol"));
+
+        // Assert
+        Assert.Equal(resultProblem.StatusCode, mapping.StatusCode);
+        Assert.Equal(resultDetails.Type, mapping.TypeUri);
+    }
+
+    // [C]ROSS-CHECK RIGHT-BICEP: 400 bad-request type URI matches ValidationFilter RFC 7231 section 6.5.1 reference
+    [Fact]
+    public void Map_WhenArgumentException_TypeUriMatchesValidationFilterBadRequestReference()
+    {
+        // Arrange
+        const string validationFilterBadRequestType = "https://tools.ietf.org/html/rfc7231#section-6.5.1";
+        var exception = UnsupportedCurrencyException.ForCode("GBP");
+
+        // Act
+        var mapping = ExceptionStatusMapper.Map(exception);
+
+        // Assert
+        Assert.Equal(validationFilterBadRequestType, mapping.TypeUri);
+    }
+}
