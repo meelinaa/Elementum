@@ -75,3 +75,53 @@ public class UpstreamFailureExceptionMappingIntegrationTests : IClassFixture<Ups
         Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.6.3", problem.Type);
     }
 }
+
+public class UpstreamTimeoutExceptionMappingIntegrationTests : IClassFixture<UpstreamTimeoutWebApplicationFactory>
+{
+    private readonly HttpClient _client;
+
+    public UpstreamTimeoutExceptionMappingIntegrationTests(UpstreamTimeoutWebApplicationFactory factory)
+    {
+        _client = factory.CreateClient();
+    }
+
+    // [E]RROR RIGHT-BICEP: upstream timeout propagates as 504 gateway timeout through the HTTP pipeline
+    [Fact]
+    public async Task GetLivePrices_WhenUpstreamTimesOut_Returns504ProblemDetails()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/prices/live");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.GatewayTimeout, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.Equal(504, problem.Status);
+        Assert.Equal("Gateway timeout", problem.Title);
+    }
+}
+
+public class UpstreamUnexpectedFailureExceptionMappingIntegrationTests : IClassFixture<UpstreamUnexpectedFailureWebApplicationFactory>
+{
+    private readonly HttpClient _client;
+
+    public UpstreamUnexpectedFailureExceptionMappingIntegrationTests(UpstreamUnexpectedFailureWebApplicationFactory factory)
+    {
+        _client = factory.CreateClient();
+    }
+
+    // [E]RROR RIGHT-BICEP: unmapped upstream exceptions fall back to 500 internal server error
+    [Fact]
+    public async Task GetLivePrices_WhenUpstreamThrowsUnexpectedException_Returns500ProblemDetails()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/prices/live");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.Equal(500, problem.Status);
+        Assert.Equal("An error occurred", problem.Title);
+    }
+}

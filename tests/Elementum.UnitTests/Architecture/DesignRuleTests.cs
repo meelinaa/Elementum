@@ -10,6 +10,7 @@ namespace Elementum.UnitTests.Architecture;
 
 /// <summary>
 /// Verifies object-oriented design and encapsulation rules.
+/// NetArchTest structural rules — not categorized under RIGHT-BICEP behavioral tests.
 /// </summary>
 public class DesignRuleTests
 {

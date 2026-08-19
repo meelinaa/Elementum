@@ -5,6 +5,7 @@ namespace Elementum.UnitTests.Architecture;
 
 /// <summary>
 /// Enforces hexagonal architecture dependency boundaries across all solution layers.
+/// NetArchTest structural rules — not categorized under RIGHT-BICEP behavioral tests.
 /// </summary>
 public class LayerDependencyTests
 {

@@ -52,9 +52,9 @@ public class OptimisticConcurrencyTests
         });
     }
 
-    // [R]IGHT-BICEP: Verifies that DailyCandleAggregator aggregates ticks into candles cleanly
+    // [R]IGHT-BICEP: DailyCandleAggregator aggregates ticks into OHLC candles on the happy path
     [Fact]
-    public async Task DailyCandleAggregator_HandlesConcurrencyConflictTransparently()
+    public async Task AggregateDailySummaryAsync_WhenTicksExist_ComputesOhlcWithoutErrors()
     {
         // Arrange
         var (db, _, _) = CreateDb();

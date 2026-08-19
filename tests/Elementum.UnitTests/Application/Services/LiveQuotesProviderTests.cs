@@ -44,7 +44,7 @@ public class LiveQuotesProviderTests
         _apiClientMock.Verify(c => c.GetEdelmetallePricesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    // [E]RROR: Verifies that null API response throws ExternalApiException
+    // [E]RROR RIGHT-BICEP: null API response throws ExternalApiException for upstream empty-data path
     [Fact]
     public async Task GetLiveQuoteAsync_WhenApiReturnsNull_ThrowsExternalApiException()
     {
@@ -56,7 +56,7 @@ public class LiveQuotesProviderTests
         await Assert.ThrowsAsync<ExternalApiException>(() => _provider.GetLiveQuoteAsync(CancellationToken.None));
     }
 
-    // [E]RROR: Verifies that underlying network or API exceptions are propagated to caller
+    // [E]RROR RIGHT-BICEP: underlying network or API exceptions are propagated unchanged to the caller
     [Fact]
     public async Task GetLiveQuoteAsync_WhenApiThrowsException_RethrowsException()
     {

@@ -65,9 +65,9 @@ public class MetalsIngestionJobTests
         lockMock.Verify(l => l.DisposeAsync(), Times.Once);
     }
 
-    // [E]RROR: Verifies that use case exceptions propagate through the job execution boundary
+    // [E]RROR RIGHT-BICEP: use case exceptions propagate and lock handle is still disposed via await using
     [Fact]
-    public async Task RunAsync_WhenUseCaseFails_RethrowsException()
+    public async Task RunAsync_WhenUseCaseFails_RethrowsExceptionAndDisposesLock()
     {
         // Arrange
         var lockMock = new Mock<IDistributedLock>();
@@ -86,5 +86,6 @@ public class MetalsIngestionJobTests
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() => job.RunAsync(CancellationToken.None));
+        lockMock.Verify(l => l.DisposeAsync(), Times.Once);
     }
 }

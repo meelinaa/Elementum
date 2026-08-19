@@ -42,7 +42,7 @@ public class EfCoreDistributedLockProviderTests
         Assert.True(handle.IsAcquired);
     }
 
-    // [E]RROR / CONCURRENCY: Verifies that acquiring an active lock returns an unacquired handle
+    // [E]RROR: acquiring an active lock returns an unacquired handle
     [Fact]
     public async Task TryAcquireLockAsync_WhenLockAlreadyActive_ReturnsUnacquired()
     {
@@ -55,7 +55,7 @@ public class EfCoreDistributedLockProviderTests
         Assert.False(handle2.IsAcquired);
     }
 
-    // [E]RROR / RESILIENCE: Verifies that expired/stale locks are reclaimed by new callers
+    // [E]RROR: expired locks are reclaimed by new callers
     [Fact]
     public async Task TryAcquireLockAsync_WhenLockExpired_TakesOverLock()
     {
@@ -88,7 +88,7 @@ public class EfCoreDistributedLockProviderTests
         Assert.True(handle2.IsAcquired);
     }
 
-    // [P]ERFORMANCE / STRESS: Verifies that under concurrent parallel attempts, exactly one lock is granted
+    // [P]ERFORMANCE: under concurrent parallel attempts, exactly one lock is granted
     [Fact]
     public async Task TryAcquireLockAsync_ParallelAttempts_OnlyOneAcquiresLock()
     {
@@ -130,7 +130,7 @@ public class EfCoreDistributedLockProviderTests
         Assert.True(lockRecord.ExpiresAtUtc > DateTime.UtcNow);
     }
 
-    // [E]RROR RIGHT-BICEP: concurrent takeover attempts on an expired lock must grant exactly one handle (DbUpdateConcurrency safety)
+    // [E]RROR: concurrent takeover on an expired lock grants exactly one handle (DbUpdateConcurrency safety)
     [Fact]
     public async Task TryAcquireLockAsync_ParallelExpiredLockTakeover_OnlyOneAcquiresLock()
     {
@@ -155,5 +155,35 @@ public class EfCoreDistributedLockProviderTests
         {
             await handle.DisposeAsync();
         }
+    }
+
+    // [E]RROR: database failures during lock acquisition return an unacquired handle instead of throwing
+    [Fact]
+    public async Task TryAcquireLockAsync_WhenDatabaseSaveFails_ReturnsUnacquired()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var dbName = "LockFailureDb_" + Guid.NewGuid();
+
+        services.AddDbContext<ElementumDbContext, ThrowingOnSaveDbContext>(options =>
+            options.UseInMemoryDatabase(dbName));
+
+        await using var serviceProvider = services.BuildServiceProvider();
+        var lockProvider = new EfCoreDistributedLockProvider(
+            serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+            NullLogger<EfCoreDistributedLockProvider>.Instance);
+
+        // Act
+        await using var handle = await lockProvider.TryAcquireLockAsync("resource_db_failure", TimeSpan.FromMinutes(5));
+
+        // Assert
+        Assert.False(handle.IsAcquired);
+    }
+
+    private sealed class ThrowingOnSaveDbContext(DbContextOptions<ElementumDbContext> options)
+        : ElementumDbContext(options)
+    {
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+            => throw new InvalidOperationException("Simulated database failure");
     }
 }

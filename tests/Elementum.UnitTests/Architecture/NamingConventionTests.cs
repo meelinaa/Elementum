@@ -6,6 +6,7 @@ namespace Elementum.UnitTests.Architecture;
 
 /// <summary>
 /// Verifies enterprise naming conventions across Domain, Application, and Api layers.
+/// NetArchTest structural rules — not categorized under RIGHT-BICEP behavioral tests.
 /// </summary>
 public class NamingConventionTests
 {

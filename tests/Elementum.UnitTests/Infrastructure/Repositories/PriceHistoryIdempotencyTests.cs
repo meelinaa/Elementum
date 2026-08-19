@@ -71,4 +71,42 @@ public class PriceHistoryIdempotencyTests
         Assert.Equal(8, countAfterFirstRun); // 4 metals * 2 currencies (USD & EUR)
         Assert.Equal(8, countAfterSecondRun); // Must remain strictly 8 with no duplicates
     }
+
+    // [B]OUNDARY: a different ReferenceTimestamp on the same day inserts new ticks instead of deduplicating
+    [Fact]
+    public async Task SavePricesAsync_WhenSameDayButDifferentTimestamp_CreatesAdditionalTicks()
+    {
+        // Arrange
+        var db = CreateInMemoryDbContext("IdempotencyBoundary_" + Guid.NewGuid());
+        var repository = new PriceHistoryRepository(db, new DailyCandleAggregator(), new PriceHistoryPruner());
+        var metalsMap = db.Metals.ToDictionary(m => m.Symbol, m => m.Id);
+        var entryDate = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var firstPayload = new EdelmetalleApiResponse
+        {
+            GoldUsd = 2500.00m,
+            GoldEur = 2280.00m,
+            SilberUsd = 30.00m,
+            SilberEur = 27.00m,
+            PlatinUsd = 1000.00m,
+            PlatinEur = 910.00m,
+            PalladiumUsd = 1050.00m,
+            PalladiumEur = 960.00m,
+            WechselkursUsdEur = 1.095m,
+            Timestamp = 1723900000
+        };
+
+        var secondPayload = firstPayload with { Timestamp = 1723903600 };
+
+        var firstEntities = firstPayload.ToPriceHistoryEntities(metalsMap, entryDate);
+        var secondEntities = secondPayload.ToPriceHistoryEntities(metalsMap, entryDate);
+
+        // Act
+        await repository.SavePricesAsync(firstEntities);
+        await repository.SavePricesAsync(secondEntities);
+        var totalCount = await db.PriceHistory.CountAsync();
+
+        // Assert
+        Assert.Equal(16, totalCount); // 8 ticks per timestamp (4 metals * USD/EUR)
+    }
 }

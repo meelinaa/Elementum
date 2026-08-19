@@ -15,7 +15,7 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         _client = factory.CreateClient();
     }
 
-    // [R]IGHT-BICEP: Verifies that the live prices HTTP endpoint responds with HTTP 200 and market overview
+    // [R]IGHT-BICEP: live prices endpoint returns HTTP 200 with market overview
     [Fact]
     public async Task GetLivePrices_ReturnsOk_WithMarketOverview()
     {
@@ -31,7 +31,7 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         Assert.Contains(overview.Items, m => m.Symbol == "XAU");
     }
 
-    // [R]IGHT-BICEP: Verifies that the live trading analysis HTTP endpoint responds with calculated technical indicators
+    // [R]IGHT-BICEP: valid trading symbol returns calculated technical indicators
     [Fact]
     public async Task GetLiveTradingAnalysis_WhenValidSymbol_ReturnsTradingPrice()
     {
@@ -47,7 +47,7 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         Assert.True(dto.Price > 0);
     }
 
-    // [R]IGHT-BICEP: Verifies that the history query endpoint returns historical prices
+    // [R]IGHT-BICEP: history query returns price list for existing metal
     [Fact]
     public async Task GetPriceHistoryByMetalSymbol_WhenExists_ReturnsHistoryList()
     {
@@ -61,7 +61,7 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         Assert.NotEmpty(list);
     }
 
-    // [E]RROR: Verifies that querying a non-existent metal symbol returns HTTP 404 ProblemDetails
+    // [E]RROR: non-existent trading symbol returns HTTP 404 ProblemDetails
     [Fact]
     public async Task GetLiveTradingAnalysis_WhenNotFound_Returns404ProblemDetails()
     {

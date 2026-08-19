@@ -71,7 +71,7 @@ public class IngestPricesUseCaseTests
         _writeRepositoryMock.Verify(r => r.SavePricesAsync(It.Is<IReadOnlyList<PriceHistory>>(l => l.Count == 8), It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    // [E]RROR: Verifies that validation failure on corrupted payload aborts persistence
+    // [E]RROR RIGHT-BICEP: validation failure on corrupted payload aborts persistence
     [Fact]
     public async Task ExecuteAsync_WhenEdelmetalleReturnsInvalidData_AbortsAndDoesNotSave()
     {
@@ -189,6 +189,75 @@ public class IngestPricesUseCaseTests
         _writeRepositoryMock.Verify(r => r.SavePricesAsync(It.IsAny<IReadOnlyList<PriceHistory>>(), It.IsAny<CancellationToken>()), Times.Once);
         _writeRepositoryMock.Verify(r => r.AggregateDailySummaryAsync(It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()), Times.Never);
         _writeRepositoryMock.Verify(r => r.PruneHourlyDataOlderThanAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // [E]RROR RIGHT-BICEP: when both primary and fallback APIs return no data, persistence must be skipped
+    [Fact]
+    public async Task ExecuteAsync_WhenEdelmetalleNullAndFallbackEmpty_DoesNotSave()
+    {
+        // Arrange
+        _apiClientMock.Setup(c => c.GetEdelmetallePricesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((EdelmetalleApiResponse?)null);
+        _apiClientMock.Setup(c => c.GetPricesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<DailyPrices>());
+
+        // Act
+        await _useCase.ExecuteAsync(CancellationToken.None);
+
+        // Assert
+        _writeRepositoryMock.Verify(r => r.SavePricesAsync(It.IsAny<IReadOnlyList<PriceHistory>>(), It.IsAny<CancellationToken>()), Times.Never);
+        _writeRepositoryMock.Verify(r => r.AggregateDailySummaryAsync(It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // [B]OUNDARY RIGHT-BICEP: RetentionDays <= 0 falls back to seven-day default when pruning hourly ticks
+    [Fact]
+    public async Task ExecuteAsync_WhenRetentionDaysZero_UsesSevenDayDefaultForPrune()
+    {
+        // Arrange
+        var response = new EdelmetalleApiResponse
+        {
+            GoldUsd = 2500m,
+            GoldEur = 2280m,
+            SilberUsd = 30m,
+            SilberEur = 28m,
+            PlatinUsd = 1000m,
+            PlatinEur = 910m,
+            PalladiumUsd = 1050m,
+            PalladiumEur = 960m,
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+            WechselkursUsdEur = 1.095m
+        };
+
+        _apiClientMock.Setup(c => c.GetEdelmetallePricesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(response);
+
+        var zeroRetentionOptions = Microsoft.Extensions.Options.Options.Create(new WorkerScheduleOptions
+        {
+            DailyRollupHour = 0,
+            RetentionDays = 0
+        });
+
+        var useCase = new IngestPricesUseCase(
+            _apiClientMock.Object,
+            _writeRepositoryMock.Object,
+            _readRepositoryMock.Object,
+            _validator,
+            zeroRetentionOptions,
+            _loggerMock.Object);
+
+        DateTime? capturedThreshold = null;
+        _writeRepositoryMock.Setup(r => r.PruneHourlyDataOlderThanAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .Callback<DateTime, CancellationToken>((threshold, _) => capturedThreshold = threshold)
+            .ReturnsAsync(0);
+
+        var expectedThreshold = DateTime.UtcNow.AddDays(-7);
+
+        // Act
+        await useCase.ExecuteAsync(CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(capturedThreshold);
+        Assert.True(Math.Abs((capturedThreshold.Value - expectedThreshold).TotalMinutes) < 2);
     }
 
     // [I]NVERSE RIGHT-BICEP: after a partial run (ticks saved, rollup skipped), the next run completes rollup and prune

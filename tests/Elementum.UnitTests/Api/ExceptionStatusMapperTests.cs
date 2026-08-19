@@ -202,6 +202,22 @@ public class ExceptionStatusMapperTests
         Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.6.1", mapping.TypeUri);
     }
 
+    // [E]RROR RIGHT-BICEP: generic ApplicationException subclasses (non-configuration) map to 502 upstream error
+    [Fact]
+    public void Map_WhenGenericApplicationException_Returns502WithBadGatewayTypeUri()
+    {
+        // Arrange
+        var exception = new TestUpstreamApplicationException();
+
+        // Act
+        var mapping = ExceptionStatusMapper.Map(exception);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status502BadGateway, mapping.StatusCode);
+        Assert.Equal("Upstream service error", mapping.Title);
+        Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.6.3", mapping.TypeUri);
+    }
+
     // [E]RROR RIGHT-BICEP: TaskCanceledException must match its dedicated switch arm before OperationCanceledException
     [Fact]
     public void Map_WhenTaskCancelled_Returns499ViaTaskCanceledArm()
@@ -247,5 +263,10 @@ public class ExceptionStatusMapperTests
 
         // Assert
         Assert.Equal(validationFilterBadRequestType, mapping.TypeUri);
+    }
+
+    private sealed class TestUpstreamApplicationException : Elementum.Application.Exceptions.ApplicationException
+    {
+        public TestUpstreamApplicationException() : base("generic upstream failure") { }
     }
 }

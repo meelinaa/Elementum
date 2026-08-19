@@ -138,4 +138,57 @@ public class DailyCandleAggregatorTests
         Assert.Equal(2550m, summary.HighPrice);
         Assert.Equal(2550m, summary.ClosePrice);
     }
+
+    // [E]RROR RIGHT-BICEP: DbUpdateConcurrencyException during save is reconciled via reload without throwing
+    [Fact]
+    public async Task AggregateDailySummaryAsync_WhenConcurrencyConflictOccurs_ReconcilesViaReload()
+    {
+        // Arrange
+        var root = new Microsoft.EntityFrameworkCore.Storage.InMemoryDatabaseRoot();
+        var databaseName = "AggregatorConcurrency_" + Guid.NewGuid();
+        var options = new DbContextOptionsBuilder<ElementumDbContext>()
+            .UseInMemoryDatabase(databaseName, root)
+            .Options;
+
+        await using var db1 = new ElementumDbContext(options);
+        db1.Database.EnsureCreated();
+
+        var date = new DateOnly(2026, 8, 17);
+        db1.PriceHistory.Add(new PriceHistory
+        {
+            MetalId = 1,
+            Currency = "USD",
+            EntryDate = date,
+            ReferenceTimestamp = 100,
+            Price = 2400m,
+            Symbol = "XAU"
+        });
+        await db1.SaveChangesAsync();
+
+        var aggregator = new DailyCandleAggregator();
+        await aggregator.AggregateDailySummaryAsync(db1, date, CancellationToken.None);
+
+        await using var db2 = new ElementumDbContext(options);
+        var summaryOnDb2 = await db2.DailyPriceSummaries.SingleAsync();
+        summaryOnDb2.ApplyPriceTick(2410m, 1.1m, isClosePrice: false);
+        await db2.SaveChangesAsync();
+
+        db1.PriceHistory.Add(new PriceHistory
+        {
+            MetalId = 1,
+            Currency = "USD",
+            EntryDate = date,
+            ReferenceTimestamp = 200,
+            Price = 2600m,
+            Symbol = "XAU"
+        });
+        await db1.SaveChangesAsync();
+
+        // Act
+        var thrown = await Record.ExceptionAsync(() => aggregator.AggregateDailySummaryAsync(db1, date, CancellationToken.None));
+
+        // Assert - concurrency reload path must not crash the aggregation step
+        Assert.Null(thrown);
+        Assert.Equal(1, await db1.DailyPriceSummaries.CountAsync());
+    }
 }
