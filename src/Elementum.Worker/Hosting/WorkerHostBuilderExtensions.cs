@@ -53,7 +53,7 @@ public static class WorkerHostBuilderExtensions
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? configuration["CONNECTION_STRING"];
         if (string.IsNullOrWhiteSpace(connectionString))
-            throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection or CONNECTION_STRING in appsettings.json or .env.");
+            throw Elementum.Application.Exceptions.ConfigurationException.MissingConnectionString("DefaultConnection");
 
         // Infrastructure & Application
         services.AddElementumInfrastructure(connectionString);

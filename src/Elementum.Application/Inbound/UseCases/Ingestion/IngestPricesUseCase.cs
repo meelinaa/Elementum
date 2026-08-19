@@ -1,3 +1,4 @@
+using Elementum.Application.Logging;
 using Elementum.Application.Options;
 using Elementum.Domain.Models;
 using Elementum.Domain.Ports.Outbound;
@@ -10,6 +11,7 @@ namespace Elementum.Application.Inbound.UseCases.Ingestion;
 /// <summary>
 /// Interactor / Implementation for ingesting daily precious metal prices.
 /// Defensively validates upstream schemas with FluentValidation before persisting.
+/// Uses zero-allocation, source-generated <see cref="IngestionLogMessages"/>.
 /// </summary>
 public class IngestPricesUseCase : IIngestPricesUseCase
 {
@@ -26,16 +28,21 @@ public class IngestPricesUseCase : IIngestPricesUseCase
         IOptions<WorkerScheduleOptions> options,
         ILogger<IngestPricesUseCase> logger)
     {
-        _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
-        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
-        _validator = validator ?? throw new ArgumentNullException(nameof(validator));
+        ArgumentNullException.ThrowIfNull(apiClient);
+        ArgumentNullException.ThrowIfNull(repository);
+        ArgumentNullException.ThrowIfNull(validator);
+        ArgumentNullException.ThrowIfNull(logger);
+
+        _apiClient = apiClient;
+        _repository = repository;
+        _validator = validator;
         _options = options?.Value ?? new WorkerScheduleOptions();
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _logger = logger;
     }
 
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Fetching precious metal prices from Edelmetalle API...");
+        IngestionLogMessages.FetchingPrices(_logger);
         var edelmetalleData = await _apiClient.GetEdelmetallePricesAsync(cancellationToken);
 
         if (edelmetalleData != null)
@@ -43,14 +50,14 @@ public class IngestPricesUseCase : IIngestPricesUseCase
             var validationResult = await _validator.ValidateAsync(edelmetalleData, cancellationToken);
             if (!validationResult.IsValid)
             {
-                _logger.LogError("Upstream Edelmetalle API data validation failed: {Errors}. Aborting persistence to protect database integrity.",
-                    string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage)));
+                var errors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
+                IngestionLogMessages.UpstreamValidationFailed(_logger, errors);
                 return;
             }
 
-            _logger.LogInformation("Saving hourly precious metal quotes (Gold, Silber, Platin, Palladium in USD & EUR)...");
+            IngestionLogMessages.SavingHourlyQuotes(_logger);
             await _repository.SaveEdelmetallePricesAsync(edelmetalleData, cancellationToken);
-            _logger.LogInformation("Hourly price ingestion completed successfully.");
+            IngestionLogMessages.HourlyIngestionSuccess(_logger);
         }
         else
         {
@@ -58,12 +65,12 @@ public class IngestPricesUseCase : IIngestPricesUseCase
             var prices = await _apiClient.GetPricesAsync(cancellationToken);
             if (prices != null && prices.Count > 0)
             {
-                _logger.LogInformation("Saving {Count} price records from fallback API...", prices.Count);
+                IngestionLogMessages.SavingFallbackPrices(_logger, prices.Count);
                 await _repository.SavePricesAsync(prices, cancellationToken);
             }
             else
             {
-                _logger.LogWarning("No price data returned from external metals API.");
+                IngestionLogMessages.NoPriceDataReturned(_logger);
                 return;
             }
         }
@@ -72,14 +79,14 @@ public class IngestPricesUseCase : IIngestPricesUseCase
         if (DateTime.UtcNow.Hour >= _options.DailyRollupHour)
         {
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
-            _logger.LogInformation("Aggregating daily {RollupHour}:00 candle summary for {Today}...", _options.DailyRollupHour, today);
+            IngestionLogMessages.AggregatingDailyCandle(_logger, _options.DailyRollupHour, today);
             await _repository.AggregateDailySummaryAsync(today, cancellationToken);
 
             var retentionDays = _options.RetentionDays <= 0 ? 7 : _options.RetentionDays;
             var retentionThreshold = DateTime.UtcNow.AddDays(-retentionDays);
-            _logger.LogInformation("Pruning hourly raw ticks older than {Threshold} ({RetentionDays}-day retention policy)...", retentionThreshold, retentionDays);
+            IngestionLogMessages.PruningHourlyTicks(_logger, retentionThreshold, retentionDays);
             var prunedCount = await _repository.PruneHourlyDataOlderThanAsync(retentionThreshold, cancellationToken);
-            _logger.LogInformation("Retention cleanup completed: {Count} old hourly records purged.", prunedCount);
+            IngestionLogMessages.RetentionCleanupCompleted(_logger, prunedCount);
         }
     }
 }

@@ -1,4 +1,5 @@
 using Elementum.Domain.Entities;
+using Elementum.Domain.Exceptions;
 
 namespace Elementum.UnitTests.Domain.Entities;
 
@@ -23,9 +24,9 @@ public class DailyPriceSummaryTests
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
-    public void Create_InvalidMetalId_ThrowsArgumentOutOfRangeException(int metalId)
+    public void Create_InvalidMetalId_ThrowsInvalidMetalIdException(int metalId)
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
+        Assert.Throws<InvalidMetalIdException>(() =>
             DailyPriceSummary.Create(metalId, "USD", new DateOnly(2026, 8, 17), 100m, 120m, 90m, 110m));
     }
 
@@ -33,19 +34,26 @@ public class DailyPriceSummaryTests
     [InlineData("")]
     [InlineData(" ")]
     [InlineData(null)]
-    [InlineData("CHF")]
-    [InlineData("GBP")]
-    [InlineData("JPY")]
-    public void Create_InvalidCurrency_ThrowsArgumentException(string? currency)
+    public void Create_InvalidCurrency_ThrowsDomainValidationException(string? currency)
     {
-        Assert.Throws<ArgumentException>(() =>
+        Assert.Throws<DomainValidationException>(() =>
             DailyPriceSummary.Create(1, currency!, new DateOnly(2026, 8, 17), 100m, 120m, 90m, 110m));
     }
 
-    [Fact]
-    public void Create_LowPriceGreaterThanHighPrice_ThrowsArgumentException()
+    [Theory]
+    [InlineData("CHF")]
+    [InlineData("GBP")]
+    [InlineData("JPY")]
+    public void Create_UnsupportedCurrency_ThrowsUnsupportedCurrencyException(string currency)
     {
-        Assert.Throws<ArgumentException>(() =>
+        Assert.Throws<UnsupportedCurrencyException>(() =>
+            DailyPriceSummary.Create(1, currency, new DateOnly(2026, 8, 17), 100m, 120m, 90m, 110m));
+    }
+
+    [Fact]
+    public void Create_LowPriceGreaterThanHighPrice_ThrowsPriceRangeInvalidException()
+    {
+        Assert.Throws<PriceRangeInvalidException>(() =>
             DailyPriceSummary.Create(1, "USD", new DateOnly(2026, 8, 17), 100m, 80m, 90m, 85m));
     }
 

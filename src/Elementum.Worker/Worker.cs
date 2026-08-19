@@ -1,5 +1,6 @@
 using Elementum.Application.Options;
 using Elementum.Worker.Jobs;
+using Elementum.Worker.Logging;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -10,6 +11,7 @@ namespace Elementum.Worker;
 /// Hosted background daemon service that runs the metals price ingestion immediately on startup,
 /// and on the configured schedule (<see cref="WorkerScheduleOptions.IngestionIntervalMinutes"/>).
 /// Also performs daily candle consolidation and retention cleanup.
+/// Uses zero-allocation, source-generated <see cref="WorkerLogMessages"/>.
 /// </summary>
 public class Worker : BackgroundService
 {
@@ -28,32 +30,36 @@ public class Worker : BackgroundService
         IServiceScopeFactory scopeFactory,
         IOptions<WorkerScheduleOptions> options)
     {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
-        _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(scopeFactory);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(options.Value);
+
+        _logger = logger;
+        _scopeFactory = scopeFactory;
+        _options = options.Value;
     }
 
     /// <summary>Runs the daemon: executes initial run immediately, then loops according to schedule.</summary>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Elementum Ingestion Daemon initialized (Interval: {Interval}m, RollupHour: {Rollup}h, Retention: {Retention}d).",
-            _options.IngestionIntervalMinutes, _options.DailyRollupHour, _options.RetentionDays);
+        WorkerLogMessages.DaemonInitialized(_logger, _options.IngestionIntervalMinutes, _options.DailyRollupHour, _options.RetentionDays);
 
         // 1. Initial run immediately on startup
         try
         {
-            _logger.LogInformation("Executing initial precious metals ingestion on startup...");
+            WorkerLogMessages.InitialIngestionStarting(_logger);
             await RunJobAsync(stoppingToken);
-            _logger.LogInformation("Initial startup ingestion completed successfully.");
+            WorkerLogMessages.InitialIngestionCompleted(_logger);
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
-            _logger.LogInformation("Worker daemon stopped during initial run.");
+            WorkerLogMessages.WorkerDaemonStopped(_logger);
             return;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during initial ingestion on startup. Daemon will continue with scheduled loop.");
+            WorkerLogMessages.InitialIngestionFailed(_logger, ex);
         }
 
         // 2. Loop at scheduled intervals
@@ -62,27 +68,24 @@ public class Worker : BackgroundService
             try
             {
                 var delay = GetDelayUntilNextRun(out var nextRunUtc);
-                _logger.LogInformation(
-                    "Next ingestion scheduled for {NextRun:yyyy-MM-dd HH:mm:ss} UTC (in {Minutes:F1} minutes).",
-                    nextRunUtc,
-                    delay.TotalMinutes);
+                WorkerLogMessages.ScheduledCycleWait(_logger, delay.TotalMinutes, nextRunUtc);
 
                 await Task.Delay(delay, stoppingToken);
 
                 if (stoppingToken.IsCancellationRequested)
                     break;
 
-                _logger.LogInformation("Starting scheduled ingestion at {Time:yyyy-MM-dd HH:mm:ss} UTC...", DateTime.UtcNow);
+                WorkerLogMessages.ScheduledIngestionStarting(_logger, DateTime.UtcNow);
                 await RunJobAsync(stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
-                _logger.LogInformation("Worker daemon loop cancelled due to host shutdown.");
+                WorkerLogMessages.WorkerDaemonCancelled(_logger);
                 break;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error in worker execution loop. Retrying in {Minutes} minute...", ErrorRetryDelay.TotalMinutes);
+                WorkerLogMessages.WorkerLoopError(_logger, ErrorRetryDelay.TotalMinutes, ex);
                 try
                 {
                     await Task.Delay(ErrorRetryDelay, stoppingToken);
@@ -129,11 +132,11 @@ public class Worker : BackgroundService
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            _logger.LogInformation("Metals ingestion job cancelled as host is shutting down.");
+            WorkerLogMessages.JobCancelledHostShutdown(_logger);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception during metals ingestion job execution. Host process remains running.");
+            WorkerLogMessages.JobUnhandledError(_logger, ex);
         }
     }
 }

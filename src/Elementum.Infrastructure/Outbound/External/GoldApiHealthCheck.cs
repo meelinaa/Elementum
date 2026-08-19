@@ -1,5 +1,5 @@
-using System.Net.Http.Json;
 using Elementum.Application.Options;
+using Elementum.Infrastructure.External.Logging;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -8,6 +8,7 @@ namespace Elementum.Infrastructure.External;
 
 /// <summary>
 /// Health check that verifies whether the GoldAPI is reachable.
+/// Uses <see cref="GoldApiHealthCheckLogMessages"/> for zero-allocation logging.
 /// </summary>
 public class GoldApiHealthCheck : IHealthCheck
 {
@@ -20,9 +21,13 @@ public class GoldApiHealthCheck : IHealthCheck
         IOptions<MetalsApiOptions> options,
         ILogger<GoldApiHealthCheck> logger)
     {
-        _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
-        _options = options ?? throw new ArgumentNullException(nameof(options));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        ArgumentNullException.ThrowIfNull(httpClientFactory);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(logger);
+
+        _httpClientFactory = httpClientFactory;
+        _options = options;
+        _logger = logger;
     }
 
     public async Task<HealthCheckResult> CheckHealthAsync(
@@ -49,7 +54,7 @@ public class GoldApiHealthCheck : IHealthCheck
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Edelmetalle API health check failed.");
+            GoldApiHealthCheckLogMessages.HealthCheckFailed(_logger, ex);
             return HealthCheckResult.Unhealthy("Edelmetalle API is unreachable.", ex);
         }
     }

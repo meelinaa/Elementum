@@ -11,9 +11,15 @@ namespace Elementum.Api.Inbound.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1/prices")]
-public class LivePricesController(ILivePricesUseCase livePricesUseCase) : ControllerBase
+public class LivePricesController : ControllerBase
 {
-    private readonly ILivePricesUseCase _livePricesUseCase = livePricesUseCase ?? throw new ArgumentNullException(nameof(livePricesUseCase));
+    private readonly ILivePricesUseCase _livePricesUseCase;
+
+    public LivePricesController(ILivePricesUseCase livePricesUseCase)
+    {
+        ArgumentNullException.ThrowIfNull(livePricesUseCase);
+        _livePricesUseCase = livePricesUseCase;
+    }
 
     /// <summary>GET /api/v1/prices/live — 5-minute live market overview for Dashboard.</summary>
     [HttpGet("live")]

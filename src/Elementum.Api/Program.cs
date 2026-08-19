@@ -1,5 +1,8 @@
 using Elementum.Api.Hosting;
+using Elementum.Api.Logging;
 using Elementum.Infrastructure.Outbound.Data;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Serilog;
 
 SerilogBootstrap.InitializeGlobalLogger();
@@ -15,5 +18,7 @@ await app.Services.ApplyMigrationsAndSeedAsync();
 
 app.UseElementumApiPipeline();
 
-Log.Information("Elementum-ServiceApi started");
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+ApiLogMessages.ApiServiceStarted(logger);
+
 app.Run();

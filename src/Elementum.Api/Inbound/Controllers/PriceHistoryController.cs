@@ -11,9 +11,15 @@ namespace Elementum.Api.Inbound.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1/history")]
-public class PriceHistoryController(IGetPriceHistoryUseCase priceHistoryUseCase) : ControllerBase
+public class PriceHistoryController : ControllerBase
 {
-    private readonly IGetPriceHistoryUseCase _priceHistoryUseCase = priceHistoryUseCase ?? throw new ArgumentNullException(nameof(priceHistoryUseCase));
+    private readonly IGetPriceHistoryUseCase _priceHistoryUseCase;
+
+    public PriceHistoryController(IGetPriceHistoryUseCase priceHistoryUseCase)
+    {
+        ArgumentNullException.ThrowIfNull(priceHistoryUseCase);
+        _priceHistoryUseCase = priceHistoryUseCase;
+    }
 
     /// <summary>GET /api/v1/history/{symbol}?currency={currency} — price history for one metal as <see cref="PriceHistoryDto"/> array.</summary>
     [HttpGet("{symbol}", Order = 10)]

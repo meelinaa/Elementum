@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Elementum.Domain.Exceptions;
 
 namespace Elementum.Domain.Entities;
 
@@ -66,8 +67,7 @@ public class DailyPriceSummary
     /// </summary>
     public void ApplyPriceTick(decimal tickPrice, decimal? exchangeRateUsdEur = null, bool isClosePrice = false)
     {
-        if (tickPrice <= 0)
-            throw new ArgumentOutOfRangeException(nameof(tickPrice), "Tick price must be positive.");
+        DomainThrowHelper.ThrowIfNegativeOrZero(tickPrice, nameof(tickPrice));
 
         if (OpenPrice <= 0)
             OpenPrice = tickPrice;
@@ -95,19 +95,16 @@ public class DailyPriceSummary
         decimal lowPrice,
         decimal closePrice)
     {
-        if (metalId <= 0)
-            throw new ArgumentOutOfRangeException(nameof(metalId), "MetalId must be greater than zero.");
-
-        if (string.IsNullOrWhiteSpace(currency))
-            throw new ArgumentException("Currency cannot be null or whitespace.", nameof(currency));
+        DomainThrowHelper.ThrowIfNegativeOrZero(metalId, nameof(metalId));
+        DomainThrowHelper.ThrowIfNullOrWhiteSpace(currency, nameof(currency));
 
         // Enforce supported currencies (EUR, USD)
         ValueObjects.Currency.FromCode(currency);
 
         if (openPrice <= 0 || highPrice <= 0 || lowPrice <= 0 || closePrice <= 0)
-            throw new ArgumentOutOfRangeException("All prices (Open, High, Low, Close) must be strictly positive (> 0).");
+            throw InvalidPriceException.AllPricesMustBePositive();
 
         if (lowPrice > highPrice)
-            throw new ArgumentException($"Low price ({lowPrice}) cannot exceed High price ({highPrice}).");
+            throw PriceRangeInvalidException.For(lowPrice, highPrice);
     }
 }

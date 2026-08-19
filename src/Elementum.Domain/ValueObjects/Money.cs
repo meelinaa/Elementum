@@ -1,4 +1,5 @@
 using System.Globalization;
+using Elementum.Domain.Exceptions;
 
 namespace Elementum.Domain.ValueObjects;
 
@@ -44,8 +45,7 @@ public readonly record struct Money : IComparable<Money>, IEquatable<Money>
 
     public static Money operator /(Money a, decimal divisor)
     {
-        if (divisor == 0)
-            throw new DivideByZeroException("Cannot divide Money by zero.");
+        DomainThrowHelper.ThrowIfZero(divisor, "Cannot divide Money by zero.");
         return new Money(a.Amount / divisor, a.Currency);
     }
 
@@ -91,6 +91,6 @@ public readonly record struct Money : IComparable<Money>, IEquatable<Money>
     private static void EnsureSameCurrency(Money a, Money b)
     {
         if (a.Currency != b.Currency)
-            throw new InvalidOperationException($"Cannot perform arithmetic/comparison on mismatching currencies: '{a.Currency.Code}' and '{b.Currency.Code}'.");
+            throw CurrencyMismatchException.For(a.Currency.Code, b.Currency.Code);
     }
 }

@@ -1,4 +1,5 @@
 using Elementum.Domain.Entities;
+using Elementum.Domain.Exceptions;
 
 namespace Elementum.UnitTests.Domain.Entities;
 
@@ -28,28 +29,28 @@ public class PriceHistoryTests
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
-    public void Create_WithInvalidMetalId_ThrowsArgumentOutOfRangeException(int invalidMetalId)
+    public void Create_WithInvalidMetalId_ThrowsInvalidMetalIdException(int invalidMetalId)
     {
         var date = new DateOnly(2026, 8, 17);
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
+        Assert.Throws<InvalidMetalIdException>(() =>
             PriceHistory.Create(invalidMetalId, "USD", date, 2000m));
     }
 
     [Theory]
     [InlineData(0)]
     [InlineData(-100)]
-    public void Create_WithNonPositivePrice_ThrowsArgumentOutOfRangeException(decimal invalidPrice)
+    public void Create_WithNonPositivePrice_ThrowsInvalidPriceException(decimal invalidPrice)
     {
         var date = new DateOnly(2026, 8, 17);
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
+        Assert.Throws<InvalidPriceException>(() =>
             PriceHistory.Create(1, "USD", date, invalidPrice));
     }
 
     [Fact]
-    public void Create_WhenLowPriceGreaterThanHighPrice_ThrowsArgumentException()
+    public void Create_WhenLowPriceGreaterThanHighPrice_ThrowsPriceRangeInvalidException()
     {
         var date = new DateOnly(2026, 8, 17);
-        Assert.Throws<ArgumentException>(() =>
+        Assert.Throws<PriceRangeInvalidException>(() =>
             PriceHistory.Create(1, "USD", date, 2000m, lowPrice: 2100m, highPrice: 2000m));
     }
 
@@ -58,10 +59,10 @@ public class PriceHistoryTests
     [InlineData("GBP")]
     [InlineData("JPY")]
     [InlineData("XYZ")]
-    public void Create_WithUnsupportedCurrency_ThrowsArgumentException(string unsupportedCurrency)
+    public void Create_WithUnsupportedCurrency_ThrowsUnsupportedCurrencyException(string unsupportedCurrency)
     {
         var date = new DateOnly(2026, 8, 17);
-        Assert.Throws<ArgumentException>(() =>
+        Assert.Throws<UnsupportedCurrencyException>(() =>
             PriceHistory.Create(1, unsupportedCurrency, date, 2000m));
     }
 }

@@ -28,9 +28,13 @@ public class PriceHistoryRepository : IElementumDbContext
         IDailyCandleAggregator candleAggregator,
         IPriceHistoryPruner pruner)
     {
-        _db = db ?? throw new ArgumentNullException(nameof(db));
-        _candleAggregator = candleAggregator ?? throw new ArgumentNullException(nameof(candleAggregator));
-        _pruner = pruner ?? throw new ArgumentNullException(nameof(pruner));
+        ArgumentNullException.ThrowIfNull(db);
+        ArgumentNullException.ThrowIfNull(candleAggregator);
+        ArgumentNullException.ThrowIfNull(pruner);
+
+        _db = db;
+        _candleAggregator = candleAggregator;
+        _pruner = pruner;
     }
 
     /// <inheritdoc />

@@ -1,6 +1,7 @@
 using Elementum.Domain.Entities;
 using Elementum.Domain.Ports.Outbound;
 using Elementum.Infrastructure.Data;
+using Elementum.Infrastructure.Locking.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -8,8 +9,8 @@ using Microsoft.Extensions.Logging;
 namespace Elementum.Infrastructure.Locking;
 
 /// <summary>
-/// Secondary / Driven Adapter: Implements distributed locking using Entity Framework Core.
-/// Fully database-agnostic, persists lock state in the <c>distributed_locks</c> table with automatic TTL expiration.
+/// Distributed lock implementation using Entity Framework Core and MySQL table <c>distributed_locks</c>.
+/// Uses optimistic concurrency tokens to prevent race conditions during takeover and source-generated logging.
 /// </summary>
 public class EfCoreDistributedLockProvider : IDistributedLockProvider
 {
@@ -20,10 +21,14 @@ public class EfCoreDistributedLockProvider : IDistributedLockProvider
         IServiceScopeFactory scopeFactory,
         ILogger<EfCoreDistributedLockProvider> logger)
     {
-        _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        ArgumentNullException.ThrowIfNull(scopeFactory);
+        ArgumentNullException.ThrowIfNull(logger);
+
+        _scopeFactory = scopeFactory;
+        _logger = logger;
     }
 
+    /// <inheritdoc />
     public async Task<IDistributedLock> TryAcquireLockAsync(
         string resource,
         TimeSpan timeout,
@@ -43,56 +48,57 @@ public class EfCoreDistributedLockProvider : IDistributedLockProvider
 
             if (existing == null)
             {
-                db.DistributedLocks.Add(new DistributedLockEntity
+                // No lock exists - create new
+                var lockRecord = new DistributedLockEntity
                 {
                     Resource = resource,
                     AcquiredBy = instanceId,
                     AcquiredAtUtc = now,
                     ExpiresAtUtc = expiresAt
-                });
+                };
+                db.DistributedLocks.Add(lockRecord);
             }
             else if (existing.ExpiresAtUtc < now)
             {
-                // Expired lock: take it over safely with optimistic concurrency check (ExpiresAtUtc is ConcurrencyCheck token)
+                // Lock expired - takeover
+                DistributedLockLogMessages.StaleLockTakenOver(_logger, resource, instanceId, expiresAt);
                 existing.AcquiredBy = instanceId;
                 existing.AcquiredAtUtc = now;
+                existing.ExpiresAtUtc = expiresAt;
+            }
+            else if (existing.AcquiredBy == instanceId)
+            {
+                // Re-entrant / extend own lock
+                DistributedLockLogMessages.LockRenewedManually(_logger, resource, instanceId, expiresAt);
                 existing.ExpiresAtUtc = expiresAt;
             }
             else
             {
                 // Lock is actively held by another instance
-                _logger.LogInformation(
-                    "Distributed lock for '{Resource}' is currently held by '{Holder}' until {ExpiresAtUtc} UTC.",
-                    resource, existing.AcquiredBy, existing.ExpiresAtUtc);
+                DistributedLockLogMessages.LockBusy(_logger, resource, existing.AcquiredBy, existing.ExpiresAtUtc);
                 return new NoOpDistributedLock();
             }
 
             await db.SaveChangesAsync(cancellationToken);
-            _logger.LogDebug(
-                "Acquired EF Core distributed lock for '{Resource}' by '{InstanceId}' until {ExpiresAtUtc} UTC.",
-                resource, instanceId, expiresAt);
+            DistributedLockLogMessages.LockAcquired(_logger, resource, instanceId, expiresAt);
 
             return new EfCoreDistributedLock(_scopeFactory, resource, instanceId, timeout, _logger);
         }
-        catch (DbUpdateConcurrencyException ex)
+        catch (DbUpdateConcurrencyException)
         {
             // Concurrency conflict: another instance won the race to take over the expired lock
-            _logger.LogInformation(
-                "Concurrency race acquiring EF Core distributed lock for '{Resource}'. Another instance took it over: {Message}",
-                resource, ex.Message);
+            DistributedLockLogMessages.LockAcquisitionFailed(_logger, resource, null);
             return new NoOpDistributedLock();
         }
-        catch (DbUpdateException ex)
+        catch (DbUpdateException)
         {
             // Concurrency conflict / primary key collision between instances creating a new lock
-            _logger.LogInformation(
-                "Conflict acquiring EF Core distributed lock for '{Resource}'. Another instance won the race: {Message}",
-                resource, ex.Message);
+            DistributedLockLogMessages.LockAcquisitionFailed(_logger, resource, null);
             return new NoOpDistributedLock();
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to acquire EF Core distributed lock for '{Resource}'.", resource);
+            DistributedLockLogMessages.LockAcquisitionFailed(_logger, resource, ex);
             return new NoOpDistributedLock();
         }
     }
@@ -105,7 +111,6 @@ public class EfCoreDistributedLockProvider : IDistributedLockProvider
         private readonly TimeSpan _timeout;
         private readonly ILogger _logger;
         private readonly CancellationTokenSource _heartbeatCts = new();
-        private readonly Task _heartbeatTask;
         private int _disposed;
 
         public bool IsAcquired => true;
@@ -122,21 +127,27 @@ public class EfCoreDistributedLockProvider : IDistributedLockProvider
             _instanceId = instanceId;
             _timeout = timeout;
             _logger = logger;
-            _heartbeatTask = StartHeartbeatAsync(_heartbeatCts.Token);
+
+            // Start background heartbeat to renew lock before it expires
+            var renewalInterval = TimeSpan.FromMilliseconds(timeout.TotalMilliseconds / 3);
+            if (renewalInterval > TimeSpan.FromSeconds(1))
+            {
+                _ = RunHeartbeatAsync(renewalInterval, _heartbeatCts.Token);
+            }
         }
 
-        private async Task StartHeartbeatAsync(CancellationToken ct)
+        private async Task RunHeartbeatAsync(TimeSpan interval, CancellationToken ct)
         {
-            var interval = TimeSpan.FromMilliseconds(Math.Max(500, _timeout.TotalMilliseconds / 2));
-            using var timer = new PeriodicTimer(interval);
             try
             {
+                using var timer = new PeriodicTimer(interval);
                 while (await timer.WaitForNextTickAsync(ct))
                 {
                     try
                     {
                         using var scope = _scopeFactory.CreateScope();
                         var db = scope.ServiceProvider.GetRequiredService<ElementumDbContext>();
+
                         var lockRecord = await db.DistributedLocks
                             .FirstOrDefaultAsync(l => l.Resource == _resource && l.AcquiredBy == _instanceId, ct);
 
@@ -144,22 +155,22 @@ public class EfCoreDistributedLockProvider : IDistributedLockProvider
                         {
                             lockRecord.ExpiresAtUtc = DateTime.UtcNow.Add(_timeout);
                             await db.SaveChangesAsync(ct);
-                            _logger.LogDebug("Auto-renewed distributed lock for '{Resource}' until {ExpiresAtUtc} UTC.", _resource, lockRecord.ExpiresAtUtc);
+                            DistributedLockLogMessages.LockAutoRenewed(_logger, _resource, lockRecord.ExpiresAtUtc);
                         }
                         else
                         {
-                            _logger.LogWarning("Lost ownership of distributed lock for '{Resource}' during heartbeat.", _resource);
+                            DistributedLockLogMessages.LockOwnershipLost(_logger, _resource);
                             break;
                         }
                     }
                     catch (DbUpdateConcurrencyException)
                     {
-                        _logger.LogWarning("Concurrency collision renewing distributed lock for '{Resource}'.", _resource);
+                        DistributedLockLogMessages.LockRenewalCollision(_logger, _resource);
                         break;
                     }
                     catch (Exception ex) when (ex is not OperationCanceledException)
                     {
-                        _logger.LogWarning(ex, "Failed to renew distributed lock for '{Resource}'.", _resource);
+                        DistributedLockLogMessages.LockRenewalFailed(_logger, _resource, ex);
                     }
                 }
             }
@@ -188,7 +199,7 @@ public class EfCoreDistributedLockProvider : IDistributedLockProvider
                     try
                     {
                         await db.SaveChangesAsync();
-                        _logger.LogDebug("Released EF Core distributed lock for '{Resource}'", _resource);
+                        DistributedLockLogMessages.LockReleased(_logger, _resource);
                     }
                     catch (DbUpdateConcurrencyException)
                     {
@@ -198,7 +209,7 @@ public class EfCoreDistributedLockProvider : IDistributedLockProvider
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Error releasing EF Core distributed lock for '{Resource}'.", _resource);
+                DistributedLockLogMessages.LockReleaseError(_logger, _resource, ex);
             }
         }
 

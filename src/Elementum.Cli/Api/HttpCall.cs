@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Text.Json;
 using Elementum.Application.DTOs;
 using Elementum.Cli.Config;
+using Elementum.Cli.Exceptions;
 using Elementum.Cli.Logging;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -11,6 +12,7 @@ namespace Elementum.Cli.Api;
 /// <summary>
 /// Central HTTP client and cache layer for the CLI.
 /// Handles REST API requests to Elementum API with in-memory caching and error resilience without magic literals.
+/// Uses <see cref="CliLogMessages"/> for zero-allocation logging and Exception Factories.
 /// </summary>
 public class HttpCall
 {
@@ -45,7 +47,7 @@ public class HttpCall
         }
         catch (Exception ex)
         {
-            _log.LogWarning(ex, "Failed to load live market overview.");
+            CliLogMessages.LiveOverviewLoadFailed(_log, ex);
             return null;
         }
     }
@@ -59,7 +61,7 @@ public class HttpCall
         }
         catch (Exception ex)
         {
-            _log.LogWarning(ex, "Failed to load trading analysis for {Symbol} in {Currency}.", metalSymbol, currency);
+            CliLogMessages.MetalDetailsLoadFailed(_log, metalSymbol, ex);
             return null;
         }
     }
@@ -73,7 +75,7 @@ public class HttpCall
         }
         catch (Exception ex)
         {
-            _log.LogWarning(ex, "Failed to load price history for {Symbol} ({Currency}).", metalSymbol, currency);
+            CliLogMessages.PriceHistoryLoadFailed(_log, metalSymbol, currency, ex);
             return null;
         }
     }
@@ -92,8 +94,8 @@ public class HttpCall
 
             if (!response.IsSuccessStatusCode)
             {
-                _log.LogWarning("Request failed: {Endpoint} -> {StatusCode}", endpoint, response.StatusCode);
-                throw new Exception($"Request failed: {response.StatusCode}");
+                CliLogMessages.HttpRequestFailed(_log, endpoint, response.StatusCode);
+                throw CliHttpException.RequestFailed(response.StatusCode, endpoint);
             }
 
             var json = await response.Content.ReadAsStringAsync();
@@ -106,7 +108,7 @@ public class HttpCall
         }
         catch (Exception ex)
         {
-            _log.LogWarning(ex, "Request failed: {Endpoint}", endpoint);
+            CliLogMessages.RequestException(_log, endpoint, ex);
             throw;
         }
     }

@@ -21,8 +21,11 @@ public class CachedGetPriceHistoryUseCase : IGetPriceHistoryUseCase
 
     public CachedGetPriceHistoryUseCase(IGetPriceHistoryUseCase inner, HybridCache cache)
     {
-        _inner = inner ?? throw new ArgumentNullException(nameof(inner));
-        _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+        ArgumentNullException.ThrowIfNull(inner);
+        ArgumentNullException.ThrowIfNull(cache);
+
+        _inner = inner;
+        _cache = cache;
     }
 
     public async ValueTask<IEnumerable<PriceHistoryDto>> GetLatestAllAsync(CancellationToken ct = default)

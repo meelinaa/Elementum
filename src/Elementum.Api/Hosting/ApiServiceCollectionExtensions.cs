@@ -31,7 +31,7 @@ public static class ApiServiceCollectionExtensions
 
         if (string.IsNullOrWhiteSpace(connectionString))
         {
-            throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection or CONNECTION_STRING in appsettings.json or environment variables.");
+            throw Elementum.Application.Exceptions.ConfigurationException.MissingConnectionString("DefaultConnection");
         }
 
         // Fail-Fast Options Validation on Start

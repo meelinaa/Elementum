@@ -1,3 +1,5 @@
+using Elementum.Application.Exceptions;
+using Elementum.Application.Logging;
 using Elementum.Domain.Models;
 using Elementum.Domain.Ports.Outbound;
 using Microsoft.Extensions.Caching.Memory;
@@ -7,6 +9,7 @@ namespace Elementum.Application.Services;
 
 /// <summary>
 /// Default implementation of <see cref="ILiveQuotesProvider"/> with in-memory caching and fail-fast resilience.
+/// Uses <see cref="LiveQuotesLogMessages"/> for zero-allocation logging and Exception Factories.
 /// </summary>
 public class LiveQuotesProvider : ILiveQuotesProvider
 {
@@ -22,9 +25,13 @@ public class LiveQuotesProvider : ILiveQuotesProvider
         IMemoryCache cache,
         ILogger<LiveQuotesProvider> logger)
     {
-        _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
-        _cache = cache ?? throw new ArgumentNullException(nameof(cache));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        ArgumentNullException.ThrowIfNull(apiClient);
+        ArgumentNullException.ThrowIfNull(cache);
+        ArgumentNullException.ThrowIfNull(logger);
+
+        _apiClient = apiClient;
+        _cache = cache;
+        _logger = logger;
     }
 
     /// <inheritdoc />
@@ -46,10 +53,10 @@ public class LiveQuotesProvider : ILiveQuotesProvider
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to fetch live quotes from external metals API.");
+            LiveQuotesLogMessages.FailedToFetchLiveQuotes(_logger, ex);
             throw;
         }
 
-        throw new InvalidOperationException("External metals API returned an empty live quote response.");
+        throw ExternalApiException.EmptyLiveQuoteResponse();
     }
 }

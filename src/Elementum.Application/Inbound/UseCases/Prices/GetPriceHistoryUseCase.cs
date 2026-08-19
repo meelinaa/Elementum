@@ -8,9 +8,15 @@ namespace Elementum.Application.Inbound.UseCases.Prices;
 /// Interactor / Implementation of the price querying use case.
 /// Uses <see cref="ValueTask{TResult}"/> to minimize managed heap allocations.
 /// </summary>
-public class GetPriceHistoryUseCase(IPriceHistoryReadRepository repository) : IGetPriceHistoryUseCase
+public class GetPriceHistoryUseCase : IGetPriceHistoryUseCase
 {
-    private readonly IPriceHistoryReadRepository _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+    private readonly IPriceHistoryReadRepository _repository;
+
+    public GetPriceHistoryUseCase(IPriceHistoryReadRepository repository)
+    {
+        ArgumentNullException.ThrowIfNull(repository);
+        _repository = repository;
+    }
 
     public async ValueTask<IEnumerable<PriceHistoryDto>> GetLatestAllAsync(CancellationToken ct = default)
     {

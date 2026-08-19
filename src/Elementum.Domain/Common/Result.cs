@@ -1,9 +1,11 @@
 using System.Diagnostics.CodeAnalysis;
+using Elementum.Domain.Exceptions;
 
 namespace Elementum.Domain.Common;
 
 /// <summary>
 /// Represents the outcome of an operation without a return value.
+/// Uses <see cref="ResultException"/> factories for invariant validation.
 /// </summary>
 public class Result
 {
@@ -14,9 +16,9 @@ public class Result
     protected Result(bool isSuccess, Error error)
     {
         if (isSuccess && error != Error.None)
-            throw new InvalidOperationException("A successful result cannot have an error.");
+            throw ResultException.SuccessfulResultCannotHaveError();
         if (!isSuccess && error == Error.None)
-            throw new InvalidOperationException("A failure result must specify an error.");
+            throw ResultException.FailureResultMustSpecifyError();
 
         IsSuccess = isSuccess;
         Error = error;
@@ -43,7 +45,7 @@ public class Result<TValue> : Result
 
     public TValue Value => IsSuccess
         ? _value!
-        : throw new InvalidOperationException("The value of a failure result cannot be accessed.");
+        : throw ResultException.CannotAccessValueOfFailure();
 
     public bool TryGetValue([NotNullWhen(true)] out TValue? value)
     {

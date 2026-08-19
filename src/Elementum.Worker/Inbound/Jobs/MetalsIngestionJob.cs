@@ -1,5 +1,6 @@
 using Elementum.Application.Inbound.UseCases.Ingestion;
 using Elementum.Domain.Ports.Outbound;
+using Elementum.Worker.Logging;
 using Elementum.Worker.Observability;
 using Microsoft.Extensions.Logging;
 
@@ -8,6 +9,7 @@ namespace Elementum.Worker.Jobs;
 /// <summary>
 /// Orchestrates a single run of metals price ingestion using the <see cref="IIngestPricesUseCase"/>.
 /// Uses <see cref="IDistributedLockProvider"/> to prevent duplicate concurrent runs in multi-instance environments.
+/// Uses <see cref="MetalsIngestionJobLogMessages"/> for zero-allocation logging.
 /// </summary>
 public class MetalsIngestionJob
 {
@@ -26,10 +28,15 @@ public class MetalsIngestionJob
         IngestionMetrics metrics,
         IDistributedLockProvider lockProvider)
     {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _ingestPricesUseCase = ingestPricesUseCase ?? throw new ArgumentNullException(nameof(ingestPricesUseCase));
-        _metrics = metrics ?? throw new ArgumentNullException(nameof(metrics));
-        _lockProvider = lockProvider ?? throw new ArgumentNullException(nameof(lockProvider));
+        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(ingestPricesUseCase);
+        ArgumentNullException.ThrowIfNull(metrics);
+        ArgumentNullException.ThrowIfNull(lockProvider);
+
+        _logger = logger;
+        _ingestPricesUseCase = ingestPricesUseCase;
+        _metrics = metrics;
+        _lockProvider = lockProvider;
     }
 
     public async Task RunAsync(CancellationToken cancellationToken = default)
@@ -41,22 +48,22 @@ public class MetalsIngestionJob
 
         if (!lockHandle.IsAcquired)
         {
-            _logger.LogWarning("Ingestion job skipped: another worker instance currently holds distributed lock '{Resource}'.", IngestionLockResource);
+            MetalsIngestionJobLogMessages.JobSkippedLockHeld(_logger, IngestionLockResource);
             return;
         }
 
         _metrics.RecordRun();
-        _logger.LogInformation("Metals ingestion job started (Distributed lock acquired).");
+        MetalsIngestionJobLogMessages.JobStarted(_logger);
         try
         {
             await _ingestPricesUseCase.ExecuteAsync(cancellationToken);
             _metrics.RecordPricesSaved(DefaultPricesSavedBatchCount);
-            _logger.LogInformation("Metals ingestion job completed.");
+            MetalsIngestionJobLogMessages.JobCompleted(_logger);
         }
         catch (Exception ex)
         {
             _metrics.RecordError(ex.GetType().Name);
-            _logger.LogError(ex, "Metals ingestion job failed.");
+            MetalsIngestionJobLogMessages.JobFailed(_logger, ex);
             throw;
         }
     }

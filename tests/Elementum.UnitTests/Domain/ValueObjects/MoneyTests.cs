@@ -1,3 +1,4 @@
+using Elementum.Domain.Exceptions;
 using Elementum.Domain.ValueObjects;
 
 namespace Elementum.UnitTests.Domain.ValueObjects;
@@ -21,15 +22,22 @@ public class MoneyTests
     [Theory]
     [InlineData("")]
     [InlineData(" ")]
+    [InlineData(null)]
+    public void Currency_FromCode_EmptyCode_ThrowsDomainValidationException(string? invalidCode)
+    {
+        Assert.Throws<DomainValidationException>(() => Currency.FromCode(invalidCode!));
+    }
+
+    [Theory]
     [InlineData("CHF")]
     [InlineData("GBP")]
     [InlineData("JPY")]
     [InlineData("US")]
     [InlineData("USDD")]
     [InlineData("123")]
-    public void Currency_FromCode_UnsupportedOrInvalidCode_ThrowsArgumentException(string invalidCode)
+    public void Currency_FromCode_UnsupportedCode_ThrowsUnsupportedCurrencyException(string invalidCode)
     {
-        Assert.Throws<ArgumentException>(() => Currency.FromCode(invalidCode));
+        Assert.Throws<UnsupportedCurrencyException>(() => Currency.FromCode(invalidCode));
     }
 
     [Fact]
@@ -45,12 +53,12 @@ public class MoneyTests
     }
 
     [Fact]
-    public void Money_Addition_DifferentCurrencies_ThrowsInvalidOperationException()
+    public void Money_Addition_DifferentCurrencies_ThrowsCurrencyMismatchException()
     {
         var m1 = Money.Usd(100m);
         var m2 = Money.Eur(100m);
 
-        Assert.Throws<InvalidOperationException>(() => _ = m1 + m2);
+        Assert.Throws<CurrencyMismatchException>(() => _ = m1 + m2);
     }
 
     [Fact]

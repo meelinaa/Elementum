@@ -1,3 +1,5 @@
+using Elementum.Domain.Exceptions;
+
 namespace Elementum.Domain.Entities;
 
 /// <summary>
@@ -97,19 +99,15 @@ public class PriceHistory
         decimal? highPrice,
         decimal? lowPrice)
     {
-        if (metalId <= 0)
-            throw new ArgumentOutOfRangeException(nameof(metalId), "MetalId must be greater than zero.");
-
-        if (string.IsNullOrWhiteSpace(currency))
-            throw new ArgumentException("Currency cannot be empty.", nameof(currency));
+        DomainThrowHelper.ThrowIfNegativeOrZero(metalId, nameof(metalId));
+        DomainThrowHelper.ThrowIfNullOrWhiteSpace(currency, nameof(currency));
 
         // Enforce valid domain currency (USD or EUR)
         ValueObjects.Currency.FromCode(currency);
 
-        if (price <= 0)
-            throw new ArgumentOutOfRangeException(nameof(price), "Price must be greater than zero.");
+        DomainThrowHelper.ThrowIfNegativeOrZero(price, nameof(price));
 
-        if (highPrice.HasValue && lowPrice.HasValue && highPrice < lowPrice)
-            throw new ArgumentException("HighPrice cannot be less than LowPrice.");
+        if (highPrice.HasValue && lowPrice.HasValue && highPrice.Value < lowPrice.Value)
+            throw PriceRangeInvalidException.For(lowPrice.Value, highPrice.Value);
     }
 }

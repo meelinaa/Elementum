@@ -1,4 +1,5 @@
 using Elementum.Domain.Common;
+using Elementum.Domain.Exceptions;
 
 namespace Elementum.Domain.Tests.Common;
 
@@ -41,7 +42,7 @@ public class ResultTests
         var result = Result.Failure<string>(error);
 
         Assert.True(result.IsFailure);
-        Assert.Throws<InvalidOperationException>(() => _ = result.Value);
+        Assert.Throws<ResultException>(() => _ = result.Value);
     }
 
     [Fact]

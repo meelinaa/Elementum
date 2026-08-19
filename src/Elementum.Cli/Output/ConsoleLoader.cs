@@ -1,10 +1,10 @@
 using Elementum.Cli.Logging;
-using Microsoft.Extensions.Logging;
 
 namespace Elementum.Cli.Output;
 
 /// <summary>
 /// Runs an async action (e.g. API load + render) without a loading spinner. Logs and shows a generic error on failure.
+/// Uses <see cref="CliLogMessages"/> for zero-allocation structured logging.
 /// </summary>
 public class ConsoleLoader
 {
@@ -17,7 +17,7 @@ public class ConsoleLoader
         }
         catch (Exception ex)
         {
-            CliLogging.GetLogger(nameof(ConsoleLoader)).LogWarning(ex, "Load operation failed");
+            CliLogMessages.LoadOperationFailed(CliLogging.GetLogger(nameof(ConsoleLoader)), ex);
             CliOutputHelper.ShowError(CliOutputHelper.GenericErrorMessage);
         }
     }

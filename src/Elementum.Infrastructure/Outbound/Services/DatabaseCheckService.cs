@@ -1,5 +1,6 @@
 using Elementum.Domain.Ports.Outbound;
 using Elementum.Infrastructure.Data;
+using Elementum.Infrastructure.Data.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -7,6 +8,7 @@ namespace Elementum.Infrastructure.Services;
 
 /// <summary>
 /// Secondary / Driven Adapter: Verifies MySQL database connection.
+/// Uses <see cref="DatabaseLogMessages"/> for zero-allocation logging.
 /// </summary>
 public class DatabaseCheckService : IDatabaseCheckService
 {
@@ -15,8 +17,11 @@ public class DatabaseCheckService : IDatabaseCheckService
 
     public DatabaseCheckService(ILogger<DatabaseCheckService> logger, IServiceScopeFactory scopeFactory)
     {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
+        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(scopeFactory);
+
+        _logger = logger;
+        _scopeFactory = scopeFactory;
     }
 
     public async Task<bool> CanConnectAsync(CancellationToken cancellationToken = default)
@@ -29,7 +34,7 @@ public class DatabaseCheckService : IDatabaseCheckService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Database connection check failed.");
+            DatabaseLogMessages.DatabaseCheckFailed(_logger, ex);
             return false;
         }
     }

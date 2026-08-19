@@ -6,83 +6,84 @@ namespace Elementum.Application.Mapping;
 /// <summary>
 /// Central mapper: Transforms domain & persistence entities to application-level DTOs,
 /// ensuring the API contract is decoupled from internal database schema and entity details.
+/// Uses <see cref="ArgumentNullException.ThrowIfNull"/> for guard clauses.
 /// </summary>
 public static class PriceHistoryMapper
 {
     /// <summary>Maps a <see cref="Metals"/> entity to <see cref="MetalsDto"/>.</summary>
     public static MetalsDto ToDto(this Metals entity)
     {
-        return entity == null
-            ? throw new ArgumentNullException(nameof(entity))
-            : new MetalsDto
-            {
-                Id = entity.Id,
-                Symbol = entity.Symbol ?? string.Empty,
-                Name = entity.Name ?? string.Empty
-            };
+        ArgumentNullException.ThrowIfNull(entity);
+
+        return new MetalsDto
+        {
+            Id = entity.Id,
+            Symbol = entity.Symbol ?? string.Empty,
+            Name = entity.Name ?? string.Empty
+        };
     }
 
     /// <summary>Maps a <see cref="PriceHistory"/> entity to <see cref="PriceHistoryDto"/>.</summary>
     public static PriceHistoryDto ToPriceHistoryDto(this PriceHistory entity)
     {
-        return entity == null
-            ? throw new ArgumentNullException(nameof(entity))
-            : new PriceHistoryDto
-            {
-                Id = entity.Id,
-                MetalId = entity.MetalId,
-                Currency = entity.Currency ?? string.Empty,
-                Symbol = entity.Symbol,
-                ReferenceTimestamp = entity.ReferenceTimestamp,
-                EntryDate = entity.EntryDate,
-                Price = entity.Price,
-                Chp = entity.Chp,
-                Metal = entity.Metal?.ToDto()
-            };
+        ArgumentNullException.ThrowIfNull(entity);
+
+        return new PriceHistoryDto
+        {
+            Id = entity.Id,
+            MetalId = entity.MetalId,
+            Currency = entity.Currency ?? string.Empty,
+            Symbol = entity.Symbol,
+            ReferenceTimestamp = entity.ReferenceTimestamp,
+            EntryDate = entity.EntryDate,
+            Price = entity.Price,
+            Chp = entity.Chp,
+            Metal = entity.Metal?.ToDto()
+        };
     }
 
     /// <summary>Maps a <see cref="DailyPriceSummary"/> entity to <see cref="DailyPriceSummaryDto"/>.</summary>
     public static DailyPriceSummaryDto ToDailyPriceSummaryDto(this DailyPriceSummary summary, string? symbol = null, string? metalName = null)
     {
-        return summary == null
-            ? throw new ArgumentNullException(nameof(summary))
-            : new DailyPriceSummaryDto
-            {
-                Id = summary.Id,
-                MetalId = summary.MetalId,
-                Symbol = symbol ?? summary.Metal?.Symbol ?? string.Empty,
-                MetalName = metalName ?? summary.Metal?.Name ?? string.Empty,
-                Currency = summary.Currency,
-                EntryDate = summary.EntryDate,
-                OpenPrice = summary.OpenPrice,
-                HighPrice = summary.HighPrice,
-                LowPrice = summary.LowPrice,
-                ClosePrice = summary.ClosePrice,
-                ExchangeRateUsdEur = summary.ExchangeRateUsdEur
-            };
+        ArgumentNullException.ThrowIfNull(summary);
+
+        return new DailyPriceSummaryDto
+        {
+            Id = summary.Id,
+            MetalId = summary.MetalId,
+            Symbol = symbol ?? summary.Metal?.Symbol ?? string.Empty,
+            MetalName = metalName ?? summary.Metal?.Name ?? string.Empty,
+            Currency = summary.Currency,
+            EntryDate = summary.EntryDate,
+            OpenPrice = summary.OpenPrice,
+            HighPrice = summary.HighPrice,
+            LowPrice = summary.LowPrice,
+            ClosePrice = summary.ClosePrice,
+            ExchangeRateUsdEur = summary.ExchangeRateUsdEur
+        };
     }
 
     /// <summary>Maps a <see cref="PriceHistory"/> entity to <see cref="TradingPriceDto"/>.</summary>
     public static TradingPriceDto ToTradingPriceDto(this PriceHistory entity)
     {
-        return entity == null
-            ? throw new ArgumentNullException(nameof(entity))
-            : new TradingPriceDto
-            {
-                Id = entity.Id,
-                Symbol = entity.Metal?.Symbol ?? entity.Symbol ?? string.Empty,
-                MetalName = entity.Metal?.Name ?? string.Empty,
-                Exchange = "EDELMETALLE",
-                Currency = entity.Currency ?? string.Empty,
-                EntryDate = entity.EntryDate,
-                ReferenceTimestamp = entity.ReferenceTimestamp == 0 ? null : entity.ReferenceTimestamp,
-                Price = entity.Price,
-                PrevClosePrice = entity.PrevClosePrice,
-                OpenPrice = entity.OpenPrice,
-                LowPrice = entity.LowPrice,
-                HighPrice = entity.HighPrice,
-                Ch = entity.Ch,
-                Chp = entity.Chp
-            };
+        ArgumentNullException.ThrowIfNull(entity);
+
+        return new TradingPriceDto
+        {
+            Id = entity.Id,
+            Symbol = entity.Metal?.Symbol ?? entity.Symbol ?? string.Empty,
+            MetalName = entity.Metal?.Name ?? string.Empty,
+            Exchange = "EDELMETALLE",
+            Currency = entity.Currency ?? string.Empty,
+            EntryDate = entity.EntryDate,
+            ReferenceTimestamp = entity.ReferenceTimestamp == 0 ? null : entity.ReferenceTimestamp,
+            Price = entity.Price,
+            PrevClosePrice = entity.PrevClosePrice,
+            OpenPrice = entity.OpenPrice,
+            LowPrice = entity.LowPrice,
+            HighPrice = entity.HighPrice,
+            Ch = entity.Ch,
+            Chp = entity.Chp
+        };
     }
 }

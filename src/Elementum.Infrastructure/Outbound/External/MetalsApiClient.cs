@@ -2,6 +2,7 @@ using System.Text.Json;
 using Elementum.Application.Options;
 using Elementum.Domain.Models;
 using Elementum.Domain.Ports.Outbound;
+using Elementum.Infrastructure.External.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -11,6 +12,7 @@ namespace Elementum.Infrastructure.External;
 /// Secondary / Driven Adapter: Client for api.edelmetalle.de.
 /// Fetches precious metal spot prices (Gold, Silver, Platinum, Palladium in USD and EUR) in a single request.
 /// Employs streaming HTTP deserialization (ResponseHeadersRead + ReadAsStreamAsync) for zero string buffering.
+/// Uses source-generated <see cref="MetalsApiClientLogMessages"/> for zero-allocation logging.
 /// </summary>
 public class MetalsApiClient : IMetalsApiClient
 {
@@ -28,9 +30,14 @@ public class MetalsApiClient : IMetalsApiClient
         ILogger<MetalsApiClient> logger,
         IOptions<MetalsApiOptions> options)
     {
-        _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+        ArgumentNullException.ThrowIfNull(httpClientFactory);
+        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(options.Value);
+
+        _httpClientFactory = httpClientFactory;
+        _logger = logger;
+        _options = options.Value;
     }
 
     public async Task<EdelmetalleApiResponse?> GetEdelmetallePricesAsync(CancellationToken cancellationToken = default)
@@ -42,7 +49,7 @@ public class MetalsApiClient : IMetalsApiClient
 
         try
         {
-            _logger.LogInformation("Streaming precious metal prices from {Url}...", url);
+            MetalsApiClientLogMessages.StreamingPricesFromUrl(_logger, url);
 
             // Stream directly from HTTP response socket to minimize memory footprint
             using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
@@ -53,19 +60,23 @@ public class MetalsApiClient : IMetalsApiClient
 
             if (result == null)
             {
-                _logger.LogWarning("Empty payload received from {Url}", url);
+                MetalsApiClientLogMessages.EmptyPayloadReceived(_logger, url);
                 return null;
             }
 
-            _logger.LogInformation(
-                "Successfully fetched prices: Gold USD={GoldUsd}, EUR={GoldEur}, Silber USD={SilberUsd}, EUR={SilberEur}, Rate={Rate}",
-                result.GoldUsd, result.GoldEur, result.SilberUsd, result.SilberEur, result.WechselkursUsdEur);
+            MetalsApiClientLogMessages.PricesFetchedSuccessfully(
+                _logger,
+                result.GoldUsd,
+                result.GoldEur,
+                result.SilberUsd,
+                result.SilberEur,
+                result.WechselkursUsdEur);
 
             return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to fetch precious metal prices from {Url}", url);
+            MetalsApiClientLogMessages.FailedToFetchPrices(_logger, url, ex);
             throw;
         }
     }

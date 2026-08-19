@@ -186,10 +186,10 @@ public class OptionsValidationTests
     }
 
     [Fact]
-    public void CliConfig_ResolveApiBaseUrl_WhenBothMissing_ThrowsInvalidOperationException()
+    public void CliConfig_ResolveApiBaseUrl_WhenBothMissing_ThrowsCliConfigurationException()
     {
-        Assert.Throws<InvalidOperationException>(() => CliConfig.ResolveApiBaseUrl(null, null));
-        Assert.Throws<InvalidOperationException>(() => CliConfig.ResolveApiBaseUrl("", "  "));
+        Assert.Throws<Elementum.Cli.Exceptions.CliConfigurationException>(() => CliConfig.ResolveApiBaseUrl(null, null));
+        Assert.Throws<Elementum.Cli.Exceptions.CliConfigurationException>(() => CliConfig.ResolveApiBaseUrl("", "  "));
     }
 
     [Fact]

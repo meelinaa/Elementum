@@ -9,14 +9,23 @@ namespace Elementum.Application.Inbound.UseCases.Prices;
 /// Interactor: Implements live price querying and daily trading aggregations.
 /// Coordinates live quotes, repository history, and trading metrics calculations without magic literals.
 /// </summary>
-public class LivePricesUseCase(
-    ILiveQuotesProvider quotesProvider,
-    IPriceHistoryReadRepository repository) : ILivePricesUseCase
+public class LivePricesUseCase : ILivePricesUseCase
 {
     private const string DefaultExchangeName = "EDELMETALLE";
 
-    private readonly ILiveQuotesProvider _quotesProvider = quotesProvider ?? throw new ArgumentNullException(nameof(quotesProvider));
-    private readonly IPriceHistoryReadRepository _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+    private readonly ILiveQuotesProvider _quotesProvider;
+    private readonly IPriceHistoryReadRepository _repository;
+
+    public LivePricesUseCase(
+        ILiveQuotesProvider quotesProvider,
+        IPriceHistoryReadRepository repository)
+    {
+        ArgumentNullException.ThrowIfNull(quotesProvider);
+        ArgumentNullException.ThrowIfNull(repository);
+
+        _quotesProvider = quotesProvider;
+        _repository = repository;
+    }
 
     /// <inheritdoc />
     public async Task<LiveMarketOverviewDto> GetLiveMarketOverviewAsync(CancellationToken cancellationToken = default)

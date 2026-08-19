@@ -16,8 +16,11 @@ public sealed class ResilientElementumDbContext : IElementumDbContext
 
     public ResilientElementumDbContext(IElementumDbContext inner, IAsyncPolicy policy)
     {
-        _inner = inner ?? throw new ArgumentNullException(nameof(inner));
-        _policy = policy ?? throw new ArgumentNullException(nameof(policy));
+        ArgumentNullException.ThrowIfNull(inner);
+        ArgumentNullException.ThrowIfNull(policy);
+
+        _inner = inner;
+        _policy = policy;
     }
 
     public IQueryable<Metals> QueryMetals() => _inner.QueryMetals();

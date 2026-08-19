@@ -1,12 +1,12 @@
+using Elementum.Cli.Exceptions;
 using Elementum.Cli.Logging;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace Elementum.Cli.Config;
 
 /// <summary>
 /// CLI configuration. Base URL: env ELEMENTUM_API_BASEURL overrides appsettings.json.
-/// Fail-fast: Throws InvalidOperationException if URL is missing.
+/// Fail-fast: Throws <see cref="CliConfigurationException"/> if URL is missing.
 /// </summary>
 public static class CliConfig
 {
@@ -29,8 +29,7 @@ public static class CliConfig
         if (!string.IsNullOrWhiteSpace(fromFile))
             return NormalizeBaseUrl(fromFile);
 
-        throw new InvalidOperationException(
-            "ApiBaseUrl configuration is missing. Configure 'ApiBaseUrl' in appsettings.json or set the 'ELEMENTUM_API_BASEURL' environment variable.");
+        throw CliConfigurationException.MissingApiBaseUrl();
     }
 
     private static string LoadBaseUrl()
@@ -55,7 +54,7 @@ public static class CliConfig
         }
         catch (Exception ex)
         {
-            CliLogging.GetLogger(nameof(CliConfig)).LogError(ex, "Failed to load ApiBaseUrl from configuration files.");
+            CliLogMessages.ConfigLoadFailed(CliLogging.GetLogger(nameof(CliConfig)), ex);
             throw;
         }
 

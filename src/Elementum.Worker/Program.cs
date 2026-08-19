@@ -1,8 +1,10 @@
 using Elementum.Infrastructure.Outbound.Data;
 using Elementum.Worker.Hosting;
 using Elementum.Worker.Jobs;
+using Elementum.Worker.Logging;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Serilog;
 
 // Optional local secrets file (development); production should use environment or key vault.
@@ -19,6 +21,7 @@ builder.ConfigureWorkerSerilog();
 builder.AddWorkerApplicationServices();
 
 var app = builder.Build();
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
 
 try
 {
@@ -26,23 +29,23 @@ try
 
     if (isSingleRun)
     {
-        Log.Information("Elementum Worker starting in Single-Run mode (--run-once / --once).");
+        WorkerLogMessages.SingleRunStarting(logger);
         using var scope = app.Services.CreateScope();
         var job = scope.ServiceProvider.GetRequiredService<MetalsIngestionJob>();
         await job.RunAsync();
-        Log.Information("Single-Run ingestion completed successfully.");
+        WorkerLogMessages.SingleRunCompleted(logger);
         return 0;
     }
 
     // Standard Daemon Mode: listen for health checks and execute on schedule
     app.MapHealthChecks("/health");
-    Log.Information("Elementum Worker Service starting in Daemon mode.");
+    WorkerLogMessages.DaemonStarting(logger);
     await app.RunAsync();
     return 0;
 }
 catch (Exception ex) when (ex is not HostAbortedException)
 {
-    Log.Fatal(ex, "Application terminated unexpectedly.");
+    WorkerLogMessages.ApplicationTerminatedUnexpectedly(logger, ex);
     if (!isSingleRun && Environment.UserInteractive && !Console.IsInputRedirected)
     {
         Console.WriteLine();

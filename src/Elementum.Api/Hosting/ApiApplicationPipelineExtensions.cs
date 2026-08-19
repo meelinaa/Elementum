@@ -42,6 +42,9 @@ public static class ApiApplicationPipelineExtensions
                 var exceptionHandlerFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
                 if (exceptionHandlerFeature?.Error != null)
                 {
+                    var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("Elementum.Api.ExceptionHandler");
+                    Elementum.Api.Logging.ApiLogMessages.UnhandledExceptionOccurred(logger, context.Request.Method, context.Request.Path, exceptionHandlerFeature.Error);
+
                     context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                     context.Response.ContentType = "application/problem+json";
                     await problemDetailsService.WriteAsync(new ProblemDetailsContext

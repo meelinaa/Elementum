@@ -1,5 +1,6 @@
 using Elementum.Domain.Entities;
 using Elementum.Infrastructure.Data;
+using Elementum.Infrastructure.Data.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -8,6 +9,7 @@ namespace Elementum.Infrastructure.Outbound.Data;
 
 /// <summary>
 /// Provides extension methods for automatic database migration and master data seeding on application startup using Entity Framework Core migrations.
+/// Uses <see cref="DatabaseLogMessages"/> for zero-allocation logging.
 /// </summary>
 public static class DatabaseMigrationExtensions
 {
@@ -26,13 +28,13 @@ public static class DatabaseMigrationExtensions
             {
                 try
                 {
-                    logger.LogInformation("Applying pending Entity Framework Core migrations...");
+                    DatabaseLogMessages.ApplyingMigrations(logger);
                     await db.Database.MigrateAsync(cancellationToken);
-                    logger.LogInformation("Entity Framework Core migrations applied successfully.");
+                    DatabaseLogMessages.MigrationsAppliedSuccessfully(logger);
                 }
                 catch (InvalidOperationException ex)
                 {
-                    logger.LogWarning(ex, "Relational migration skipped (non-relational or mock provider detected). Ensuring database created.");
+                    DatabaseLogMessages.RelationalMigrationSkipped(logger, ex);
                     await db.Database.EnsureCreatedAsync(cancellationToken);
                 }
             }
@@ -44,7 +46,7 @@ public static class DatabaseMigrationExtensions
             // Seed master data (metals) if not present
             if (!await db.Metals.AnyAsync(cancellationToken))
             {
-                logger.LogInformation("Seeding master metals catalog (Gold, Silver, Platinum, Palladium)...");
+                DatabaseLogMessages.SeedingMetalsCatalog(logger);
                 db.Metals.AddRange(
                     new Metals { Id = 1, Symbol = "XAU", Name = "Gold" },
                     new Metals { Id = 2, Symbol = "XAG", Name = "Silver" },
@@ -52,12 +54,12 @@ public static class DatabaseMigrationExtensions
                     new Metals { Id = 4, Symbol = "XPD", Name = "Palladium" }
                 );
                 await db.SaveChangesAsync(cancellationToken);
-                logger.LogInformation("Metals master catalog seeded successfully.");
+                DatabaseLogMessages.MetalsCatalogSeeded(logger);
             }
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error during Entity Framework Core database migration and schema initialization.");
+            DatabaseLogMessages.MigrationError(logger, ex);
             throw;
         }
     }

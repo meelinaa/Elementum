@@ -1,4 +1,5 @@
 using Elementum.Domain.Constants;
+using Elementum.Domain.Exceptions;
 
 namespace Elementum.Domain.ValueObjects;
 
@@ -36,15 +37,14 @@ public readonly record struct Currency : IEquatable<Currency>
     /// </summary>
     public static Currency FromCode(string code)
     {
-        if (string.IsNullOrWhiteSpace(code))
-            throw new ArgumentException("Currency code cannot be null or whitespace.", nameof(code));
+        DomainThrowHelper.ThrowIfNullOrWhiteSpace(code, nameof(code));
 
         var normalized = code.Trim().ToUpperInvariant();
 
         if (SupportedCurrencies.TryGetValue(normalized, out var currency))
             return currency;
 
-        throw new ArgumentException($"Currency '{code}' is not supported. Supported currencies are USD and EUR.", nameof(code));
+        throw UnsupportedCurrencyException.ForCode(code);
     }
 
     public override string ToString() => Code;
