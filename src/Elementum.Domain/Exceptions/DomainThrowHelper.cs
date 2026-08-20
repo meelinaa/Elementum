@@ -22,10 +22,4 @@ public static class DomainThrowHelper
         if (value <= 0)
             throw InvalidMetalIdException.MustBePositive(value);
     }
-
-    public static void ThrowIfZero(decimal value, string message)
-    {
-        if (value == 0)
-            throw DomainArithmeticException.DivideByZero(message);
-    }
 }

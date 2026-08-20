@@ -23,22 +23,6 @@ public class ExceptionStatusMapperTests
         Assert.Equal("https://tools.ietf.org/html/rfc4918#section-11.2", mapping.TypeUri);
     }
 
-    // [R]IGHT-BICEP: CurrencyMismatchException maps via its own switch arm to 422
-    [Fact]
-    public void Map_WhenCurrencyMismatch_Returns422WithDomainValidationTitle()
-    {
-        // Arrange
-        var exception = CurrencyMismatchException.For("USD", "EUR");
-
-        // Act
-        var mapping = ExceptionStatusMapper.Map(exception);
-
-        // Assert
-        Assert.Equal(422, mapping.StatusCode);
-        Assert.Equal("Domain validation error", mapping.Title);
-        Assert.Equal("https://tools.ietf.org/html/rfc4918#section-11.2", mapping.TypeUri);
-    }
-
     // [R]IGHT-BICEP: ArgumentOutOfRangeException arm maps invalid numeric input to 400 bad request
     [Fact]
     public void Map_WhenArgumentOutOfRange_Returns400WithBadRequestTypeUri()

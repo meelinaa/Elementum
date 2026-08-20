@@ -9,7 +9,6 @@ using Elementum.Infrastructure.Data.Resilience;
 using Elementum.Infrastructure.Data.Services;
 using Elementum.Infrastructure.External;
 using Elementum.Infrastructure.Outbound.Caching;
-using Elementum.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Caching.Memory;
@@ -40,7 +39,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPriceHistoryRepository>(sp => sp.GetRequiredService<IElementumDbContext>());
         services.AddScoped<IPriceHistoryReadRepository>(sp => sp.GetRequiredService<IElementumDbContext>());
         services.AddScoped<IPriceHistoryWriteRepository>(sp => sp.GetRequiredService<IElementumDbContext>());
-        services.AddSingleton<IDatabaseCheckService, DatabaseCheckService>();
         services.AddSingleton<IMetalsApiClient, MetalsApiClient>();
         services.AddSingleton<IDistributedLockProvider, Locking.EfCoreDistributedLockProvider>();
 

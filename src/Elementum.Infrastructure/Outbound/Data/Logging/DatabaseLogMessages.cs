@@ -3,16 +3,10 @@ using Microsoft.Extensions.Logging;
 namespace Elementum.Infrastructure.Data.Logging;
 
 /// <summary>
-/// Source-generated logging for database checks and migrations.
+/// Source-generated logging for database migrations and catalog seeding.
 /// </summary>
 public static partial class DatabaseLogMessages
 {
-    [LoggerMessage(
-        EventId = 3201,
-        Level = LogLevel.Error,
-        Message = "Database connection check failed.")]
-    public static partial void DatabaseCheckFailed(ILogger logger, Exception ex);
-
     [LoggerMessage(
         EventId = 3202,
         Level = LogLevel.Information,
