@@ -40,7 +40,8 @@ public class DailyPriceSummary
         decimal highPrice,
         decimal lowPrice,
         decimal closePrice,
-        decimal? exchangeRateUsdEur = null)
+        decimal? exchangeRateUsdEur = null,
+        Metals? metal = null)
     {
         ValidateInvariants(metalId, currency, openPrice, highPrice, lowPrice, closePrice);
 
@@ -56,7 +57,8 @@ public class DailyPriceSummary
             ClosePrice = closePrice,
             ExchangeRateUsdEur = exchangeRateUsdEur,
             CreatedAtUtc = now,
-            UpdatedAtUtc = now
+            UpdatedAtUtc = now,
+            Metal = metal
         };
     }
 

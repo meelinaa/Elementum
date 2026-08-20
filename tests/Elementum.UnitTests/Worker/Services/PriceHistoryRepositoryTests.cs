@@ -321,4 +321,31 @@ public class PriceHistoryRepositoryTests
         Assert.Contains(metals, m => m.Symbol == "XAU");
         Assert.Contains(metals, m => m.Symbol == "XAG");
     }
+
+    // [R]IGHT-BICEP: live session query returns all metals/currencies in the inclusive date window
+    [Fact]
+    public async Task GetDailySummariesAsync_ByDateRange_ReturnsInclusiveWindow()
+    {
+        // Arrange
+        var (db, repo) = CreateTestSetup();
+        var gold = await db.Metals.FirstAsync(m => m.Symbol == "XAU");
+        var inRange = new DateOnly(2026, 8, 19);
+        var alsoInRange = new DateOnly(2026, 8, 20);
+        var outOfRange = new DateOnly(2026, 8, 18);
+
+        db.DailyPriceSummaries.Add(DailyPriceSummary.Create(gold.Id, "USD", outOfRange, 2300m, 2310m, 2290m, 2305m));
+        db.DailyPriceSummaries.Add(DailyPriceSummary.Create(gold.Id, "USD", inRange, 2400m, 2420m, 2390m, 2410m));
+        db.DailyPriceSummaries.Add(DailyPriceSummary.Create(gold.Id, "EUR", alsoInRange, 2100m, 2120m, 2090m, 2110m));
+        await db.SaveChangesAsync();
+
+        // Act
+        var result = await repo.GetDailySummariesAsync(inRange, alsoInRange, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        Assert.DoesNotContain(result, s => s.EntryDate == outOfRange);
+        Assert.Contains(result, s => s.Currency == "USD" && s.OpenPrice == 2400m);
+        Assert.Contains(result, s => s.Currency == "EUR" && s.OpenPrice == 2100m);
+        Assert.All(result, s => Assert.Equal("XAU", s.Metal?.Symbol));
+    }
 }

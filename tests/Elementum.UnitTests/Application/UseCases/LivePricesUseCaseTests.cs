@@ -2,8 +2,10 @@ using Elementum.Application.Inbound.UseCases.Prices;
 using Elementum.Application.Models;
 using Elementum.Application.Services;
 using Elementum.Application.Exceptions;
+using Elementum.Domain.Constants;
 using Elementum.Domain.Entities;
 using Elementum.Domain.Ports.Outbound;
+using Elementum.Domain.Services;
 using Moq;
 
 namespace Elementum.UnitTests.Application.UseCases;
@@ -17,36 +19,31 @@ public class LivePricesUseCaseTests
     public LivePricesUseCaseTests()
     {
         _useCase = new LivePricesUseCase(_quotesProviderMock.Object, _repositoryMock.Object);
+        _repositoryMock.Setup(r => r.GetDailySummariesAsync(It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<DailyPriceSummary>());
     }
+
+    private static EdelmetalleApiResponse FullQuote() => new()
+    {
+        GoldUsd = 2500m,
+        GoldEur = 2300m,
+        SilberUsd = 30m,
+        SilberEur = 27m,
+        PlatinUsd = 1000m,
+        PlatinEur = 900m,
+        PalladiumUsd = 1100m,
+        PalladiumEur = 1000m,
+        Timestamp = 1786975085,
+        WechselkursUsdEur = 1.15m
+    };
 
     // [R]IGHT-BICEP: Verifies that GetLiveMarketOverviewAsync transforms live quotes into an overview for all metals
     [Fact]
     public async Task GetLiveMarketOverviewAsync_ReturnsAllMetalsWithQuotes()
     {
         // Arrange
-        var quote = new EdelmetalleApiResponse
-        {
-            GoldUsd = 2500m,
-            GoldEur = 2300m,
-            SilberUsd = 30m,
-            SilberEur = 27m,
-            PlatinUsd = 1000m,
-            PlatinEur = 900m,
-            PalladiumUsd = 1100m,
-            PalladiumEur = 1000m,
-            Timestamp = 1786975085,
-            WechselkursUsdEur = 1.15m
-        };
-
         _quotesProviderMock.Setup(q => q.GetLiveQuoteAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(quote);
-
-        _repositoryMock.Setup(r => r.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
-                It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<PriceHistory>());
-
-        _repositoryMock.Setup(r => r.GetDailySummariesAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateOnly?>(), It.IsAny<DateOnly?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<DailyPriceSummary>());
+            .ReturnsAsync(FullQuote());
 
         // Act
         var result = await _useCase.GetLiveMarketOverviewAsync(CancellationToken.None);
@@ -59,6 +56,41 @@ public class LivePricesUseCaseTests
         var gold = result.Items.First(i => i.Symbol == "XAU");
         Assert.Equal(2500m, gold.PriceUsd);
         Assert.Equal(2300m, gold.PriceEur);
+        _repositoryMock.Verify(
+            r => r.GetDailySummariesAsync(It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    // [R]IGHT-BICEP: session candles from the single query drive open/high/low/prev-close and domain Chp
+    [Fact]
+    public async Task GetLiveMarketOverviewAsync_WhenSessionCandlesExist_AppliesOhlcAndCalculator()
+    {
+        // Arrange
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var yesterday = today.AddDays(-1);
+        var gold = new Metals { Id = 1, Symbol = "XAU", Name = "Gold" };
+
+        _quotesProviderMock.Setup(q => q.GetLiveQuoteAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FullQuote());
+
+        _repositoryMock.Setup(r => r.GetDailySummariesAsync(It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<DailyPriceSummary>
+            {
+                DailyPriceSummary.Create(1, "USD", today, 2400m, 2550m, 2380m, 2490m, metal: gold),
+                DailyPriceSummary.Create(1, "USD", yesterday, 2300m, 2410m, 2290m, 2450m, metal: gold)
+            });
+
+        // Act
+        var result = await _useCase.GetLiveMarketOverviewAsync(CancellationToken.None);
+
+        // Assert
+        var item = result.Items.First(i => i.Symbol == "XAU");
+        var expected = TradingAnalysisCalculator.Calculate(2500m, 2400m, 2550m, 2380m, 2450m);
+        Assert.Equal(2400m, item.OpenPriceUsd);
+        Assert.Equal(2550m, item.HighPriceUsd);
+        Assert.Equal(2380m, item.LowPriceUsd);
+        Assert.Equal(2450m, item.PrevCloseUsd);
+        Assert.Equal(expected.Chp, item.ChpUsd);
     }
 
     // [E]RROR RIGHT-BICEP: unknown trading symbol returns null so controller can emit 404
@@ -66,16 +98,8 @@ public class LivePricesUseCaseTests
     public async Task GetLiveTradingAnalysisAsync_WhenMetalNotFound_ReturnsNull()
     {
         // Arrange
-        var quote = new EdelmetalleApiResponse { Timestamp = 1000 };
         _quotesProviderMock.Setup(q => q.GetLiveQuoteAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(quote);
-
-        _repositoryMock.Setup(r => r.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
-                It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<PriceHistory>());
-
-        _repositoryMock.Setup(r => r.GetDailySummariesAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateOnly?>(), It.IsAny<DateOnly?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<DailyPriceSummary>());
+            .ReturnsAsync(new EdelmetalleApiResponse { Timestamp = 1000 });
 
         // Act
         var result = await _useCase.GetLiveTradingAnalysisAsync("UNKNOWN", "EUR", CancellationToken.None);
@@ -89,29 +113,8 @@ public class LivePricesUseCaseTests
     public async Task GetLiveTradingAnalysisAsync_WhenMetalFound_ReturnsTradingPriceDto()
     {
         // Arrange
-        var quote = new EdelmetalleApiResponse
-        {
-            GoldUsd = 2500m,
-            GoldEur = 2300m,
-            SilberUsd = 30m,
-            SilberEur = 27m,
-            PlatinUsd = 1000m,
-            PlatinEur = 900m,
-            PalladiumUsd = 1100m,
-            PalladiumEur = 1000m,
-            Timestamp = 1786975085,
-            WechselkursUsdEur = 1.15m
-        };
-
         _quotesProviderMock.Setup(q => q.GetLiveQuoteAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(quote);
-
-        _repositoryMock.Setup(r => r.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
-                It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<PriceHistory>());
-
-        _repositoryMock.Setup(r => r.GetDailySummariesAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateOnly?>(), It.IsAny<DateOnly?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<DailyPriceSummary>());
+            .ReturnsAsync(FullQuote());
 
         // Act
         var result = await _useCase.GetLiveTradingAnalysisAsync("XAU", "EUR", CancellationToken.None);
@@ -121,6 +124,7 @@ public class LivePricesUseCaseTests
         Assert.Equal("XAU", result.Symbol);
         Assert.Equal("EUR", result.Currency);
         Assert.Equal(2300m, result.Price);
+        Assert.Equal(DomainConstants.Trading.BullishStatus, result.Status);
     }
 
     // [E]RROR RIGHT-BICEP: provider failures propagate unchanged to API exception handler boundary
@@ -133,5 +137,8 @@ public class LivePricesUseCaseTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ExternalApiException>(() => _useCase.GetLiveMarketOverviewAsync(CancellationToken.None));
+        _repositoryMock.Verify(
+            r => r.GetDailySummariesAsync(It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 }

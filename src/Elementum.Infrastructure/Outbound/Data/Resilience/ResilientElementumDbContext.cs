@@ -57,8 +57,8 @@ public sealed class ResilientElementumDbContext : IElementumDbContext
     public Task<int> PruneHourlyDataOlderThanAsync(DateTime thresholdUtc, CancellationToken ct = default) =>
         ExecuteAsync(innerCt => _inner.PruneHourlyDataOlderThanAsync(thresholdUtc, innerCt), ct);
 
-    public Task<IReadOnlyList<DailyPriceSummary>> GetDailySummariesAsync(string symbol, string currency, DateOnly? fromDate = null, DateOnly? toDate = null, CancellationToken ct = default) =>
-        ExecuteAsync(innerCt => _inner.GetDailySummariesAsync(symbol, currency, fromDate, toDate, innerCt), ct);
+    public Task<IReadOnlyList<DailyPriceSummary>> GetDailySummariesAsync(DateOnly fromDate, DateOnly toDate, CancellationToken ct = default) =>
+        ExecuteAsync(innerCt => _inner.GetDailySummariesAsync(fromDate, toDate, innerCt), ct);
 
     private Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> action, CancellationToken ct) =>
         _policy.ExecuteAsync(action, ct);

@@ -1,14 +1,15 @@
 using Elementum.Application.DTOs;
+using Elementum.Application.Models;
 using Elementum.Application.Services;
 using Elementum.Domain.Constants;
+using Elementum.Domain.Entities;
 using Elementum.Domain.Ports.Outbound;
 using Elementum.Domain.Services;
 
 namespace Elementum.Application.Inbound.UseCases.Prices;
 
 /// <summary>
-/// Interactor: Implements live price querying and daily trading aggregations.
-/// Coordinates live quotes and repository history; trading metrics are computed by the domain service.
+/// Interactor: live quotes plus one server-side candle query; trading metrics come from the domain service.
 /// </summary>
 public class LivePricesUseCase : ILivePricesUseCase
 {
@@ -34,77 +35,16 @@ public class LivePricesUseCase : ILivePricesUseCase
         var quote = await _quotesProvider.GetLiveQuoteAsync(cancellationToken);
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var yesterday = today.AddDays(-1);
+        var summaries = await _repository.GetDailySummariesAsync(yesterday, today, cancellationToken);
 
-        var metals = new (string Symbol, string Name, decimal Usd, decimal Eur)[]
-        {
-            (DomainConstants.Symbols.Gold, DomainConstants.Names.Gold, quote.GoldUsd, quote.GoldEur),
-            (DomainConstants.Symbols.Silver, DomainConstants.Names.Silver, quote.SilberUsd, quote.SilberEur),
-            (DomainConstants.Symbols.Platinum, DomainConstants.Names.Platinum, quote.PlatinUsd, quote.PlatinEur),
-            (DomainConstants.Symbols.Palladium, DomainConstants.Names.Palladium, quote.PalladiumUsd, quote.PalladiumEur)
-        };
-
-        var items = new List<LiveMetalPriceDto>();
-
-        foreach (var m in metals)
-        {
-            var historyTodayUsd = await _repository.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
-                m.Symbol, today, today, DomainConstants.Currencies.Usd, cancellationToken);
-
-            var historyTodayEur = await _repository.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
-                m.Symbol, today, today, DomainConstants.Currencies.Eur, cancellationToken);
-
-            decimal openUsd = historyTodayUsd.Count > 0 ? (historyTodayUsd[0].OpenPrice ?? historyTodayUsd[0].Price) : m.Usd;
-            decimal openEur = historyTodayEur.Count > 0 ? (historyTodayEur[0].OpenPrice ?? historyTodayEur[0].Price) : m.Eur;
-
-            decimal highUsd = historyTodayUsd.Count > 0 ? Math.Max(historyTodayUsd.Max(p => p.HighPrice ?? p.Price), m.Usd) : m.Usd;
-            decimal lowUsd = historyTodayUsd.Count > 0 ? Math.Min(historyTodayUsd.Min(p => p.LowPrice ?? p.Price), m.Usd) : m.Usd;
-
-            decimal highEur = historyTodayEur.Count > 0 ? Math.Max(historyTodayEur.Max(p => p.HighPrice ?? p.Price), m.Eur) : m.Eur;
-            decimal lowEur = historyTodayEur.Count > 0 ? Math.Min(historyTodayEur.Min(p => p.LowPrice ?? p.Price), m.Eur) : m.Eur;
-
-            var yesterdaySummariesUsd = await _repository.GetDailySummariesAsync(m.Symbol, DomainConstants.Currencies.Usd, yesterday, yesterday, cancellationToken);
-            decimal prevCloseUsd = yesterdaySummariesUsd.FirstOrDefault()?.ClosePrice ?? openUsd;
-
-            var yesterdaySummariesEur = await _repository.GetDailySummariesAsync(m.Symbol, DomainConstants.Currencies.Eur, yesterday, yesterday, cancellationToken);
-            decimal prevCloseEur = yesterdaySummariesEur.FirstOrDefault()?.ClosePrice ?? openEur;
-
-            var usdAnalysis = TradingAnalysisCalculator.Calculate(m.Usd, openUsd, highUsd, lowUsd, prevCloseUsd);
-            var eurAnalysis = TradingAnalysisCalculator.Calculate(m.Eur, openEur, highEur, lowEur, prevCloseEur);
-
-            items.Add(new LiveMetalPriceDto
-            {
-                Symbol = m.Symbol,
-                Name = m.Name,
-                PriceUsd = m.Usd,
-                PriceEur = m.Eur,
-                OpenPriceUsd = openUsd,
-                OpenPriceEur = openEur,
-                ChpUsd = usdAnalysis.Chp,
-                ChpEur = eurAnalysis.Chp,
-                HighPriceUsd = highUsd,
-                HighPriceEur = highEur,
-                LowPriceUsd = lowUsd,
-                LowPriceEur = lowEur,
-                PrevCloseUsd = prevCloseUsd,
-                PrevCloseEur = prevCloseEur
-            });
-        }
-
-        DateTime localTime = quote.Timestamp > 0
-            ? DateTimeOffset.FromUnixTimeSeconds(quote.Timestamp).ToLocalTime().DateTime
-            : DateTime.Now;
-
-        return new LiveMarketOverviewDto
-        {
-            Items = items,
-            ExchangeRateUsdEur = quote.WechselkursUsdEur,
-            Timestamp = quote.Timestamp,
-            LastUpdatedAtLocal = localTime
-        };
+        return MapOverview(quote, today, yesterday, summaries);
     }
 
     /// <inheritdoc />
-    public async Task<TradingPriceDto?> GetLiveTradingAnalysisAsync(string symbol, string currency = DomainConstants.Currencies.Eur, CancellationToken cancellationToken = default)
+    public async Task<TradingPriceDto?> GetLiveTradingAnalysisAsync(
+        string symbol,
+        string currency = DomainConstants.Currencies.Eur,
+        CancellationToken cancellationToken = default)
     {
         var normSymbol = symbol.Trim().ToUpperInvariant();
         var normCurrency = currency.Trim().ToUpperInvariant();
@@ -146,5 +86,96 @@ public class LivePricesUseCase : ILivePricesUseCase
             Status = analysis.Status,
             ExchangeRateUsdEur = overview.ExchangeRateUsdEur
         };
+    }
+
+    private static LiveMarketOverviewDto MapOverview(
+        EdelmetalleApiResponse quote,
+        DateOnly today,
+        DateOnly yesterday,
+        IReadOnlyList<DailyPriceSummary> summaries)
+    {
+        var metals = new (string Symbol, string Name, decimal Usd, decimal Eur)[]
+        {
+            (DomainConstants.Symbols.Gold, DomainConstants.Names.Gold, quote.GoldUsd, quote.GoldEur),
+            (DomainConstants.Symbols.Silver, DomainConstants.Names.Silver, quote.SilberUsd, quote.SilberEur),
+            (DomainConstants.Symbols.Platinum, DomainConstants.Names.Platinum, quote.PlatinUsd, quote.PlatinEur),
+            (DomainConstants.Symbols.Palladium, DomainConstants.Names.Palladium, quote.PalladiumUsd, quote.PalladiumEur)
+        };
+
+        var items = metals.Select(m => MapMetalItem(m.Symbol, m.Name, m.Usd, m.Eur, today, yesterday, summaries)).ToList();
+
+        DateTime localTime = quote.Timestamp > 0
+            ? DateTimeOffset.FromUnixTimeSeconds(quote.Timestamp).ToLocalTime().DateTime
+            : DateTime.Now;
+
+        return new LiveMarketOverviewDto
+        {
+            Items = items,
+            ExchangeRateUsdEur = quote.WechselkursUsdEur,
+            Timestamp = quote.Timestamp,
+            LastUpdatedAtLocal = localTime
+        };
+    }
+
+    private static LiveMetalPriceDto MapMetalItem(
+        string symbol,
+        string name,
+        decimal liveUsd,
+        decimal liveEur,
+        DateOnly today,
+        DateOnly yesterday,
+        IReadOnlyList<DailyPriceSummary> summaries)
+    {
+        var usd = ResolveSession(
+            FindCandle(summaries, symbol, DomainConstants.Currencies.Usd, today),
+            FindCandle(summaries, symbol, DomainConstants.Currencies.Usd, yesterday),
+            liveUsd);
+        var eur = ResolveSession(
+            FindCandle(summaries, symbol, DomainConstants.Currencies.Eur, today),
+            FindCandle(summaries, symbol, DomainConstants.Currencies.Eur, yesterday),
+            liveEur);
+
+        var usdAnalysis = TradingAnalysisCalculator.Calculate(liveUsd, usd.Open, usd.High, usd.Low, usd.PrevClose);
+        var eurAnalysis = TradingAnalysisCalculator.Calculate(liveEur, eur.Open, eur.High, eur.Low, eur.PrevClose);
+
+        return new LiveMetalPriceDto
+        {
+            Symbol = symbol,
+            Name = name,
+            PriceUsd = liveUsd,
+            PriceEur = liveEur,
+            OpenPriceUsd = usd.Open,
+            OpenPriceEur = eur.Open,
+            ChpUsd = usdAnalysis.Chp,
+            ChpEur = eurAnalysis.Chp,
+            HighPriceUsd = usd.High,
+            HighPriceEur = eur.High,
+            LowPriceUsd = usd.Low,
+            LowPriceEur = eur.Low,
+            PrevCloseUsd = usd.PrevClose,
+            PrevCloseEur = eur.PrevClose
+        };
+    }
+
+    private static DailyPriceSummary? FindCandle(
+        IReadOnlyList<DailyPriceSummary> summaries,
+        string symbol,
+        string currency,
+        DateOnly date) =>
+        summaries.FirstOrDefault(s =>
+            s.EntryDate == date &&
+            string.Equals(s.Currency, currency, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(s.Metal?.Symbol, symbol, StringComparison.OrdinalIgnoreCase));
+
+    private static (decimal Open, decimal High, decimal Low, decimal PrevClose) ResolveSession(
+        DailyPriceSummary? today,
+        DailyPriceSummary? yesterday,
+        decimal livePrice)
+    {
+        decimal open = today?.OpenPrice ?? livePrice;
+        decimal high = today != null ? Math.Max(today.HighPrice, livePrice) : livePrice;
+        decimal low = today != null ? Math.Min(today.LowPrice, livePrice) : livePrice;
+        decimal prevClose = yesterday?.ClosePrice ?? open;
+        return (open, high, low, prevClose);
     }
 }

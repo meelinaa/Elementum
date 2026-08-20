@@ -35,6 +35,9 @@ public interface IPriceHistoryReadRepository
     /// <summary>Returns aggregated price history for a metal (daily/weekly/monthly/yearly) with at most count entries.</summary>
     Task<IEnumerable<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct);
 
-    /// <summary>Retrieves daily candle summaries (Min/Max/Open/Close) for a metal symbol and currency in a date range.</summary>
-    Task<IReadOnlyList<DailyPriceSummary>> GetDailySummariesAsync(string symbol, string currency, DateOnly? fromDate = null, DateOnly? toDate = null, CancellationToken ct = default);
+    /// <summary>
+    /// Returns daily candle summaries for all metals and currencies in the inclusive date range.
+    /// Used by live-price orchestration so Application issues one filtered query instead of per-metal roundtrips.
+    /// </summary>
+    Task<IReadOnlyList<DailyPriceSummary>> GetDailySummariesAsync(DateOnly fromDate, DateOnly toDate, CancellationToken ct = default);
 }

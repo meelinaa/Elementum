@@ -100,32 +100,15 @@ public class PriceHistoryRepository : IElementumDbContext
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<DailyPriceSummary>> GetDailySummariesAsync(
-        string symbol,
-        string currency,
-        DateOnly? fromDate = null,
-        DateOnly? toDate = null,
-        CancellationToken ct = default)
-    {
-        var metal = await GetMetalBySymbol(symbol, ct);
-        if (metal == null)
-            return Array.Empty<DailyPriceSummary>();
-
-        var normalizedCurrency = currency.Trim().ToUpperInvariant();
-
-        var query = _db.DailyPriceSummaries
+        DateOnly fromDate,
+        DateOnly toDate,
+        CancellationToken ct = default) =>
+        await _db.DailyPriceSummaries
             .Include(s => s.Metal)
-            .Where(s => s.MetalId == metal.Id && s.Currency == normalizedCurrency);
-
-        if (fromDate.HasValue)
-            query = query.Where(s => s.EntryDate >= fromDate.Value);
-
-        if (toDate.HasValue)
-            query = query.Where(s => s.EntryDate <= toDate.Value);
-
-        return await query
+            .Where(s => s.EntryDate >= fromDate && s.EntryDate <= toDate)
             .OrderBy(s => s.EntryDate)
+            .ThenBy(s => s.MetalId)
             .ToListAsync(ct);
-    }
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<Metals>> GetMetalsAsync(CancellationToken ct = default) =>
