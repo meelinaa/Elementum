@@ -35,7 +35,6 @@ public static class ExceptionStatusMapper
             TimeoutException => Map504(TitleGatewayTimeout),
             KeyNotFoundException => Map404(TitleResourceNotFound),
             CurrencyMismatchException => Map422(TitleDomainValidation),
-            ResultException => Map500(TitleInternalError),
             DomainException => Map422(TitleDomainValidation),
             ExternalApiException => Map502(TitleUpstreamError),
             ConfigurationException => Map500(TitleInternalError),

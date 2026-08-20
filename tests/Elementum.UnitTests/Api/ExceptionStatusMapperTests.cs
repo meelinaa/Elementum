@@ -1,10 +1,7 @@
 using Elementum.Api.Exceptions;
-using Elementum.Api.Extensions;
 using Elementum.Application.Exceptions;
-using Elementum.Domain.Common;
 using Elementum.Domain.Exceptions;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 
 namespace Elementum.UnitTests.Api;
 
@@ -170,22 +167,6 @@ public class ExceptionStatusMapperTests
         Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.6.1", mapping.TypeUri);
     }
 
-    // [E]RROR RIGHT-BICEP: ResultException is a programming error and must not inherit 422 from InvalidOperationException handling
-    [Fact]
-    public void Map_WhenResultAccessedOnFailure_Returns500Not422()
-    {
-        // Arrange
-        var exception = ResultException.CannotAccessValueOfFailure();
-
-        // Act
-        var mapping = ExceptionStatusMapper.Map(exception);
-
-        // Assert
-        Assert.Equal(StatusCodes.Status500InternalServerError, mapping.StatusCode);
-        Assert.Equal("An error occurred", mapping.Title);
-        Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.6.1", mapping.TypeUri);
-    }
-
     // [E]RROR RIGHT-BICEP: ConfigurationException must map to 500 before the generic ApplicationException 502 arm
     [Fact]
     public void Map_WhenConfigurationMissing_Returns500Not502()
@@ -232,22 +213,6 @@ public class ExceptionStatusMapperTests
         Assert.Equal(499, mapping.StatusCode);
         Assert.Equal("Request cancelled", mapping.Title);
         Assert.Null(mapping.TypeUri);
-    }
-
-    // [C]ROSS-CHECK RIGHT-BICEP: KeyNotFound mapping aligns with ResultExtensions not-found ProblemDetails type URI and status
-    [Fact]
-    public void Map_WhenResourceNotFound_MatchesResultExtensionsNotFoundProblemDetails()
-    {
-        // Arrange
-        var resultProblem = (ObjectResult)Result.Failure(new Error("Metals.NotFoundBySymbol", "not found")).ToActionResult();
-        var resultDetails = Assert.IsType<ProblemDetails>(resultProblem.Value);
-
-        // Act
-        var mapping = ExceptionStatusMapper.Map(new KeyNotFoundException("metal symbol"));
-
-        // Assert
-        Assert.Equal(resultProblem.StatusCode, mapping.StatusCode);
-        Assert.Equal(resultDetails.Type, mapping.TypeUri);
     }
 
     // [C]ROSS-CHECK RIGHT-BICEP: 400 bad-request type URI matches ValidationFilter RFC 7231 section 6.5.1 reference

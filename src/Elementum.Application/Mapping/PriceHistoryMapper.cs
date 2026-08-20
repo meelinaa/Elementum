@@ -43,27 +43,6 @@ public static class PriceHistoryMapper
         };
     }
 
-    /// <summary>Maps a <see cref="DailyPriceSummary"/> entity to <see cref="DailyPriceSummaryDto"/>.</summary>
-    public static DailyPriceSummaryDto ToDailyPriceSummaryDto(this DailyPriceSummary summary, string? symbol = null, string? metalName = null)
-    {
-        ArgumentNullException.ThrowIfNull(summary);
-
-        return new DailyPriceSummaryDto
-        {
-            Id = summary.Id,
-            MetalId = summary.MetalId,
-            Symbol = symbol ?? summary.Metal?.Symbol ?? string.Empty,
-            MetalName = metalName ?? summary.Metal?.Name ?? string.Empty,
-            Currency = summary.Currency,
-            EntryDate = summary.EntryDate,
-            OpenPrice = summary.OpenPrice,
-            HighPrice = summary.HighPrice,
-            LowPrice = summary.LowPrice,
-            ClosePrice = summary.ClosePrice,
-            ExchangeRateUsdEur = summary.ExchangeRateUsdEur
-        };
-    }
-
     /// <summary>Maps a <see cref="PriceHistory"/> entity to <see cref="TradingPriceDto"/>.</summary>
     public static TradingPriceDto ToTradingPriceDto(this PriceHistory entity)
     {

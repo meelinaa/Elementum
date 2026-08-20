@@ -148,13 +148,8 @@ public class PriceHistoryRepository : IElementumDbContext
     public async Task<IReadOnlyList<Metals>> GetMetalsAsync(CancellationToken ct = default) =>
         await _db.Metals.ToListAsync(ct);
 
-    /// <inheritdoc />
-    public async Task<Metals?> GetMetalById(int id, CancellationToken ct) =>
-        await _db.Metals.FirstOrDefaultAsync(x => x.Id == id, ct);
-
-    /// <inheritdoc />
-    public async Task<Metals?> GetMetalBySymbol(string symbol, CancellationToken ct) =>
-        await _db.Metals.FirstOrDefaultAsync(x => x.Symbol == symbol, ct);
+    private Task<Metals?> GetMetalBySymbol(string symbol, CancellationToken ct) =>
+        _db.Metals.FirstOrDefaultAsync(x => x.Symbol == symbol, ct);
 
     /// <inheritdoc />
     public async Task<PriceHistory?> GetPriceHistoryByMetalSymbolLatest(string symbol, CancellationToken ct) =>

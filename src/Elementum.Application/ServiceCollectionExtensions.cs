@@ -1,5 +1,4 @@
 using Elementum.Application.Inbound.UseCases.Ingestion;
-using Elementum.Application.Inbound.UseCases.Metals;
 using Elementum.Application.Inbound.UseCases.Prices;
 using Elementum.Application.Services;
 using FluentValidation;
@@ -17,8 +16,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ILiveQuotesProvider, LiveQuotesProvider>();
         services.AddScoped<IIngestPricesUseCase, IngestPricesUseCase>();
         services.AddScoped<IGetPriceHistoryUseCase, GetPriceHistoryUseCase>();
-        services.AddScoped<IGetMetalsUseCase, GetMetalsUseCase>();
-        services.AddScoped<IGetDailyCandlesUseCase, GetDailyCandlesUseCase>();
         services.AddScoped<ILivePricesUseCase, LivePricesUseCase>();
 
         services.AddValidatorsFromAssembly(typeof(ServiceCollectionExtensions).Assembly);

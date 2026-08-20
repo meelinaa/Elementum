@@ -51,36 +51,6 @@ public class PriceHistoryMapperTests
         Assert.Equal("Gold", dto.Metal.Name);
     }
 
-    // [R]IGHT-BICEP: Verifies that DailyPriceSummary maps to DailyPriceSummaryDto including OHLC candles
-    [Fact]
-    public void ToDailyPriceSummaryDto_MapsSummaryCorrectly()
-    {
-        // Arrange
-        var summary = DailyPriceSummary.Create(
-            metalId: 1,
-            currency: "USD",
-            entryDate: new DateOnly(2026, 8, 17),
-            openPrice: 2400m,
-            highPrice: 2450m,
-            lowPrice: 2390m,
-            closePrice: 2420m,
-            exchangeRateUsdEur: 1.15m);
-
-        // Act
-        var dto = summary.ToDailyPriceSummaryDto("XAU", "Gold");
-
-        // Assert
-        Assert.Equal(1, dto.MetalId);
-        Assert.Equal("XAU", dto.Symbol);
-        Assert.Equal("Gold", dto.MetalName);
-        Assert.Equal("USD", dto.Currency);
-        Assert.Equal(2400m, dto.OpenPrice);
-        Assert.Equal(2450m, dto.HighPrice);
-        Assert.Equal(2390m, dto.LowPrice);
-        Assert.Equal(2420m, dto.ClosePrice);
-        Assert.Equal(1.15m, dto.ExchangeRateUsdEur);
-    }
-
     // [R]IGHT-BICEP: Verifies that PriceHistory entity maps to TradingPriceDto with technical indicator metrics
     [Fact]
     public void ToTradingPriceDto_MapsPriceHistoryCorrectly()

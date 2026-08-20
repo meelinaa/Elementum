@@ -29,12 +29,6 @@ public interface IPriceHistoryReadRepository
         string? currency = null,
         CancellationToken ct = default);
 
-    /// <summary>Returns a single metal by its primary key.</summary>
-    Task<Metals?> GetMetalById(int id, CancellationToken ct);
-
-    /// <summary>Returns a single metal by its symbol (e.g. XAU, XAG, XPT).</summary>
-    Task<Metals?> GetMetalBySymbol(string symbol, CancellationToken ct);
-
     /// <summary>Returns the most recent price history entry for a metal by symbol.</summary>
     Task<PriceHistory?> GetPriceHistoryByMetalSymbolLatest(string symbol, CancellationToken ct);
 

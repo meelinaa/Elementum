@@ -1,6 +1,5 @@
 using Elementum.Api.Inbound.Controllers;
 using Elementum.Application.Inbound.UseCases.Ingestion;
-using Elementum.Application.Inbound.UseCases.Metals;
 using Elementum.Application.Inbound.UseCases.Prices;
 using Elementum.Infrastructure.Outbound.Caching;
 using Microsoft.AspNetCore.Mvc;
@@ -83,19 +82,6 @@ public class DesignRuleTests
             .GetResult();
 
         Assert.True(result.IsSuccessful, "GetPriceHistoryUseCase must implement IGetPriceHistoryUseCase");
-    }
-
-    [Fact]
-    public void GetMetalsUseCase_Should_Implement_IGetMetalsUseCase()
-    {
-        var result = Types.InAssembly(typeof(GetMetalsUseCase).Assembly)
-            .That()
-            .HaveName("GetMetalsUseCase")
-            .Should()
-            .ImplementInterface(typeof(IGetMetalsUseCase))
-            .GetResult();
-
-        Assert.True(result.IsSuccessful, "GetMetalsUseCase must implement IGetMetalsUseCase");
     }
 
     [Fact]
