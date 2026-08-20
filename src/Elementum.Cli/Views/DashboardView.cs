@@ -11,6 +11,14 @@ namespace Elementum.Cli.Views;
 /// </summary>
 public class DashboardView : AsyncDetailViewBase
 {
+    private readonly IHttpCall _api;
+
+    public DashboardView(IHttpCall api)
+    {
+        ArgumentNullException.ThrowIfNull(api);
+        _api = api;
+    }
+
     /// <inheritdoc />
     protected override string ViewTitle => CliStrings.DashboardTitle;
 
@@ -22,7 +30,7 @@ public class DashboardView : AsyncDetailViewBase
     {
         await ConsoleLoader.RunAsync(async () =>
         {
-            var overview = await HttpCall.GetLiveMarketOverviewAsync();
+            var overview = await _api.GetLiveMarketOverviewAsync();
 
             var w = CliConstants.DashboardColumnWidths;
 

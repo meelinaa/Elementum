@@ -1,4 +1,3 @@
-using Elementum.Cli.Api;
 using Elementum.Cli.Constants;
 using Elementum.Cli.Enums;
 using Elementum.Cli.Rendering;
@@ -50,17 +49,17 @@ public static class CliNavigation
         }
         else if (app.State == AppState.Detail && app.CurrentDetailView.HasValue)
         {
-            var view = ViewRegistry.Get(app.CurrentDetailView.Value);
+            var view = app.Views.Get(app.CurrentDetailView.Value);
             if (key.Key == ConsoleKey.R)
             {
-                HttpCall.ClearCache();
+                app.Api.ClearCache();
                 _ = view.RenderAsync();
                 return;
             }
             if (key.Key == ConsoleKey.C)
             {
                 app.ToggleCurrency();
-                HttpCall.ClearCache();
+                app.Api.ClearCache();
                 _ = view.RenderAsync();
                 return;
             }
@@ -83,7 +82,7 @@ public static class CliNavigation
         app.CurrentDetailView = item.View;
         if (ViewRegistry.RequiresMetalSelection(item.View!.Value))
             app.CurrentSelectedMetal = null;
-        var view = ViewRegistry.Get(item.View.Value);
+        var view = app.Views.Get(item.View.Value);
         _ = view.RenderAsync();
     }
 

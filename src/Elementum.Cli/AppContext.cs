@@ -1,6 +1,8 @@
+using Elementum.Cli.Api;
 using Elementum.Cli.Enums;
 using Elementum.Cli.Constants;
 using Elementum.Cli.Models;
+using Elementum.Cli.Views;
 
 namespace Elementum.Cli;
 
@@ -9,8 +11,14 @@ namespace Elementum.Cli;
 /// </summary>
 public class AppContext
 {
-    /// <summary>Current context for this run. Set in <see cref="Program.Main"/>.</summary>
+    /// <summary>Current context for this run. Set in <see cref="Hosting.CliApplicationHost"/>.</summary>
     public static AppContext? Current { get; set; }
+
+    /// <summary>Injected Elementum API client for this session.</summary>
+    public IHttpCall Api { get; set; } = null!;
+
+    /// <summary>View factory for this session.</summary>
+    public ViewRegistry Views { get; set; } = null!;
 
     /// <summary>Current UI state (Menu or Detail).</summary>
     public AppState State { get; set; } = AppState.Menu;

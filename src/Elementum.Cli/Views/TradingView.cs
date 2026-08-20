@@ -10,6 +10,14 @@ namespace Elementum.Cli.Views;
 /// </summary>
 public class TradingView : MetalDetailViewBase
 {
+    private readonly IHttpCall _api;
+
+    public TradingView(IHttpCall api)
+    {
+        ArgumentNullException.ThrowIfNull(api);
+        _api = api;
+    }
+
     /// <inheritdoc />
     protected override string ViewTitle => "TRADING & DAILY ANALYSIS";
 
@@ -28,7 +36,7 @@ public class TradingView : MetalDetailViewBase
             Console.Clear();
             CliOutputHelper.RenderViewHeader($"{ViewTitle} — {name.ToUpperInvariant()} ({sym})");
 
-            var item = await HttpCall.GetPriceHistoryTradingLatestAsync(sym, currency);
+            var item = await _api.GetPriceHistoryTradingLatestAsync(sym, currency);
 
             if (item == null)
             {

@@ -1,5 +1,8 @@
+using Elementum.Cli.Api;
 using Elementum.Cli.Navigation;
 using Elementum.Cli.Rendering;
+using Elementum.Cli.Views;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Elementum.Cli.Hosting;
 
@@ -8,10 +11,16 @@ namespace Elementum.Cli.Hosting;
 /// </summary>
 public static class CliApplicationHost
 {
-    /// <summary>Builds application state and blocks until the user exits.</summary>
-    public static void Run()
+    /// <summary>Builds application state from DI and blocks until the user exits.</summary>
+    public static void Run(IServiceProvider services)
     {
-        var app = new AppContext();
+        ArgumentNullException.ThrowIfNull(services);
+
+        var app = new AppContext
+        {
+            Api = services.GetRequiredService<IHttpCall>(),
+            Views = services.GetRequiredService<ViewRegistry>()
+        };
         app.InitializeMenuItems();
         AppContext.Current = app;
 

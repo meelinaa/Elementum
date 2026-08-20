@@ -11,6 +11,7 @@ public class Program
     public static void Main()
     {
         CliConsoleConfiguration.Apply();
-        CliApplicationHost.Run();
+        using var services = CliServiceCollectionExtensions.CreateServiceProvider();
+        CliApplicationHost.Run(services);
     }
 }

@@ -1,4 +1,3 @@
-using Elementum.Application.DTOs;
 using Elementum.Cli.Aggregation;
 using Elementum.Cli.Api;
 using Elementum.Cli.Constants;
@@ -15,6 +14,14 @@ namespace Elementum.Cli.Views;
 /// </summary>
 public class HistoryView : IDetailView
 {
+    private readonly IHttpCall _api;
+
+    public HistoryView(IHttpCall api)
+    {
+        ArgumentNullException.ThrowIfNull(api);
+        _api = api;
+    }
+
     /// <summary>Number of data points per aggregation (passed to API as count).</summary>
     private static readonly Dictionary<HistoryPeriod, int> PeriodCounts = new()
     {
@@ -67,7 +74,7 @@ public class HistoryView : IDetailView
     }
 
     /// <summary>Fetches history data, aggregates via <see cref="HistoryDataAggregator"/> and renders charts via <see cref="HistoryRenderer"/>.</summary>
-    private static async Task LoadAndRenderChartsAsync(string sym, string name, HistoryPeriod period, int count)
+    private async Task LoadAndRenderChartsAsync(string sym, string name, HistoryPeriod period, int count)
     {
         await ConsoleLoader.RunAsync(async () =>
         {
@@ -75,7 +82,7 @@ public class HistoryView : IDetailView
             var currency = app?.SelectedCurrency ?? "EUR";
             var currencySymbol = app?.CurrencySymbol ?? "€";
 
-            var rawList = await HttpCall.GetPriceHistoryMetalAsync(sym, currency);
+            var rawList = await _api.GetPriceHistoryMetalAsync(sym, currency);
             var list = HistoryDataAggregator.Aggregate(rawList, period, count, currency);
             var periodLabel = PeriodLabels[period];
             Console.Clear();

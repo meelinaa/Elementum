@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 using Elementum.Application.DTOs;
-using Elementum.Cli.Config;
 using Elementum.Cli.Exceptions;
 using Elementum.Cli.Logging;
 using Microsoft.Extensions.Caching.Memory;
@@ -10,40 +9,37 @@ using Microsoft.Extensions.Logging;
 namespace Elementum.Cli.Api;
 
 /// <summary>
-/// Central HTTP client and cache layer for the CLI.
-/// Handles REST API requests to Elementum API with in-memory caching and error resilience without magic literals.
-/// Uses <see cref="CliLogMessages"/> for zero-allocation logging and Exception Factories.
+/// HTTP client and cache layer for the CLI. Timeout is owned by the injected <see cref="HttpClient"/>.
 /// </summary>
-public class HttpCall
+public sealed class HttpCall : IHttpCall
 {
-    private static readonly TimeSpan DefaultHttpTimeout = TimeSpan.FromSeconds(15);
+    public static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan DefaultCacheDuration = TimeSpan.FromMinutes(5);
 
-    private static readonly ILogger _log = CliLogging.GetLogger(nameof(HttpCall));
-
-    /// <summary>Shared options for JSON (de)serialization.</summary>
     public static readonly JsonSerializerOptions DefaultJsonOptions = new() { PropertyNameCaseInsensitive = true };
 
-    private static readonly Lazy<HttpClient> _httpClient = new(() =>
+    private readonly HttpClient _httpClient;
+    private readonly IMemoryCache _cache;
+    private readonly ILogger<HttpCall> _log;
+    private readonly ConcurrentDictionary<string, byte> _cacheKeys = new();
+
+    public HttpCall(HttpClient httpClient, IMemoryCache cache, ILogger<HttpCall> logger)
     {
-        var client = new HttpClient
-        {
-            BaseAddress = new Uri(CliConfig.ApiBaseUrl),
-            Timeout = DefaultHttpTimeout
-        };
-        client.DefaultRequestHeaders.Add("Accept", "application/json");
-        return client;
-    });
+        ArgumentNullException.ThrowIfNull(httpClient);
+        ArgumentNullException.ThrowIfNull(cache);
+        ArgumentNullException.ThrowIfNull(logger);
 
-    private static readonly IMemoryCache _cache = new MemoryCache(new MemoryCacheOptions());
-    private static readonly ConcurrentDictionary<string, byte> _cacheKeys = new();
+        _httpClient = httpClient;
+        _cache = cache;
+        _log = logger;
+    }
 
-    /// <summary>GET prices/live — live market overview for all 4 metals in USD and EUR.</summary>
-    public static async Task<LiveMarketOverviewDto?> GetLiveMarketOverviewAsync()
+    /// <inheritdoc />
+    public async Task<LiveMarketOverviewDto?> GetLiveMarketOverviewAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            return await SendRequestAsync<LiveMarketOverviewDto>("prices/live");
+            return await SendRequestAsync<LiveMarketOverviewDto>("prices/live", cancellationToken);
         }
         catch (Exception ex)
         {
@@ -52,12 +48,17 @@ public class HttpCall
         }
     }
 
-    /// <summary>GET prices/live/trading/{symbol}?currency={currency} — live trading analysis for a specific metal.</summary>
-    public static async Task<TradingPriceDto?> GetPriceHistoryTradingLatestAsync(string metalSymbol, string currency = "EUR")
+    /// <inheritdoc />
+    public async Task<TradingPriceDto?> GetPriceHistoryTradingLatestAsync(
+        string metalSymbol,
+        string currency = "EUR",
+        CancellationToken cancellationToken = default)
     {
         try
         {
-            return await SendRequestAsync<TradingPriceDto>($"prices/live/trading/{metalSymbol}?currency={currency}");
+            return await SendRequestAsync<TradingPriceDto>(
+                $"prices/live/trading/{metalSymbol}?currency={currency}",
+                cancellationToken);
         }
         catch (Exception ex)
         {
@@ -66,12 +67,17 @@ public class HttpCall
         }
     }
 
-    /// <summary>GET history/{symbol}?currency={currency} — returns raw price history for one metal and currency.</summary>
-    public static async Task<List<PriceHistoryDto>?> GetPriceHistoryMetalAsync(string metalSymbol, string currency = "EUR")
+    /// <inheritdoc />
+    public async Task<List<PriceHistoryDto>?> GetPriceHistoryMetalAsync(
+        string metalSymbol,
+        string currency = "EUR",
+        CancellationToken cancellationToken = default)
     {
         try
         {
-            return await SendRequestAsync<List<PriceHistoryDto>>($"history/{metalSymbol}?currency={currency}");
+            return await SendRequestAsync<List<PriceHistoryDto>>(
+                $"history/{metalSymbol}?currency={currency}",
+                cancellationToken);
         }
         catch (Exception ex)
         {
@@ -80,17 +86,14 @@ public class HttpCall
         }
     }
 
-    /// <summary>Sends GET to the given endpoint; returns cached JSON if present, otherwise fetches and caches.</summary>
-    private static async Task<T> SendRequestAsync<T>(string endpoint)
+    private async Task<T> SendRequestAsync<T>(string endpoint, CancellationToken cancellationToken)
     {
         try
         {
             if (_cache.TryGetValue(endpoint, out T? cachedValue) && cachedValue != null)
-            {
                 return cachedValue;
-            }
 
-            var response = await _httpClient.Value.GetAsync(endpoint);
+            var response = await _httpClient.GetAsync(endpoint, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -98,7 +101,7 @@ public class HttpCall
                 throw CliHttpException.RequestFailed(response.StatusCode, endpoint);
             }
 
-            var json = await response.Content.ReadAsStringAsync();
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
             var value = JsonSerializer.Deserialize<T>(json, DefaultJsonOptions)!;
 
             _cacheKeys.TryAdd(endpoint, 0);
@@ -113,8 +116,8 @@ public class HttpCall
         }
     }
 
-    /// <summary>Clears all cached API responses.</summary>
-    public static void ClearCache()
+    /// <inheritdoc />
+    public void ClearCache()
     {
         foreach (var key in _cacheKeys.Keys)
             _cache.Remove(key);

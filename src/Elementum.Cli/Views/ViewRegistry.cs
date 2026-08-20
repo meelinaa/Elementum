@@ -1,16 +1,24 @@
+using Elementum.Cli.Api;
 using Elementum.Cli.Enums;
 using Elementum.Cli.Views.Interfaces;
 
 namespace Elementum.Cli.Views;
 
 /// <summary>Factory and cache for detail views.</summary>
-public static class ViewRegistry
+public sealed class ViewRegistry
 {
-    private static readonly Dictionary<DetailView, IDetailView> _cache = [];
-    private static readonly Lock _lock = new();
+    private readonly IHttpCall _api;
+    private readonly Dictionary<DetailView, IDetailView> _cache = [];
+    private readonly Lock _lock = new();
+
+    public ViewRegistry(IHttpCall api)
+    {
+        ArgumentNullException.ThrowIfNull(api);
+        _api = api;
+    }
 
     /// <summary>Returns the view instance for the given type; creates and caches it on first request.</summary>
-    public static IDetailView Get(DetailView view)
+    public IDetailView Get(DetailView view)
     {
         lock (_lock)
         {
@@ -23,22 +31,17 @@ public static class ViewRegistry
         }
     }
 
-    /// <summary>Creates a new instance of the view type (Dashboard, Trading, History, Info).</summary>
-    private static IDetailView Create(DetailView view)
-    {
-        return view switch
+    private IDetailView Create(DetailView view) =>
+        view switch
         {
-            DetailView.Dashboard => new DashboardView(),
-            DetailView.TradingView => new TradingView(),
-            DetailView.History => new HistoryView(),
+            DetailView.Dashboard => new DashboardView(_api),
+            DetailView.TradingView => new TradingView(_api),
+            DetailView.History => new HistoryView(_api),
             DetailView.Info => new InfoView(),
-            _ => new DashboardView()
+            _ => new DashboardView(_api)
         };
-    }
 
     /// <summary>Returns true if the view requires the user to select a metal (Trading, History) before showing data.</summary>
-    public static bool RequiresMetalSelection(DetailView view)
-    {
-        return view is DetailView.TradingView or DetailView.History;
-    }
+    public static bool RequiresMetalSelection(DetailView view) =>
+        view is DetailView.TradingView or DetailView.History;
 }
