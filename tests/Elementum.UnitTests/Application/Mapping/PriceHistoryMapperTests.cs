@@ -26,24 +26,22 @@ public class PriceHistoryMapperTests
     public void ToPriceHistoryDto_MapsPriceHistoryCorrectly()
     {
         // Arrange
-        var entity = new PriceHistory
-        {
-            Id = 42,
-            MetalId = 1,
-            Currency = "USD",
-            Symbol = "XAU",
-            ReferenceTimestamp = 1723900000L,
-            EntryDate = new DateOnly(2026, 8, 17),
-            Price = 2500.50m,
-            Chp = 1.2m,
-            Metal = new Metals { Id = 1, Symbol = "XAU", Name = "Gold" }
-        };
+        var metal = new Metals { Id = 1, Symbol = "XAU", Name = "Gold" };
+        var entity = PriceHistory.Create(
+            metalId: 1,
+            currency: "USD",
+            entryDate: new DateOnly(2026, 8, 17),
+            price: 2500.50m,
+            symbol: "XAU",
+            chp: 1.2m,
+            referenceTimestamp: 1723900000L,
+            metal: metal);
 
         // Act
         var dto = entity.ToPriceHistoryDto();
 
         // Assert
-        Assert.Equal(42, dto.Id);
+        Assert.Equal(entity.Id, dto.Id);
         Assert.Equal(1, dto.MetalId);
         Assert.Equal("USD", dto.Currency);
         Assert.Equal(1723900000L, dto.ReferenceTimestamp);
@@ -88,28 +86,27 @@ public class PriceHistoryMapperTests
     public void ToTradingPriceDto_MapsPriceHistoryCorrectly()
     {
         // Arrange
-        var entity = new PriceHistory
-        {
-            Id = 10,
-            Symbol = "XAUUSD",
-            Currency = "USD",
-            EntryDate = new DateOnly(2026, 8, 17),
-            ReferenceTimestamp = 1723900000L,
-            Price = 2500m,
-            OpenPrice = 2480m,
-            PrevClosePrice = 2470m,
-            HighPrice = 2510m,
-            LowPrice = 2475m,
-            Ch = 20m,
-            Chp = 0.81m,
-            Metal = new Metals { Id = 1, Symbol = "XAU", Name = "Gold" }
-        };
+        var metal = new Metals { Id = 1, Symbol = "XAU", Name = "Gold" };
+        var entity = PriceHistory.Create(
+            metalId: 1,
+            currency: "USD",
+            entryDate: new DateOnly(2026, 8, 17),
+            price: 2500m,
+            symbol: "XAUUSD",
+            openPrice: 2480m,
+            highPrice: 2510m,
+            lowPrice: 2475m,
+            prevClosePrice: 2470m,
+            ch: 20m,
+            chp: 0.81m,
+            referenceTimestamp: 1723900000L,
+            metal: metal);
 
         // Act
         var dto = entity.ToTradingPriceDto();
 
         // Assert
-        Assert.Equal(10, dto.Id);
+        Assert.Equal(entity.Id, dto.Id);
         Assert.Equal("XAU", dto.Symbol);
         Assert.Equal("Gold", dto.MetalName);
         Assert.Equal(1723900000L, dto.ReferenceTimestamp);

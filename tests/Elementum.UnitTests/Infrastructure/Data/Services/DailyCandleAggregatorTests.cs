@@ -27,10 +27,10 @@ public class DailyCandleAggregatorTests
         var date = new DateOnly(2026, 8, 17);
 
         db.PriceHistory.AddRange(
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, ReferenceTimestamp = 100, Price = 2400m, Symbol = "XAU" },
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, ReferenceTimestamp = 200, Price = 2450m, Symbol = "XAU" }, // High
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, ReferenceTimestamp = 300, Price = 2390m, Symbol = "XAU" }, // Low
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, ReferenceTimestamp = 400, Price = 2420m, Symbol = "XAU" }  // Close
+            PriceHistory.Create(1, "USD", date, 2400m, "XAU", referenceTimestamp: 100),
+            PriceHistory.Create(1, "USD", date, 2450m, "XAU", referenceTimestamp: 200),
+            PriceHistory.Create(1, "USD", date, 2390m, "XAU", referenceTimestamp: 300),
+            PriceHistory.Create(1, "USD", date, 2420m, "XAU", referenceTimestamp: 400)
         );
         await db.SaveChangesAsync();
 
@@ -72,14 +72,14 @@ public class DailyCandleAggregatorTests
         using var db = CreateInMemoryDbContext();
         var date = new DateOnly(2026, 8, 17);
 
-        db.PriceHistory.Add(new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, ReferenceTimestamp = 100, Price = 2400m, Symbol = "XAU" });
+        db.PriceHistory.Add(PriceHistory.Create(1, "USD", date, 2400m, "XAU", referenceTimestamp: 100));
         await db.SaveChangesAsync();
 
         var aggregator = new DailyCandleAggregator();
         await aggregator.AggregateDailySummaryAsync(db, date, CancellationToken.None);
 
         // Add a new higher tick later in the day
-        db.PriceHistory.Add(new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, ReferenceTimestamp = 200, Price = 2600m, Symbol = "XAU" });
+        db.PriceHistory.Add(PriceHistory.Create(1, "USD", date, 2600m, "XAU", referenceTimestamp: 200));
         await db.SaveChangesAsync();
 
         // Act - 2nd run
@@ -154,15 +154,7 @@ public class DailyCandleAggregatorTests
         db1.Database.EnsureCreated();
 
         var date = new DateOnly(2026, 8, 17);
-        db1.PriceHistory.Add(new PriceHistory
-        {
-            MetalId = 1,
-            Currency = "USD",
-            EntryDate = date,
-            ReferenceTimestamp = 100,
-            Price = 2400m,
-            Symbol = "XAU"
-        });
+        db1.PriceHistory.Add(PriceHistory.Create(1, "USD", date, 2400m, "XAU", referenceTimestamp: 100));
         await db1.SaveChangesAsync();
 
         var aggregator = new DailyCandleAggregator();
@@ -173,15 +165,7 @@ public class DailyCandleAggregatorTests
         summaryOnDb2.ApplyPriceTick(2410m, 1.1m, isClosePrice: false);
         await db2.SaveChangesAsync();
 
-        db1.PriceHistory.Add(new PriceHistory
-        {
-            MetalId = 1,
-            Currency = "USD",
-            EntryDate = date,
-            ReferenceTimestamp = 200,
-            Price = 2600m,
-            Symbol = "XAU"
-        });
+        db1.PriceHistory.Add(PriceHistory.Create(1, "USD", date, 2600m, "XAU", referenceTimestamp: 200));
         await db1.SaveChangesAsync();
 
         // Act

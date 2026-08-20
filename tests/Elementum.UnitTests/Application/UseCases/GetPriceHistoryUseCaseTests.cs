@@ -22,7 +22,7 @@ public class GetPriceHistoryUseCaseTests
         // Arrange
         var entities = new List<PriceHistory>
         {
-            new() { Id = 1, MetalId = 1, Symbol = "XAU", Currency = "USD", Price = 2500m, EntryDate = new DateOnly(2026, 8, 17), ReferenceTimestamp = 1000L }
+            PriceHistory.Create(1, "USD", new DateOnly(2026, 8, 17), 2500m, "XAU", referenceTimestamp: 1000L)
         };
 
         _repositoryMock.Setup(r => r.GetPriceHistoryAllLatest(It.IsAny<CancellationToken>()))
@@ -41,16 +41,7 @@ public class GetPriceHistoryUseCaseTests
     public async Task GetLatestBySymbolAsync_ReturnsSingleDto()
     {
         // Arrange
-        var entity = new PriceHistory
-        {
-            Id = 1,
-            MetalId = 1,
-            Symbol = "XAU",
-            Currency = "USD",
-            Price = 2500m,
-            EntryDate = new DateOnly(2026, 8, 17),
-            ReferenceTimestamp = 1000L
-        };
+        var entity = PriceHistory.Create(1, "USD", new DateOnly(2026, 8, 17), 2500m, "XAU", referenceTimestamp: 1000L);
 
         _repositoryMock.Setup(r => r.GetPriceHistoryByMetalSymbolLatest("XAU", It.IsAny<CancellationToken>()))
             .ReturnsAsync(entity);
@@ -85,7 +76,7 @@ public class GetPriceHistoryUseCaseTests
         // Arrange
         var entities = new List<PriceHistory>
         {
-            new() { Id = 1, MetalId = 1, Symbol = "XAU", Currency = "EUR", Price = 2300m, EntryDate = new DateOnly(2026, 8, 17), ReferenceTimestamp = 1000L }
+            PriceHistory.Create(1, "EUR", new DateOnly(2026, 8, 17), 2300m, "XAU", referenceTimestamp: 1000L)
         };
 
         _repositoryMock.Setup(r => r.GetPriceHistoryByMetalSymbolAsync("XAU", "EUR", It.IsAny<CancellationToken>()))
@@ -109,7 +100,7 @@ public class GetPriceHistoryUseCaseTests
         var last = new DateOnly(2026, 8, 17);
         var entities = new List<PriceHistory>
         {
-            new() { Id = 1, MetalId = 1, Symbol = "XAU", Currency = "USD", Price = 2500m, EntryDate = first, ReferenceTimestamp = 1000L }
+            PriceHistory.Create(1, "USD", first, 2500m, "XAU", referenceTimestamp: 1000L)
         };
 
         _repositoryMock.Setup(r => r.GetPriceHistoryByMetalSymbolAndDateRangeAsync("XAU", first, last, null, It.IsAny<CancellationToken>()))
@@ -128,16 +119,7 @@ public class GetPriceHistoryUseCaseTests
     public async Task GetTradingLatestAsync_ReturnsTradingPriceDto()
     {
         // Arrange
-        var entity = new PriceHistory
-        {
-            Id = 1,
-            MetalId = 1,
-            Symbol = "XAU",
-            Currency = "USD",
-            Price = 2500m,
-            EntryDate = new DateOnly(2026, 8, 17),
-            ReferenceTimestamp = 1000L
-        };
+        var entity = PriceHistory.Create(1, "USD", new DateOnly(2026, 8, 17), 2500m, "XAU", referenceTimestamp: 1000L);
 
         _repositoryMock.Setup(r => r.GetPriceHistoryByMetalSymbolLatest("XAU", It.IsAny<CancellationToken>()))
             .ReturnsAsync(entity);

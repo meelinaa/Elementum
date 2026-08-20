@@ -28,10 +28,10 @@ public class PriceHistoryPrunerTests
         var cutoffDate = DateOnly.FromDateTime(cutoff);
 
         db.PriceHistory.AddRange(
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = cutoffDate.AddDays(-3), Price = 2000m, Symbol = "XAU" },
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = cutoffDate.AddDays(-1), Price = 2050m, Symbol = "XAU" },
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = cutoffDate, Price = 2100m, Symbol = "XAU" },
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = cutoffDate.AddDays(1), Price = 2150m, Symbol = "XAU" }
+            PriceHistory.Create(1, "USD", cutoffDate.AddDays(-3), 2000m, "XAU"),
+            PriceHistory.Create(1, "USD", cutoffDate.AddDays(-1), 2050m, "XAU"),
+            PriceHistory.Create(1, "USD", cutoffDate, 2100m, "XAU"),
+            PriceHistory.Create(1, "USD", cutoffDate.AddDays(1), 2150m, "XAU")
         );
         await db.SaveChangesAsync();
 
@@ -54,7 +54,7 @@ public class PriceHistoryPrunerTests
         var cutoff = DateTime.UtcNow.AddDays(-7);
         var cutoffDate = DateOnly.FromDateTime(cutoff);
 
-        db.PriceHistory.Add(new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = cutoffDate.AddDays(1), Price = 2500m, Symbol = "XAU" });
+        db.PriceHistory.Add(PriceHistory.Create(1, "USD", cutoffDate.AddDays(1), 2500m, "XAU"));
         await db.SaveChangesAsync();
 
         var pruner = new PriceHistoryPruner();
@@ -77,14 +77,7 @@ public class PriceHistoryPrunerTests
         var cutoffDate = DateOnly.FromDateTime(cutoff);
 
         var staleRecords = Enumerable.Range(0, 5)
-            .Select(i => new PriceHistory
-            {
-                MetalId = 1,
-                Currency = "USD",
-                EntryDate = cutoffDate.AddDays(-(i + 1)),
-                Price = 2000m + i,
-                Symbol = "XAU"
-            })
+            .Select(i => PriceHistory.Create(1, "USD", cutoffDate.AddDays(-(i + 1)), 2000m + i, "XAU"))
             .ToList();
 
         db.PriceHistory.AddRange(staleRecords);

@@ -122,4 +122,34 @@ public class DailyPriceSummaryTests
         Assert.Equal(120m, candle.HighPrice);
         Assert.Equal(90m, candle.LowPrice);
     }
+
+    // [R]IGHT-BICEP: UpdateCandle replaces OHLC and refreshes the concurrency token
+    [Fact]
+    public void UpdateCandle_ReplacesOhlcAndTouchesUpdatedAt()
+    {
+        // Arrange
+        var candle = DailyPriceSummary.Create(1, "USD", new DateOnly(2026, 8, 17), 100m, 120m, 90m, 110m);
+        var previousUpdatedAt = candle.UpdatedAtUtc;
+
+        // Act
+        candle.UpdateCandle(200m, 220m, 190m, 210m);
+
+        // Assert
+        Assert.Equal(200m, candle.OpenPrice);
+        Assert.Equal(220m, candle.HighPrice);
+        Assert.Equal(190m, candle.LowPrice);
+        Assert.Equal(210m, candle.ClosePrice);
+        Assert.True(candle.UpdatedAtUtc >= previousUpdatedAt);
+    }
+
+    // [E]RROR: UpdateCandle rejects inverted high/low
+    [Fact]
+    public void UpdateCandle_WhenLowGreaterThanHigh_ThrowsPriceRangeInvalidException()
+    {
+        // Arrange
+        var candle = DailyPriceSummary.Create(1, "USD", new DateOnly(2026, 8, 17), 100m, 120m, 90m, 110m);
+
+        // Act & Assert
+        Assert.Throws<PriceRangeInvalidException>(() => candle.UpdateCandle(100m, 80m, 90m, 85m));
+    }
 }

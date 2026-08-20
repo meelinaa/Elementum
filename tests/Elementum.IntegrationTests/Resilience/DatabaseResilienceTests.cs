@@ -15,7 +15,10 @@ public class DatabaseResilienceTests
         // Arrange
         var attempts = 0;
         var innerMock = new Mock<IElementumDbContext>();
-        var list = new List<PriceHistory> { new() { Id = 1, MetalId = 1, Price = 2500m } };
+        var list = new List<PriceHistory>
+        {
+            PriceHistory.Create(1, "USD", DateOnly.FromDateTime(DateTime.UtcNow), 2500m)
+        };
         var transientEx = new SocketException((int)SocketError.ConnectionReset);
 
         innerMock.Setup(x => x.GetPriceHistoryAllLatest(It.IsAny<CancellationToken>()))

@@ -90,22 +90,19 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
         if (!db.PriceHistory.Any())
         {
-            db.PriceHistory.Add(new PriceHistory
-            {
-                Id = 1,
-                MetalId = 1,
-                Currency = "USD",
-                Symbol = "FOREXCOM:XAUUSD",
-                ReferenceTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                EntryDate = DateOnly.FromDateTime(DateTime.UtcNow),
-                Price = 2500.50m,
-                PrevClosePrice = 2480.00m,
-                OpenPrice = 2485.00m,
-                LowPrice = 2475.00m,
-                HighPrice = 2510.00m,
-                Ch = 20.50m,
-                Chp = 0.82m
-            });
+            db.PriceHistory.Add(PriceHistory.Create(
+                metalId: 1,
+                currency: "USD",
+                entryDate: DateOnly.FromDateTime(DateTime.UtcNow),
+                price: 2500.50m,
+                symbol: "FOREXCOM:XAUUSD",
+                openPrice: 2485.00m,
+                highPrice: 2510.00m,
+                lowPrice: 2475.00m,
+                prevClosePrice: 2480.00m,
+                ch: 20.50m,
+                chp: 0.82m,
+                referenceTimestamp: DateTimeOffset.UtcNow.ToUnixTimeSeconds()));
 
             db.SaveChanges();
         }

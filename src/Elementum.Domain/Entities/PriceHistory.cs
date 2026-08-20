@@ -8,23 +8,23 @@ namespace Elementum.Domain.Entities;
 /// </summary>
 public class PriceHistory
 {
-    public int Id { get; set; }
-    public int MetalId { get; set; }
-    public string Currency { get; set; } = "USD";
-    public string Symbol { get; set; } = string.Empty;
-    public long ReferenceTimestamp { get; set; }
-    public DateOnly EntryDate { get; set; }
-    public decimal Price { get; set; }
-    public decimal? PrevClosePrice { get; set; }
-    public decimal? OpenPrice { get; set; }
-    public decimal? LowPrice { get; set; }
-    public decimal? HighPrice { get; set; }
-    public decimal? Ch { get; set; }
-    public decimal? Chp { get; set; }
+    public int Id { get; private set; }
+    public int MetalId { get; private set; }
+    public string Currency { get; private set; } = "USD";
+    public string Symbol { get; private set; } = string.Empty;
+    public long ReferenceTimestamp { get; private set; }
+    public DateOnly EntryDate { get; private set; }
+    public decimal Price { get; private set; }
+    public decimal? PrevClosePrice { get; private set; }
+    public decimal? OpenPrice { get; private set; }
+    public decimal? LowPrice { get; private set; }
+    public decimal? HighPrice { get; private set; }
+    public decimal? Ch { get; private set; }
+    public decimal? Chp { get; private set; }
 
-    public Metals? Metal { get; set; }
+    public Metals? Metal { get; private set; }
 
-    public PriceHistory() { }
+    private PriceHistory() { }
 
     /// <summary>
     /// Factory method to create a validated <see cref="PriceHistory"/> instance.
@@ -41,7 +41,8 @@ public class PriceHistory
         decimal? prevClosePrice = null,
         decimal? ch = null,
         decimal? chp = null,
-        long referenceTimestamp = 0)
+        long referenceTimestamp = 0,
+        Metals? metal = null)
     {
         ValidateInvariants(metalId, currency, price, highPrice, lowPrice);
 
@@ -58,7 +59,8 @@ public class PriceHistory
             PrevClosePrice = prevClosePrice,
             Ch = ch,
             Chp = chp,
-            ReferenceTimestamp = referenceTimestamp
+            ReferenceTimestamp = referenceTimestamp,
+            Metal = metal
         };
     }
 
@@ -102,7 +104,6 @@ public class PriceHistory
         DomainThrowHelper.ThrowIfNegativeOrZero(metalId, nameof(metalId));
         DomainThrowHelper.ThrowIfNullOrWhiteSpace(currency, nameof(currency));
 
-        // Enforce valid domain currency (USD or EUR)
         ValueObjects.Currency.FromCode(currency);
 
         DomainThrowHelper.ThrowIfNegativeOrZero(price, nameof(price));

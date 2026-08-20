@@ -48,11 +48,7 @@ public class DailyCandleAggregator : IDailyCandleAggregator
             }
             else
             {
-                existing.OpenPrice = openPrice;
-                existing.HighPrice = highPrice;
-                existing.LowPrice = lowPrice;
-                existing.ClosePrice = closePrice;
-                existing.UpdatedAtUtc = DateTime.UtcNow;
+                existing.UpdateCandle(openPrice, highPrice, lowPrice, closePrice);
             }
         }
 

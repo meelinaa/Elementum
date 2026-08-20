@@ -272,16 +272,13 @@ public class PriceHistoryRepository : IElementumDbContext
 
             monthGroups.Reverse();
 
-            return monthGroups.Select(m => new PriceHistory
-            {
-                Id = 0,
-                MetalId = metal.Id,
-                Currency = m.Currency ?? DomainConstants.Currencies.Usd,
-                Symbol = metalSymbol,
-                EntryDate = new DateOnly(m.Year, m.Month, 1),
-                Price = Math.Round(m.AvgPrice, RoundingPrecision, MidpointRounding.ToEven),
-                Metal = metal
-            }).ToList();
+            return monthGroups.Select(m => PriceHistory.Create(
+                metalId: metal.Id,
+                currency: m.Currency ?? DomainConstants.Currencies.Usd,
+                entryDate: new DateOnly(m.Year, m.Month, 1),
+                price: Math.Round(m.AvgPrice, RoundingPrecision, MidpointRounding.ToEven),
+                symbol: metalSymbol,
+                metal: metal)).ToList();
         }
         else if (agg == "yearly")
         {
@@ -300,16 +297,13 @@ public class PriceHistoryRepository : IElementumDbContext
 
             yearGroups.Reverse();
 
-            return yearGroups.Select(y => new PriceHistory
-            {
-                Id = 0,
-                MetalId = metal.Id,
-                Currency = y.Currency ?? DomainConstants.Currencies.Usd,
-                Symbol = metalSymbol,
-                EntryDate = new DateOnly(y.Year, 1, 1),
-                Price = Math.Round(y.AvgPrice, RoundingPrecision, MidpointRounding.ToEven),
-                Metal = metal
-            }).ToList();
+            return yearGroups.Select(y => PriceHistory.Create(
+                metalId: metal.Id,
+                currency: y.Currency ?? DomainConstants.Currencies.Usd,
+                entryDate: new DateOnly(y.Year, 1, 1),
+                price: Math.Round(y.AvgPrice, RoundingPrecision, MidpointRounding.ToEven),
+                symbol: metalSymbol,
+                metal: metal)).ToList();
         }
         else // weekly
         {
@@ -333,16 +327,13 @@ public class PriceHistoryRepository : IElementumDbContext
                 })
                 .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Week)
                 .TakeLast(effectiveCount)
-                .Select(g => new PriceHistory
-                {
-                    Id = 0,
-                    MetalId = metal.Id,
-                    Currency = g.First().Currency,
-                    Symbol = metalSymbol,
-                    EntryDate = g.First().EntryDate,
-                    Price = Math.Round(g.Average(p => p.Price), RoundingPrecision, MidpointRounding.ToEven),
-                    Metal = metal
-                })
+                .Select(g => PriceHistory.Create(
+                    metalId: metal.Id,
+                    currency: g.First().Currency,
+                    entryDate: g.First().EntryDate,
+                    price: Math.Round(g.Average(p => p.Price), RoundingPrecision, MidpointRounding.ToEven),
+                    symbol: metalSymbol,
+                    metal: metal))
                 .ToList();
 
             return weeklyGroups;

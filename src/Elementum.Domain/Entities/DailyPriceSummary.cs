@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using Elementum.Domain.Exceptions;
 
 namespace Elementum.Domain.Entities;
@@ -6,30 +5,29 @@ namespace Elementum.Domain.Entities;
 /// <summary>
 /// Domain Entity & Aggregate Root representing the daily consolidated price candle (Min/Max/Open/Close at 22:00).
 /// Retained permanently for candlestick charts and long-term trend analytics.
-/// Uses <see cref="UpdatedAtUtc"/> as a concurrency check token for optimistic concurrency control.
+/// <see cref="UpdatedAtUtc"/> is the optimistic concurrency token, configured in Infrastructure Fluent API.
 /// </summary>
 public class DailyPriceSummary
 {
-    public int Id { get; set; }
-    public int MetalId { get; set; }
-    public string Currency { get; set; } = "USD";
-    public DateOnly EntryDate { get; set; }
-    public decimal OpenPrice { get; set; }
-    public decimal HighPrice { get; set; }
-    public decimal LowPrice { get; set; }
-    public decimal ClosePrice { get; set; }
-    public decimal? ExchangeRateUsdEur { get; set; }
-    public DateTime CreatedAtUtc { get; set; }
+    public int Id { get; private set; }
+    public int MetalId { get; private set; }
+    public string Currency { get; private set; } = "USD";
+    public DateOnly EntryDate { get; private set; }
+    public decimal OpenPrice { get; private set; }
+    public decimal HighPrice { get; private set; }
+    public decimal LowPrice { get; private set; }
+    public decimal ClosePrice { get; private set; }
+    public decimal? ExchangeRateUsdEur { get; private set; }
+    public DateTime CreatedAtUtc { get; private set; }
 
     /// <summary>
-    /// UTC timestamp of the last update. Serves as Optimistic Concurrency Token to prevent lost updates.
+    /// UTC timestamp of the last update. Persistence maps this as an optimistic concurrency token.
     /// </summary>
-    [ConcurrencyCheck]
-    public DateTime UpdatedAtUtc { get; set; }
+    public DateTime UpdatedAtUtc { get; private set; }
 
-    public Metals? Metal { get; set; }
+    public Metals? Metal { get; private set; }
 
-    public DailyPriceSummary() { }
+    private DailyPriceSummary() { }
 
     /// <summary>
     /// Factory method to create or initialize a <see cref="DailyPriceSummary"/> with invariant validation.
@@ -60,6 +58,29 @@ public class DailyPriceSummary
             CreatedAtUtc = now,
             UpdatedAtUtc = now
         };
+    }
+
+    /// <summary>
+    /// Replaces the full OHLC candle (e.g. after a daily rollup of all ticks).
+    /// </summary>
+    public void UpdateCandle(
+        decimal openPrice,
+        decimal highPrice,
+        decimal lowPrice,
+        decimal closePrice,
+        decimal? exchangeRateUsdEur = null)
+    {
+        ValidateInvariants(MetalId, Currency, openPrice, highPrice, lowPrice, closePrice);
+
+        OpenPrice = openPrice;
+        HighPrice = highPrice;
+        LowPrice = lowPrice;
+        ClosePrice = closePrice;
+
+        if (exchangeRateUsdEur.HasValue)
+            ExchangeRateUsdEur = exchangeRateUsdEur.Value;
+
+        UpdatedAtUtc = DateTime.UtcNow;
     }
 
     /// <summary>
@@ -98,7 +119,6 @@ public class DailyPriceSummary
         DomainThrowHelper.ThrowIfNegativeOrZero(metalId, nameof(metalId));
         DomainThrowHelper.ThrowIfNullOrWhiteSpace(currency, nameof(currency));
 
-        // Enforce supported currencies (EUR, USD)
         ValueObjects.Currency.FromCode(currency);
 
         if (openPrice <= 0 || highPrice <= 0 || lowPrice <= 0 || closePrice <= 0)

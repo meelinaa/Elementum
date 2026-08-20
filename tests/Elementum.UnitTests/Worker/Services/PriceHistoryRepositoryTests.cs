@@ -28,6 +28,15 @@ public class PriceHistoryRepositoryTests
         return (context, repo);
     }
 
+    private static PriceHistory Tick(
+        int metalId,
+        DateOnly date,
+        decimal price,
+        string currency = "USD",
+        string symbol = "XAU",
+        long timestamp = 0) =>
+        PriceHistory.Create(metalId, currency, date, price, symbol, referenceTimestamp: timestamp);
+
     // [B]OUNDARY: Verifies that saving an empty list of prices handles the boundary without exceptions or mutations
     [Fact]
     public async Task SavePricesAsync_WhenPricesEmpty_DoesNotThrow()
@@ -76,14 +85,7 @@ public class PriceHistoryRepositoryTests
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         for (int i = 10; i >= 1; i--)
         {
-            db.PriceHistory.Add(new PriceHistory
-            {
-                MetalId = 1,
-                Currency = "USD",
-                EntryDate = today.AddDays(-i),
-                Price = 2000m + i,
-                Symbol = "FOREXCOM:XAUUSD"
-            });
+            db.PriceHistory.Add(Tick(1, today.AddDays(-i), 2000m + i, symbol: "FOREXCOM:XAUUSD"));
         }
         await db.SaveChangesAsync();
 
@@ -103,9 +105,9 @@ public class PriceHistoryRepositoryTests
         // Arrange
         var (db, repo) = CreateTestSetup();
         db.PriceHistory.AddRange(
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = new DateOnly(2026, 1, 10), Price = 2000m, Symbol = "XAU" },
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = new DateOnly(2026, 1, 20), Price = 3000m, Symbol = "XAU" },
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = new DateOnly(2026, 2, 15), Price = 4000m, Symbol = "XAU" }
+            Tick(1, new DateOnly(2026, 1, 10), 2000m),
+            Tick(1, new DateOnly(2026, 1, 20), 3000m),
+            Tick(1, new DateOnly(2026, 2, 15), 4000m)
         );
         await db.SaveChangesAsync();
 
@@ -161,12 +163,12 @@ public class PriceHistoryRepositoryTests
         Assert.False(await repo.IsDataAlreadyIngestedToday(CancellationToken.None));
 
         // Act & Assert - Ingest only Gold (1 of 2 metals)
-        db.PriceHistory.Add(new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = today, Price = 2000m, Symbol = "XAU" });
+        db.PriceHistory.Add(Tick(1, today, 2000m));
         await db.SaveChangesAsync();
         Assert.False(await repo.IsDataAlreadyIngestedToday(CancellationToken.None));
 
         // Act & Assert - Ingest Silver (2 of 2 metals)
-        db.PriceHistory.Add(new PriceHistory { MetalId = 2, Currency = "USD", EntryDate = today, Price = 30m, Symbol = "XAG" });
+        db.PriceHistory.Add(Tick(2, today, 30m, symbol: "XAG"));
         await db.SaveChangesAsync();
         Assert.True(await repo.IsDataAlreadyIngestedToday(CancellationToken.None));
     }
@@ -220,10 +222,10 @@ public class PriceHistoryRepositoryTests
         var (db, repo) = CreateTestSetup();
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        db.PriceHistory.Add(new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = today.AddDays(-10), Price = 2000m, Symbol = "XAU" });
-        db.PriceHistory.Add(new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = today.AddDays(-8), Price = 2100m, Symbol = "XAU" });
-        db.PriceHistory.Add(new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = today.AddDays(-5), Price = 2200m, Symbol = "XAU" });
-        db.PriceHistory.Add(new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = today, Price = 2300m, Symbol = "XAU" });
+        db.PriceHistory.Add(Tick(1, today.AddDays(-10), 2000m));
+        db.PriceHistory.Add(Tick(1, today.AddDays(-8), 2100m));
+        db.PriceHistory.Add(Tick(1, today.AddDays(-5), 2200m));
+        db.PriceHistory.Add(Tick(1, today, 2300m));
         await db.SaveChangesAsync();
 
         // Act
@@ -244,10 +246,10 @@ public class PriceHistoryRepositoryTests
         var date = new DateOnly(2026, 8, 17);
 
         db.PriceHistory.AddRange(
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, Price = 4400m, ReferenceTimestamp = 1000L, Symbol = "XAU" },
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, Price = 4480m, ReferenceTimestamp = 1001L, Symbol = "XAU" }, // High
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, Price = 4390m, ReferenceTimestamp = 1002L, Symbol = "XAU" }, // Low
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, Price = 4420m, ReferenceTimestamp = 1003L, Symbol = "XAU" }  // Close
+            Tick(1, date, 4400m, timestamp: 1000L),
+            Tick(1, date, 4480m, timestamp: 1001L),
+            Tick(1, date, 4390m, timestamp: 1002L),
+            Tick(1, date, 4420m, timestamp: 1003L)
         );
         await db.SaveChangesAsync();
 
@@ -285,8 +287,8 @@ public class PriceHistoryRepositoryTests
         var (db, repo) = CreateTestSetup();
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         db.PriceHistory.AddRange(
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = today, Price = 2500m, Symbol = "XAU", ReferenceTimestamp = 1000L },
-            new PriceHistory { MetalId = 1, Currency = "EUR", EntryDate = today, Price = 2300m, Symbol = "XAU", ReferenceTimestamp = 1001L }
+            Tick(1, today, 2500m, timestamp: 1000L),
+            Tick(1, today, 2300m, currency: "EUR", timestamp: 1001L)
         );
         await db.SaveChangesAsync();
 
@@ -308,10 +310,10 @@ public class PriceHistoryRepositoryTests
         // Arrange
         var (db, repo) = CreateTestSetup();
         db.PriceHistory.AddRange(
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = new DateOnly(2026, 8, 1), Price = 2400m, Symbol = "XAU", ReferenceTimestamp = 1L },
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = new DateOnly(2026, 8, 10), Price = 2500m, Symbol = "XAU", ReferenceTimestamp = 2L },
-            new PriceHistory { MetalId = 1, Currency = "EUR", EntryDate = new DateOnly(2026, 8, 10), Price = 2300m, Symbol = "XAU", ReferenceTimestamp = 3L },
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = new DateOnly(2026, 8, 20), Price = 2600m, Symbol = "XAU", ReferenceTimestamp = 4L }
+            Tick(1, new DateOnly(2026, 8, 1), 2400m, timestamp: 1L),
+            Tick(1, new DateOnly(2026, 8, 10), 2500m, timestamp: 2L),
+            Tick(1, new DateOnly(2026, 8, 10), 2300m, currency: "EUR", timestamp: 3L),
+            Tick(1, new DateOnly(2026, 8, 20), 2600m, timestamp: 4L)
         );
         await db.SaveChangesAsync();
 

@@ -45,7 +45,7 @@ public class OptimisticConcurrencyTests
         // Instance 2 attempts to update with stale concurrency token (UpdatedAtUtc)
         summaryFromDb2.ApplyPriceTick(2400m);
 
-        // Assert - InMemory EF Core enforces ConcurrencyCheck attributes
+        // Assert - InMemory EF Core enforces Fluent API concurrency tokens
         await Assert.ThrowsAsync<DbUpdateConcurrencyException>(async () =>
         {
             await db2.SaveChangesAsync();
@@ -63,8 +63,8 @@ public class OptimisticConcurrencyTests
 
         db.Metals.Add(new Metals { Id = 1, Symbol = "XAU", Name = "Gold" });
         db.PriceHistory.AddRange(
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, Price = 2500m, ReferenceTimestamp = 1000L, Symbol = "XAU" },
-            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = date, Price = 2550m, ReferenceTimestamp = 1001L, Symbol = "XAU" }
+            PriceHistory.Create(1, "USD", date, 2500m, "XAU", referenceTimestamp: 1000L),
+            PriceHistory.Create(1, "USD", date, 2550m, "XAU", referenceTimestamp: 1001L)
         );
         await db.SaveChangesAsync();
 
