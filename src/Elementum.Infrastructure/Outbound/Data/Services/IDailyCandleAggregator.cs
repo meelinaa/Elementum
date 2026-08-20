@@ -1,7 +1,7 @@
 using Elementum.Domain.Entities;
-using Elementum.Infrastructure.Data;
+using Elementum.Infrastructure.Outbound.Data;
 
-namespace Elementum.Infrastructure.Data.Services;
+namespace Elementum.Infrastructure.Outbound.Data.Services;
 
 /// <summary>
 /// Service responsible for aggregating and updating daily price candles (Min, Max, Open, Close).

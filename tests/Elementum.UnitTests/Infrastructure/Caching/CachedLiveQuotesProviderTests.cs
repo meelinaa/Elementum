@@ -1,6 +1,6 @@
 using Elementum.Application.Models;
 using Elementum.Application.Services;
-using Elementum.Infrastructure.Caching;
+using Elementum.Infrastructure.Outbound.Caching;
 using Microsoft.Extensions.Caching.Memory;
 using Moq;
 

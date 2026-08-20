@@ -1,7 +1,7 @@
-using Elementum.Infrastructure.Data;
+using Elementum.Infrastructure.Outbound.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace Elementum.Infrastructure.Data.Services;
+namespace Elementum.Infrastructure.Outbound.Data.Services;
 
 /// <summary>
 /// Service implementation for pruning stale hourly price history ticks based on a retention threshold.

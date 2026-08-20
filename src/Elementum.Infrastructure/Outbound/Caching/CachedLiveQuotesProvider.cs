@@ -2,7 +2,7 @@ using Elementum.Application.Models;
 using Elementum.Application.Services;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace Elementum.Infrastructure.Caching;
+namespace Elementum.Infrastructure.Outbound.Caching;
 
 /// <summary>
 /// Infrastructure Decorator for <see cref="ILiveQuotesProvider"/> providing 5-minute In-Memory Caching.

@@ -1,9 +1,9 @@
 using Elementum.Application.Mapping;
 using Elementum.Application.Models;
 using Elementum.Domain.Entities;
-using Elementum.Infrastructure.Data;
-using Elementum.Infrastructure.Data.Repositories;
-using Elementum.Infrastructure.Data.Services;
+using Elementum.Infrastructure.Outbound.Data;
+using Elementum.Infrastructure.Outbound.Data.Repositories;
+using Elementum.Infrastructure.Outbound.Data.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace Elementum.Worker.Tests.Services;

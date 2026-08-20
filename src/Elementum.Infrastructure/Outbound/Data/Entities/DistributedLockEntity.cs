@@ -1,4 +1,4 @@
-namespace Elementum.Infrastructure.Data.Entities;
+namespace Elementum.Infrastructure.Outbound.Data.Entities;
 
 /// <summary>
 /// Infrastructure persistence entity representing a distributed lock record managed via Entity Framework Core.

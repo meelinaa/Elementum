@@ -1,6 +1,6 @@
-using Elementum.Infrastructure.Data;
+using Elementum.Infrastructure.Outbound.Data;
 
-namespace Elementum.Infrastructure.Data.Services;
+namespace Elementum.Infrastructure.Outbound.Data.Services;
 
 /// <summary>
 /// Service responsible for purging stale hourly price ticks based on data retention policies.

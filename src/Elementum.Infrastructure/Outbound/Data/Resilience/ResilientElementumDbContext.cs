@@ -1,8 +1,8 @@
 using Elementum.Domain.Entities;
-using Elementum.Infrastructure.Data.Interfaces;
+using Elementum.Infrastructure.Outbound.Data.Interfaces;
 using Polly;
 
-namespace Elementum.Infrastructure.Data.Resilience;
+namespace Elementum.Infrastructure.Outbound.Data.Resilience;
 
 /// <summary>
 /// Decorator that implements <see cref="IElementumDbContext"/> and wraps every call in a Polly retry policy.

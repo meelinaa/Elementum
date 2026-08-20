@@ -2,13 +2,13 @@ using Elementum.Application.Inbound.UseCases.Prices;
 using Elementum.Application.Ports.Outbound;
 using Elementum.Application.Services;
 using Elementum.Domain.Ports.Outbound;
-using Elementum.Infrastructure.Caching;
-using Elementum.Infrastructure.Data.Interfaces;
-using Elementum.Infrastructure.Data.Repositories;
-using Elementum.Infrastructure.Data.Resilience;
-using Elementum.Infrastructure.Data.Services;
-using Elementum.Infrastructure.External;
 using Elementum.Infrastructure.Outbound.Caching;
+using Elementum.Infrastructure.Outbound.Data.Interfaces;
+using Elementum.Infrastructure.Outbound.Data.Repositories;
+using Elementum.Infrastructure.Outbound.Data.Resilience;
+using Elementum.Infrastructure.Outbound.Data.Services;
+using Elementum.Infrastructure.Outbound.External;
+using Elementum.Infrastructure.Outbound.Locking;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Caching.Memory;
@@ -17,7 +17,7 @@ using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Extensions.Http;
 
-namespace Elementum.Infrastructure.Data;
+namespace Elementum.Infrastructure.Outbound.Data;
 
 /// <summary>
 /// Extension methods for registering Elementum Infrastructure, HybridCache, and secondary adapters in DI.
@@ -40,7 +40,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPriceHistoryReadRepository>(sp => sp.GetRequiredService<IElementumDbContext>());
         services.AddScoped<IPriceHistoryWriteRepository>(sp => sp.GetRequiredService<IElementumDbContext>());
         services.AddSingleton<IMetalsApiClient, MetalsApiClient>();
-        services.AddSingleton<IDistributedLockProvider, Locking.EfCoreDistributedLockProvider>();
+        services.AddSingleton<IDistributedLockProvider, EfCoreDistributedLockProvider>();
 
         services.AddMemoryCache();
 

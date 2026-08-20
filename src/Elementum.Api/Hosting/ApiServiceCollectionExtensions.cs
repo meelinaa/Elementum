@@ -2,7 +2,7 @@ using System.Threading.RateLimiting;
 using Elementum.Api.Exceptions;
 using Elementum.Application;
 using Elementum.Application.Options;
-using Elementum.Infrastructure.Data;
+using Elementum.Infrastructure.Outbound.Data;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.Mvc;

@@ -1,7 +1,7 @@
 using System.Net.Sockets;
 using Elementum.Domain.Entities;
-using Elementum.Infrastructure.Data.Interfaces;
-using Elementum.Infrastructure.Data.Resilience;
+using Elementum.Infrastructure.Outbound.Data.Interfaces;
+using Elementum.Infrastructure.Outbound.Data.Resilience;
 using Moq;
 
 namespace Elementum.IntegrationTests.Resilience;

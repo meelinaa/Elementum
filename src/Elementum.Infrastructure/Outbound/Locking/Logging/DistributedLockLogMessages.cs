@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace Elementum.Infrastructure.Locking.Logging;
+namespace Elementum.Infrastructure.Outbound.Locking.Logging;
 
 /// <summary>
 /// Source-generated, zero-allocation logging for distributed locking operations.

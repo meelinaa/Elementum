@@ -1,12 +1,12 @@
 using Elementum.Domain.Ports.Outbound;
-using Elementum.Infrastructure.Data;
-using Elementum.Infrastructure.Data.Entities;
-using Elementum.Infrastructure.Locking.Logging;
+using Elementum.Infrastructure.Outbound.Data;
+using Elementum.Infrastructure.Outbound.Data.Entities;
+using Elementum.Infrastructure.Outbound.Locking.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace Elementum.Infrastructure.Locking;
+namespace Elementum.Infrastructure.Outbound.Locking;
 
 /// <summary>
 /// Distributed lock implementation using Entity Framework Core and MySQL table <c>distributed_locks</c>.

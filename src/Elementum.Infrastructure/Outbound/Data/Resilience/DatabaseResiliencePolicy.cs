@@ -1,6 +1,6 @@
 using Polly;
 
-namespace Elementum.Infrastructure.Data.Resilience;
+namespace Elementum.Infrastructure.Outbound.Data.Resilience;
 
 /// <summary>
 /// Shared database resilience: defines which exceptions are transient and builds a Polly retry policy.

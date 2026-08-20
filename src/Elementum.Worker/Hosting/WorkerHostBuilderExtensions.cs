@@ -1,7 +1,7 @@
 using Elementum.Application;
 using Elementum.Application.Options;
-using Elementum.Infrastructure.Data;
-using Elementum.Infrastructure.External;
+using Elementum.Infrastructure.Outbound.Data;
+using Elementum.Infrastructure.Outbound.External;
 using Elementum.Worker.Jobs;
 using Elementum.Worker.Observability;
 using Microsoft.AspNetCore.Builder;

@@ -1,10 +1,10 @@
 using Elementum.Application.Options;
-using Elementum.Infrastructure.External.Logging;
+using Elementum.Infrastructure.Outbound.External.Logging;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Elementum.Infrastructure.External;
+namespace Elementum.Infrastructure.Outbound.External;
 
 /// <summary>
 /// Health check that verifies whether the GoldAPI is reachable.

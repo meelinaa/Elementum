@@ -1,7 +1,7 @@
 using Elementum.Application.Models;
 using Elementum.Application.Ports.Outbound;
 using Elementum.Domain.Entities;
-using Elementum.Infrastructure.Data;
+using Elementum.Infrastructure.Outbound.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;

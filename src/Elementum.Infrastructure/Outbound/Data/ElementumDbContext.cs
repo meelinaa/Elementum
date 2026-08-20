@@ -1,8 +1,8 @@
 using Elementum.Domain.Entities;
-using Elementum.Infrastructure.Data.Entities;
+using Elementum.Infrastructure.Outbound.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace Elementum.Infrastructure.Data;
+namespace Elementum.Infrastructure.Outbound.Data;
 
 /// <summary>
 /// Entity Framework Core DbContext for Elementum.

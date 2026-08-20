@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace Elementum.Infrastructure.External.Logging;
+namespace Elementum.Infrastructure.Outbound.External.Logging;
 
 /// <summary>
 /// Source-generated logging for external API health checks.

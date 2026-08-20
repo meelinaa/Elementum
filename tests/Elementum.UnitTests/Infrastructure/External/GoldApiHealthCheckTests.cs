@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text;
 using Elementum.Application.Options;
-using Elementum.Infrastructure.External;
+using Elementum.Infrastructure.Outbound.External;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;

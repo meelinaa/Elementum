@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Elementum.Application.Models;
 using Elementum.Application.Options;
-using Elementum.Infrastructure.External;
+using Elementum.Infrastructure.Outbound.External;
 using Microsoft.Extensions.Logging;
 using MicrosoftOptions = Microsoft.Extensions.Options.Options;
 using Moq;

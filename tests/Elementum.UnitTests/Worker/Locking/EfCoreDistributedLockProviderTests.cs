@@ -1,5 +1,5 @@
-using Elementum.Infrastructure.Data;
-using Elementum.Infrastructure.Locking;
+using Elementum.Infrastructure.Outbound.Data;
+using Elementum.Infrastructure.Outbound.Locking;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;

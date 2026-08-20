@@ -94,7 +94,7 @@ public class LayerDependencyTests
     public void Infrastructure_ShouldNot_HaveDependencyOn_PresentationLayers()
     {
         // Infrastructure implements Driven Ports for Domain/Application and must not depend on Api, Worker, or Cli
-        var result = Types.InAssembly(typeof(Elementum.Infrastructure.Data.ElementumDbContext).Assembly)
+        var result = Types.InAssembly(typeof(Elementum.Infrastructure.Outbound.Data.ElementumDbContext).Assembly)
             .ShouldNot()
             .HaveDependencyOnAny(
                 ApiNamespace,
@@ -113,7 +113,7 @@ public class LayerDependencyTests
             .That()
             .ResideInNamespace("Elementum.Api.Controllers")
             .ShouldNot()
-            .HaveDependencyOn("Elementum.Infrastructure.Data.ElementumDbContext")
+            .HaveDependencyOn("Elementum.Infrastructure.Outbound.Data.ElementumDbContext")
             .GetResult();
 
         Assert.True(result.IsSuccessful, "API Controllers must not depend directly on ElementumDbContext (use Application Use Cases instead)");
@@ -127,7 +127,7 @@ public class LayerDependencyTests
             .That()
             .ResideInNamespace("Elementum.Worker.Jobs")
             .ShouldNot()
-            .HaveDependencyOn("Elementum.Infrastructure.Data.ElementumDbContext")
+            .HaveDependencyOn("Elementum.Infrastructure.Outbound.Data.ElementumDbContext")
             .GetResult();
 
         Assert.True(result.IsSuccessful, "Worker Jobs must not depend directly on ElementumDbContext (use Application Use Cases instead)");

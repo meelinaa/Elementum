@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace Elementum.Infrastructure.Data.Logging;
+namespace Elementum.Infrastructure.Outbound.Data.Logging;
 
 /// <summary>
 /// Source-generated logging for database migrations and catalog seeding.

@@ -1,6 +1,5 @@
 using Elementum.Domain.Entities;
-using Elementum.Infrastructure.Data;
-using Elementum.Infrastructure.Data.Logging;
+using Elementum.Infrastructure.Outbound.Data.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

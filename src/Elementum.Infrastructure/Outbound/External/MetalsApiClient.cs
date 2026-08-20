@@ -2,11 +2,11 @@ using System.Text.Json;
 using Elementum.Application.Models;
 using Elementum.Application.Options;
 using Elementum.Application.Ports.Outbound;
-using Elementum.Infrastructure.External.Logging;
+using Elementum.Infrastructure.Outbound.External.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Elementum.Infrastructure.External;
+namespace Elementum.Infrastructure.Outbound.External;
 
 /// <summary>
 /// Secondary / Driven Adapter: Client for api.edelmetalle.de.

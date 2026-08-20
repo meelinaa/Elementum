@@ -2,11 +2,11 @@ using System.Globalization;
 using Elementum.Domain.Constants;
 using Elementum.Domain.Entities;
 using Elementum.Domain.Ports.Outbound;
-using Elementum.Infrastructure.Data.Interfaces;
-using Elementum.Infrastructure.Data.Services;
+using Elementum.Infrastructure.Outbound.Data.Interfaces;
+using Elementum.Infrastructure.Outbound.Data.Services;
 using Microsoft.EntityFrameworkCore;
 
-namespace Elementum.Infrastructure.Data.Repositories;
+namespace Elementum.Infrastructure.Outbound.Data.Repositories;
 
 /// <summary>
 /// Secondary / Driven Outbound Adapter: Implements <see cref="IPriceHistoryRepository"/> and <see cref="IElementumDbContext"/>

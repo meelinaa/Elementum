@@ -1,6 +1,6 @@
 using Elementum.Domain.Entities;
-using Elementum.Infrastructure.Data;
-using Elementum.Infrastructure.Data.Services;
+using Elementum.Infrastructure.Outbound.Data;
+using Elementum.Infrastructure.Outbound.Data.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 

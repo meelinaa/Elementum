@@ -1,8 +1,8 @@
 using Elementum.Domain.Entities;
-using Elementum.Infrastructure.Data;
+using Elementum.Infrastructure.Outbound.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace Elementum.Infrastructure.Data.Services;
+namespace Elementum.Infrastructure.Outbound.Data.Services;
 
 /// <summary>
 /// Service implementation for daily price summary (candle) aggregation and real-time tick updates.
