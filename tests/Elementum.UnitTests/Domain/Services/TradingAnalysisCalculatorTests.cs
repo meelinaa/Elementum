@@ -1,7 +1,7 @@
-using Elementum.Application.Services;
 using Elementum.Domain.Constants;
+using Elementum.Domain.Services;
 
-namespace Elementum.UnitTests.Application.Services;
+namespace Elementum.UnitTests.Domain.Services;
 
 public class TradingAnalysisCalculatorTests
 {

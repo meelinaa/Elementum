@@ -1,17 +1,32 @@
 using Elementum.Domain.Constants;
 
-namespace Elementum.Application.Services;
+namespace Elementum.Domain.Services;
 
 /// <summary>
-/// Domain/Application calculation engine for technical trading metrics (changes, percentage, volatility, status).
+/// Result of technical trading-indicator calculation for a single quote snapshot.
+/// </summary>
+public readonly record struct TradingAnalysis(
+    decimal Ch,
+    decimal Chp,
+    decimal DiffPrevClose,
+    string Status,
+    decimal VolatilityRange,
+    decimal VolatilityPercent);
+
+/// <summary>
+/// Domain service: computes change, percentage, previous-close delta, status, and volatility from prices.
 /// </summary>
 public static class TradingAnalysisCalculator
 {
     /// <summary>
-    /// Computes trading indicators from prices without magic numbers.
+    /// Computes trading indicators from OHLC-style prices without magic numbers.
     /// </summary>
-    public static (decimal Ch, decimal Chp, decimal DiffPrevClose, string Status, decimal VolatilityRange, decimal VolatilityPercent)
-        Calculate(decimal currentPrice, decimal openPrice, decimal highPrice, decimal lowPrice, decimal prevClose)
+    public static TradingAnalysis Calculate(
+        decimal currentPrice,
+        decimal openPrice,
+        decimal highPrice,
+        decimal lowPrice,
+        decimal prevClose)
     {
         decimal ch = currentPrice - openPrice;
         decimal chp = openPrice > 0
@@ -28,6 +43,6 @@ public static class TradingAnalysisCalculator
             ? Math.Round((volatilityRange / lowPrice) * DomainConstants.Trading.PercentageMultiplier, DomainConstants.Trading.DefaultPrecisionDecimals)
             : 0m;
 
-        return (ch, chp, diffPrevClose, status, volatilityRange, volatilityPct);
+        return new TradingAnalysis(ch, chp, diffPrevClose, status, volatilityRange, volatilityPct);
     }
 }

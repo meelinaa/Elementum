@@ -2,12 +2,13 @@ using Elementum.Application.DTOs;
 using Elementum.Application.Services;
 using Elementum.Domain.Constants;
 using Elementum.Domain.Ports.Outbound;
+using Elementum.Domain.Services;
 
 namespace Elementum.Application.Inbound.UseCases.Prices;
 
 /// <summary>
 /// Interactor: Implements live price querying and daily trading aggregations.
-/// Coordinates live quotes, repository history, and trading metrics calculations without magic literals.
+/// Coordinates live quotes and repository history; trading metrics are computed by the domain service.
 /// </summary>
 public class LivePricesUseCase : ILivePricesUseCase
 {
@@ -55,25 +56,20 @@ public class LivePricesUseCase : ILivePricesUseCase
             decimal openUsd = historyTodayUsd.Count > 0 ? (historyTodayUsd[0].OpenPrice ?? historyTodayUsd[0].Price) : m.Usd;
             decimal openEur = historyTodayEur.Count > 0 ? (historyTodayEur[0].OpenPrice ?? historyTodayEur[0].Price) : m.Eur;
 
-            decimal chpUsd = openUsd > 0
-                ? Math.Round(((m.Usd - openUsd) / openUsd) * DomainConstants.Trading.PercentageMultiplier, DomainConstants.Trading.DefaultPrecisionDecimals)
-                : 0m;
-            decimal chpEur = openEur > 0
-                ? Math.Round(((m.Eur - openEur) / openEur) * DomainConstants.Trading.PercentageMultiplier, DomainConstants.Trading.DefaultPrecisionDecimals)
-                : 0m;
-
             decimal highUsd = historyTodayUsd.Count > 0 ? Math.Max(historyTodayUsd.Max(p => p.HighPrice ?? p.Price), m.Usd) : m.Usd;
             decimal lowUsd = historyTodayUsd.Count > 0 ? Math.Min(historyTodayUsd.Min(p => p.LowPrice ?? p.Price), m.Usd) : m.Usd;
 
             decimal highEur = historyTodayEur.Count > 0 ? Math.Max(historyTodayEur.Max(p => p.HighPrice ?? p.Price), m.Eur) : m.Eur;
             decimal lowEur = historyTodayEur.Count > 0 ? Math.Min(historyTodayEur.Min(p => p.LowPrice ?? p.Price), m.Eur) : m.Eur;
 
-            // Get yesterday close from daily candles
             var yesterdaySummariesUsd = await _repository.GetDailySummariesAsync(m.Symbol, DomainConstants.Currencies.Usd, yesterday, yesterday, cancellationToken);
-            decimal? prevCloseUsd = yesterdaySummariesUsd.FirstOrDefault()?.ClosePrice;
+            decimal prevCloseUsd = yesterdaySummariesUsd.FirstOrDefault()?.ClosePrice ?? openUsd;
 
             var yesterdaySummariesEur = await _repository.GetDailySummariesAsync(m.Symbol, DomainConstants.Currencies.Eur, yesterday, yesterday, cancellationToken);
-            decimal? prevCloseEur = yesterdaySummariesEur.FirstOrDefault()?.ClosePrice;
+            decimal prevCloseEur = yesterdaySummariesEur.FirstOrDefault()?.ClosePrice ?? openEur;
+
+            var usdAnalysis = TradingAnalysisCalculator.Calculate(m.Usd, openUsd, highUsd, lowUsd, prevCloseUsd);
+            var eurAnalysis = TradingAnalysisCalculator.Calculate(m.Eur, openEur, highEur, lowEur, prevCloseEur);
 
             items.Add(new LiveMetalPriceDto
             {
@@ -83,14 +79,14 @@ public class LivePricesUseCase : ILivePricesUseCase
                 PriceEur = m.Eur,
                 OpenPriceUsd = openUsd,
                 OpenPriceEur = openEur,
-                ChpUsd = chpUsd,
-                ChpEur = chpEur,
+                ChpUsd = usdAnalysis.Chp,
+                ChpEur = eurAnalysis.Chp,
                 HighPriceUsd = highUsd,
                 HighPriceEur = highEur,
                 LowPriceUsd = lowUsd,
                 LowPriceEur = lowEur,
-                PrevCloseUsd = prevCloseUsd ?? openUsd,
-                PrevCloseEur = prevCloseEur ?? openEur
+                PrevCloseUsd = prevCloseUsd,
+                PrevCloseEur = prevCloseEur
             });
         }
 
@@ -127,8 +123,7 @@ public class LivePricesUseCase : ILivePricesUseCase
         decimal lowPrice = (isEur ? metal.LowPriceEur : metal.LowPriceUsd) ?? currentPrice;
         decimal prevClose = (isEur ? metal.PrevCloseEur : metal.PrevCloseUsd) ?? openPrice;
 
-        var (ch, chp, diffPrevClose, status, volatilityRange, volatilityPct) =
-            TradingAnalysisCalculator.Calculate(currentPrice, openPrice, highPrice, lowPrice, prevClose);
+        var analysis = TradingAnalysisCalculator.Calculate(currentPrice, openPrice, highPrice, lowPrice, prevClose);
 
         return new TradingPriceDto
         {
@@ -143,12 +138,12 @@ public class LivePricesUseCase : ILivePricesUseCase
             HighPrice = highPrice,
             LowPrice = lowPrice,
             PrevClosePrice = prevClose,
-            Ch = ch,
-            Chp = chp,
-            DifferencePrevClose = diffPrevClose,
-            VolatilityRange = volatilityRange,
-            VolatilityPercent = volatilityPct,
-            Status = status,
+            Ch = analysis.Ch,
+            Chp = analysis.Chp,
+            DifferencePrevClose = analysis.DiffPrevClose,
+            VolatilityRange = analysis.VolatilityRange,
+            VolatilityPercent = analysis.VolatilityPercent,
+            Status = analysis.Status,
             ExchangeRateUsdEur = overview.ExchangeRateUsdEur
         };
     }
