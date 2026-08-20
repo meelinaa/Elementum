@@ -53,7 +53,8 @@ public class IngestPricesUseCase : IIngestPricesUseCase
         var edelmetalleData = await _apiClient.GetEdelmetallePricesAsync(cancellationToken);
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        var metals = _readRepository.QueryMetals().ToDictionary(m => m.Symbol, m => m.Id, StringComparer.OrdinalIgnoreCase);
+        var metals = (await _readRepository.GetMetalsAsync(cancellationToken))
+            .ToDictionary(m => m.Symbol, m => m.Id, StringComparer.OrdinalIgnoreCase);
 
         if (edelmetalleData != null)
         {

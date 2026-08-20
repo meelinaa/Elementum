@@ -24,16 +24,10 @@ public class GetPriceHistoryUseCase : IGetPriceHistoryUseCase
         return entities.Select(e => e.ToPriceHistoryDto());
     }
 
-    public ValueTask<IEnumerable<PriceHistoryDto>> GetBySymbolAsync(string symbol, string? currency = null, CancellationToken ct = default)
+    public async ValueTask<IEnumerable<PriceHistoryDto>> GetBySymbolAsync(string symbol, string? currency = null, CancellationToken ct = default)
     {
-        var query = _repository.QueryPriceHistoryByMetalSymbol(symbol);
-        if (!string.IsNullOrWhiteSpace(currency))
-        {
-            var cur = currency.Trim().ToUpperInvariant();
-            query = query.Where(p => p.Currency == cur);
-        }
-        var entities = query.ToList();
-        return ValueTask.FromResult<IEnumerable<PriceHistoryDto>>(entities.Select(e => e.ToPriceHistoryDto()));
+        var entities = await _repository.GetPriceHistoryByMetalSymbolAsync(symbol, currency, ct);
+        return entities.Select(e => e.ToPriceHistoryDto());
     }
 
     public async ValueTask<PriceHistoryDto?> GetLatestBySymbolAsync(string symbol, CancellationToken ct = default)
@@ -48,10 +42,10 @@ public class GetPriceHistoryUseCase : IGetPriceHistoryUseCase
         return entity?.ToTradingPriceDto();
     }
 
-    public ValueTask<IEnumerable<PriceHistoryDto>> GetByDateRangeAsync(string symbol, DateOnly firstDate, DateOnly lastDate, CancellationToken ct = default)
+    public async ValueTask<IEnumerable<PriceHistoryDto>> GetByDateRangeAsync(string symbol, DateOnly firstDate, DateOnly lastDate, CancellationToken ct = default)
     {
-        var entities = _repository.QueryPriceHistoryByMetalSymbolAndDateRange(symbol, firstDate, lastDate).ToList();
-        return ValueTask.FromResult<IEnumerable<PriceHistoryDto>>(entities.Select(e => e.ToPriceHistoryDto()));
+        var entities = await _repository.GetPriceHistoryByMetalSymbolAndDateRangeAsync(symbol, firstDate, lastDate, currency: null, ct);
+        return entities.Select(e => e.ToPriceHistoryDto());
     }
 
     public async ValueTask<IEnumerable<PriceHistoryDto>> GetAggregatedAsync(string symbol, string aggregation, int count, CancellationToken ct = default)

@@ -29,9 +29,10 @@ public class IngestPricesUseCaseTests
             new() { Id = 2, Symbol = "XAG", Name = "Silver" },
             new() { Id = 3, Symbol = "XPT", Name = "Platinum" },
             new() { Id = 4, Symbol = "XPD", Name = "Palladium" }
-        }.AsQueryable();
+        };
 
-        _readRepositoryMock.Setup(r => r.QueryMetals()).Returns(metals);
+        _readRepositoryMock.Setup(r => r.GetMetalsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(metals);
 
         _useCase = new IngestPricesUseCase(
             _apiClientMock.Object,

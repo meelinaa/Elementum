@@ -22,18 +22,22 @@ public sealed class ResilientElementumDbContext : IElementumDbContext
         _policy = policy;
     }
 
-    public IQueryable<Metals> QueryMetals() => _inner.QueryMetals();
+    public Task<IReadOnlyList<Metals>> GetMetalsAsync(CancellationToken ct = default) =>
+        ExecuteAsync(innerCt => _inner.GetMetalsAsync(innerCt), ct);
 
-    public IQueryable<PriceHistory> QueryPriceHistoryAll() => _inner.QueryPriceHistoryAll();
+    public Task<IReadOnlyList<PriceHistory>> GetPriceHistoryByMetalSymbolAsync(
+        string symbol,
+        string? currency = null,
+        CancellationToken ct = default) =>
+        ExecuteAsync(innerCt => _inner.GetPriceHistoryByMetalSymbolAsync(symbol, currency, innerCt), ct);
 
-    public IQueryable<PriceHistory> QueryPriceHistoryByMetalSymbol(string symbol) =>
-        _inner.QueryPriceHistoryByMetalSymbol(symbol);
-
-    public IQueryable<PriceHistory> QueryPriceHistoryAllByDateRange(DateOnly firstDate, DateOnly lastDate) =>
-        _inner.QueryPriceHistoryAllByDateRange(firstDate, lastDate);
-
-    public IQueryable<PriceHistory> QueryPriceHistoryByMetalSymbolAndDateRange(string symbol, DateOnly firstDate, DateOnly lastDate) =>
-        _inner.QueryPriceHistoryByMetalSymbolAndDateRange(symbol, firstDate, lastDate);
+    public Task<IReadOnlyList<PriceHistory>> GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+        string symbol,
+        DateOnly firstDate,
+        DateOnly lastDate,
+        string? currency = null,
+        CancellationToken ct = default) =>
+        ExecuteAsync(innerCt => _inner.GetPriceHistoryByMetalSymbolAndDateRangeAsync(symbol, firstDate, lastDate, currency, innerCt), ct);
 
     public Task<Metals?> GetMetalById(int id, CancellationToken ct) =>
         ExecuteAsync(innerCt => _inner.GetMetalById(id, innerCt), ct);

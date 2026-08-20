@@ -46,15 +46,11 @@ public class LivePricesUseCase : ILivePricesUseCase
 
         foreach (var m in metals)
         {
-            var historyTodayUsd = _repository.QueryPriceHistoryByMetalSymbolAndDateRange(m.Symbol, today, today)
-                .Where(p => p.Currency == DomainConstants.Currencies.Usd)
-                .OrderBy(p => p.Id)
-                .ToList();
+            var historyTodayUsd = await _repository.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+                m.Symbol, today, today, DomainConstants.Currencies.Usd, cancellationToken);
 
-            var historyTodayEur = _repository.QueryPriceHistoryByMetalSymbolAndDateRange(m.Symbol, today, today)
-                .Where(p => p.Currency == DomainConstants.Currencies.Eur)
-                .OrderBy(p => p.Id)
-                .ToList();
+            var historyTodayEur = await _repository.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+                m.Symbol, today, today, DomainConstants.Currencies.Eur, cancellationToken);
 
             decimal openUsd = historyTodayUsd.Count > 0 ? (historyTodayUsd[0].OpenPrice ?? historyTodayUsd[0].Price) : m.Usd;
             decimal openEur = historyTodayEur.Count > 0 ? (historyTodayEur[0].OpenPrice ?? historyTodayEur[0].Price) : m.Eur;

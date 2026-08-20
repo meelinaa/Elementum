@@ -46,6 +46,23 @@ public class LayerDependencyTests
     }
 
     [Fact]
+    public void DomainPorts_ShouldNot_ExposeIQueryable()
+    {
+        // IQueryable on a Domain port leaks LINQ/EF composition into Application.
+        var queryableMethods = typeof(Elementum.Domain.Ports.Outbound.IPriceHistoryReadRepository).Assembly
+            .GetTypes()
+            .Where(t => t.IsInterface && t.Namespace is not null && t.Namespace.StartsWith("Elementum.Domain.Ports", StringComparison.Ordinal))
+            .SelectMany(t => t.GetMethods())
+            .Where(m => typeof(IQueryable).IsAssignableFrom(m.ReturnType))
+            .Select(m => $"{m.DeclaringType!.Name}.{m.Name}")
+            .ToList();
+
+        Assert.True(
+            queryableMethods.Count == 0,
+            $"Domain ports must not return IQueryable: {string.Join(", ", queryableMethods)}");
+    }
+
+    [Fact]
     public void Application_ShouldNot_HaveDependencyOn_InfrastructureOrPresentation()
     {
         // Application layer only depends on Domain, never on Infrastructure or Presentation (Api/Worker/Cli)

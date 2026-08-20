@@ -26,8 +26,8 @@ public class GetMetalsUseCaseTests
             new() { Id = 2, Symbol = "XAG", Name = "Silver" }
         };
 
-        _repositoryMock.Setup(r => r.QueryMetals())
-            .Returns(metals.AsQueryable());
+        _repositoryMock.Setup(r => r.GetMetalsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(metals);
 
         // Act
         var result = (await _useCase.GetAllAsync(CancellationToken.None)).ToList();

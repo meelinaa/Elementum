@@ -145,7 +145,8 @@ public class PriceHistoryRepository : IElementumDbContext
     }
 
     /// <inheritdoc />
-    public IQueryable<Metals> QueryMetals() => _db.Metals;
+    public async Task<IReadOnlyList<Metals>> GetMetalsAsync(CancellationToken ct = default) =>
+        await _db.Metals.ToListAsync(ct);
 
     /// <inheritdoc />
     public async Task<Metals?> GetMetalById(int id, CancellationToken ct) =>
@@ -162,10 +163,6 @@ public class PriceHistoryRepository : IElementumDbContext
             .Where(x => x.Metal != null && x.Metal.Symbol == symbol)
             .OrderByDescending(x => x.EntryDate)
             .FirstOrDefaultAsync(ct);
-
-    /// <inheritdoc />
-    public IQueryable<PriceHistory> QueryPriceHistoryAll() =>
-        _db.PriceHistory.Include(x => x.Metal);
 
     /// <inheritdoc />
     public async Task<IEnumerable<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken ct)
@@ -185,25 +182,55 @@ public class PriceHistoryRepository : IElementumDbContext
     }
 
     /// <inheritdoc />
-    public IQueryable<PriceHistory> QueryPriceHistoryByMetalSymbol(string symbol) =>
-        _db.PriceHistory
+    public async Task<IReadOnlyList<PriceHistory>> GetPriceHistoryByMetalSymbolAsync(
+        string symbol,
+        string? currency = null,
+        CancellationToken ct = default)
+    {
+        var query = _db.PriceHistory
             .Include(x => x.Metal)
             .Where(x => x.Metal != null && x.Metal.Symbol == symbol);
 
-    /// <inheritdoc />
-    public IQueryable<PriceHistory> QueryPriceHistoryAllByDateRange(DateOnly firstDate, DateOnly lastDate) =>
-        _db.PriceHistory
-            .Include(x => x.Metal)
-            .Where(x => x.EntryDate >= firstDate && x.EntryDate <= lastDate);
+        query = ApplyCurrencyFilter(query, currency);
+
+        return await query
+            .OrderBy(p => p.EntryDate)
+            .ThenBy(p => p.ReferenceTimestamp)
+            .ThenBy(p => p.Id)
+            .ToListAsync(ct);
+    }
 
     /// <inheritdoc />
-    public IQueryable<PriceHistory> QueryPriceHistoryByMetalSymbolAndDateRange(string symbol, DateOnly firstDate, DateOnly lastDate) =>
-        _db.PriceHistory
+    public async Task<IReadOnlyList<PriceHistory>> GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+        string symbol,
+        DateOnly firstDate,
+        DateOnly lastDate,
+        string? currency = null,
+        CancellationToken ct = default)
+    {
+        var query = _db.PriceHistory
             .Include(x => x.Metal)
             .Where(x => x.Metal != null &&
                         x.Metal.Symbol == symbol &&
                         x.EntryDate >= firstDate &&
                         x.EntryDate <= lastDate);
+
+        query = ApplyCurrencyFilter(query, currency);
+
+        return await query
+            .OrderBy(p => p.ReferenceTimestamp)
+            .ThenBy(p => p.Id)
+            .ToListAsync(ct);
+    }
+
+    private static IQueryable<PriceHistory> ApplyCurrencyFilter(IQueryable<PriceHistory> query, string? currency)
+    {
+        if (string.IsNullOrWhiteSpace(currency))
+            return query;
+
+        var cur = currency.Trim().ToUpperInvariant();
+        return query.Where(p => p.Currency == cur);
+    }
 
     /// <inheritdoc />
     public async Task<IEnumerable<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct)

@@ -276,4 +276,69 @@ public class PriceHistoryRepositoryTests
         // Assert
         Assert.Empty(result);
     }
+
+    // [R]IGHT-BICEP: currency filter is applied in the repository, not via IQueryable composition in Application
+    [Fact]
+    public async Task GetPriceHistoryByMetalSymbolAsync_WhenCurrencyProvided_ReturnsOnlyMatchingCurrency()
+    {
+        // Arrange
+        var (db, repo) = CreateTestSetup();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        db.PriceHistory.AddRange(
+            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = today, Price = 2500m, Symbol = "XAU", ReferenceTimestamp = 1000L },
+            new PriceHistory { MetalId = 1, Currency = "EUR", EntryDate = today, Price = 2300m, Symbol = "XAU", ReferenceTimestamp = 1001L }
+        );
+        await db.SaveChangesAsync();
+
+        // Act
+        var usd = await repo.GetPriceHistoryByMetalSymbolAsync("XAU", "eur", CancellationToken.None);
+        var all = await repo.GetPriceHistoryByMetalSymbolAsync("XAU", currency: null, CancellationToken.None);
+
+        // Assert
+        Assert.Single(usd);
+        Assert.Equal("EUR", usd[0].Currency);
+        Assert.Equal(2300m, usd[0].Price);
+        Assert.Equal(2, all.Count);
+    }
+
+    // [B]OUNDARY: date-range query is inclusive and respects currency
+    [Fact]
+    public async Task GetPriceHistoryByMetalSymbolAndDateRangeAsync_FiltersByInclusiveRangeAndCurrency()
+    {
+        // Arrange
+        var (db, repo) = CreateTestSetup();
+        db.PriceHistory.AddRange(
+            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = new DateOnly(2026, 8, 1), Price = 2400m, Symbol = "XAU", ReferenceTimestamp = 1L },
+            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = new DateOnly(2026, 8, 10), Price = 2500m, Symbol = "XAU", ReferenceTimestamp = 2L },
+            new PriceHistory { MetalId = 1, Currency = "EUR", EntryDate = new DateOnly(2026, 8, 10), Price = 2300m, Symbol = "XAU", ReferenceTimestamp = 3L },
+            new PriceHistory { MetalId = 1, Currency = "USD", EntryDate = new DateOnly(2026, 8, 20), Price = 2600m, Symbol = "XAU", ReferenceTimestamp = 4L }
+        );
+        await db.SaveChangesAsync();
+
+        // Act
+        var result = await repo.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+            "XAU", new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 10), "USD", CancellationToken.None);
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        Assert.All(result, row => Assert.Equal("USD", row.Currency));
+        Assert.Equal(2400m, result[0].Price);
+        Assert.Equal(2500m, result[1].Price);
+    }
+
+    // [R]IGHT-BICEP: metals catalog is returned as a materialized list
+    [Fact]
+    public async Task GetMetalsAsync_ReturnsCatalog()
+    {
+        // Arrange
+        var (_, repo) = CreateTestSetup();
+
+        // Act
+        var metals = await repo.GetMetalsAsync(CancellationToken.None);
+
+        // Assert
+        Assert.Equal(2, metals.Count);
+        Assert.Contains(metals, m => m.Symbol == "XAU");
+        Assert.Contains(metals, m => m.Symbol == "XAG");
+    }
 }

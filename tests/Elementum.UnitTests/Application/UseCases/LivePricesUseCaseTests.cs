@@ -41,8 +41,9 @@ public class LivePricesUseCaseTests
         _quotesProviderMock.Setup(q => q.GetLiveQuoteAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(quote);
 
-        _repositoryMock.Setup(r => r.QueryPriceHistoryByMetalSymbolAndDateRange(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<DateOnly>()))
-            .Returns(new List<PriceHistory>().AsQueryable());
+        _repositoryMock.Setup(r => r.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+                It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<PriceHistory>());
 
         _repositoryMock.Setup(r => r.GetDailySummariesAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateOnly?>(), It.IsAny<DateOnly?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<DailyPriceSummary>());
@@ -69,8 +70,9 @@ public class LivePricesUseCaseTests
         _quotesProviderMock.Setup(q => q.GetLiveQuoteAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(quote);
 
-        _repositoryMock.Setup(r => r.QueryPriceHistoryByMetalSymbolAndDateRange(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<DateOnly>()))
-            .Returns(new List<PriceHistory>().AsQueryable());
+        _repositoryMock.Setup(r => r.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+                It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<PriceHistory>());
 
         _repositoryMock.Setup(r => r.GetDailySummariesAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateOnly?>(), It.IsAny<DateOnly?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<DailyPriceSummary>());
@@ -104,8 +106,9 @@ public class LivePricesUseCaseTests
         _quotesProviderMock.Setup(q => q.GetLiveQuoteAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(quote);
 
-        _repositoryMock.Setup(r => r.QueryPriceHistoryByMetalSymbolAndDateRange(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<DateOnly>()))
-            .Returns(new List<PriceHistory>().AsQueryable());
+        _repositoryMock.Setup(r => r.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+                It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<PriceHistory>());
 
         _repositoryMock.Setup(r => r.GetDailySummariesAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateOnly?>(), It.IsAny<DateOnly?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<DailyPriceSummary>());

@@ -5,26 +5,29 @@ namespace Elementum.Domain.Ports.Outbound;
 /// <summary>
 /// Secondary / Driven Outbound Read Port: Abstraction for querying price history, metals, and daily candle summaries.
 /// Follows Interface Segregation Principle (ISP) / CQRS pattern for read-only consumption.
+/// Returns materialized collections so Application never composes LINQ against the persistence model.
 /// </summary>
 public interface IPriceHistoryReadRepository
 {
     /// <summary>Returns whether any row in price_history has entry date equal to today (UTC).</summary>
     Task<bool> IsDataAlreadyIngestedToday(CancellationToken ct);
 
-    /// <summary>Queryable over all rows in metals.</summary>
-    IQueryable<Metals> QueryMetals();
+    /// <summary>Returns the full metals catalog.</summary>
+    Task<IReadOnlyList<Metals>> GetMetalsAsync(CancellationToken ct = default);
 
-    /// <summary>Queryable over price_history with metal included.</summary>
-    IQueryable<PriceHistory> QueryPriceHistoryAll();
+    /// <summary>Returns price history ticks for a metal symbol, optionally filtered by currency (USD/EUR).</summary>
+    Task<IReadOnlyList<PriceHistory>> GetPriceHistoryByMetalSymbolAsync(
+        string symbol,
+        string? currency = null,
+        CancellationToken ct = default);
 
-    /// <summary>Queryable over price history for the given metal symbol.</summary>
-    IQueryable<PriceHistory> QueryPriceHistoryByMetalSymbol(string symbol);
-
-    /// <summary>Queryable over price history in the inclusive date range.</summary>
-    IQueryable<PriceHistory> QueryPriceHistoryAllByDateRange(DateOnly firstDate, DateOnly lastDate);
-
-    /// <summary>Queryable over price history for a metal symbol in the inclusive date range.</summary>
-    IQueryable<PriceHistory> QueryPriceHistoryByMetalSymbolAndDateRange(string symbol, DateOnly firstDate, DateOnly lastDate);
+    /// <summary>Returns price history ticks for a metal symbol in an inclusive date range, optionally filtered by currency.</summary>
+    Task<IReadOnlyList<PriceHistory>> GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+        string symbol,
+        DateOnly firstDate,
+        DateOnly lastDate,
+        string? currency = null,
+        CancellationToken ct = default);
 
     /// <summary>Returns a single metal by its primary key.</summary>
     Task<Metals?> GetMetalById(int id, CancellationToken ct);

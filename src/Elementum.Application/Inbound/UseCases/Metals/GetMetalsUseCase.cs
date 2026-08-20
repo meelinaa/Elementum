@@ -19,7 +19,7 @@ public class GetMetalsUseCase : IGetMetalsUseCase
 
     public async Task<IEnumerable<MetalsDto>> GetAllAsync(CancellationToken ct = default)
     {
-        var entities = _repository.QueryMetals().ToList();
+        var entities = await _repository.GetMetalsAsync(ct);
         return entities.Select(e => e.ToDto());
     }
 
