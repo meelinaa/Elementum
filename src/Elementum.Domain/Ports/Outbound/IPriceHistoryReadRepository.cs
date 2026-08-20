@@ -9,9 +9,6 @@ namespace Elementum.Domain.Ports.Outbound;
 /// </summary>
 public interface IPriceHistoryReadRepository
 {
-    /// <summary>Returns whether any row in price_history has entry date equal to today (UTC).</summary>
-    Task<bool> IsDataAlreadyIngestedToday(CancellationToken ct);
-
     /// <summary>Returns the full metals catalog.</summary>
     Task<IReadOnlyList<Metals>> GetMetalsAsync(CancellationToken ct = default);
 

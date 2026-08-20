@@ -39,9 +39,6 @@ public sealed class ResilientElementumDbContext : IElementumDbContext
         CancellationToken ct = default) =>
         ExecuteAsync(innerCt => _inner.GetPriceHistoryByMetalSymbolAndDateRangeAsync(symbol, firstDate, lastDate, currency, innerCt), ct);
 
-    public Task<bool> IsDataAlreadyIngestedToday(CancellationToken ct) =>
-        ExecuteAsync(innerCt => _inner.IsDataAlreadyIngestedToday(innerCt), ct);
-
     public Task<PriceHistory?> GetPriceHistoryByMetalSymbolLatest(string symbol, CancellationToken ct) =>
         ExecuteAsync(innerCt => _inner.GetPriceHistoryByMetalSymbolLatest(symbol, innerCt), ct);
 

@@ -15,8 +15,6 @@ public class MetalsApiOptions
     [Url(ErrorMessage = "MetalsApi:BaseUrl must be a valid absolute URL.")]
     public string BaseUrl { get; set; } = null!;
 
-    public string? ApiKey { get; set; }
-
     [Required(ErrorMessage = "MetalsApi:Currency is required.")]
     public string Currency { get; set; } = "USD";
 

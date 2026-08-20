@@ -151,28 +151,6 @@ public class PriceHistoryRepositoryTests
         Assert.Equal(2650.00m, (await db.PriceHistory.FirstAsync()).Price);
     }
 
-    // [B]OUNDARY: Verifies partial versus full metal catalog ingestion boundaries for today's check
-    [Fact]
-    public async Task IsDataAlreadyIngestedToday_PartialVsFullIngestion_ChecksAllCatalogMetals()
-    {
-        // Arrange
-        var (db, repo) = CreateTestSetup(); // Contains Metal 1 (Gold) and Metal 2 (Silver)
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-
-        // Act & Assert - Initially no prices ingested
-        Assert.False(await repo.IsDataAlreadyIngestedToday(CancellationToken.None));
-
-        // Act & Assert - Ingest only Gold (1 of 2 metals)
-        db.PriceHistory.Add(Tick(1, today, 2000m));
-        await db.SaveChangesAsync();
-        Assert.False(await repo.IsDataAlreadyIngestedToday(CancellationToken.None));
-
-        // Act & Assert - Ingest Silver (2 of 2 metals)
-        db.PriceHistory.Add(Tick(2, today, 30m, symbol: "XAG"));
-        await db.SaveChangesAsync();
-        Assert.True(await repo.IsDataAlreadyIngestedToday(CancellationToken.None));
-    }
-
     // [R]IGHT-BICEP: Verifies that saving live tick responses creates price history ticks and updates daily candles
     [Fact]
     public async Task SavePricesAsync_SavesHourlyTicksAndUpdatesDailyCandles()

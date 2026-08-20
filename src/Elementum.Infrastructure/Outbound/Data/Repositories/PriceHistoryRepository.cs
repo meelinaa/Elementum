@@ -37,23 +37,6 @@ public class PriceHistoryRepository : IElementumDbContext
     }
 
     /// <inheritdoc />
-    public async Task<bool> IsDataAlreadyIngestedToday(CancellationToken ct)
-    {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var totalMetalsCount = await _db.Metals.CountAsync(ct);
-        if (totalMetalsCount == 0)
-            return false;
-
-        var ingestedMetalsCountToday = await _db.PriceHistory
-            .Where(x => x.EntryDate == today)
-            .Select(x => x.MetalId)
-            .Distinct()
-            .CountAsync(ct);
-
-        return ingestedMetalsCountToday >= totalMetalsCount;
-    }
-
-    /// <inheritdoc />
     public async Task SavePricesAsync(IReadOnlyList<PriceHistory> prices, CancellationToken cancellationToken = default)
     {
         if (prices == null || prices.Count == 0)

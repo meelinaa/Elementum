@@ -1,7 +1,7 @@
 namespace Elementum.Worker.Hosting;
 
 /// <summary>
-/// Loads optional <c>.env</c> files into the process environment so <c>Configuration</c> can read METALS_API_KEY, connection strings, etc.
+/// Loads optional <c>.env</c> files into the process environment so <c>Configuration</c> can read connection strings and other host settings.
 /// In production, prefer real environment variables or secrets instead of files.
 /// </summary>
 public static class WorkerDotNetEnvConfiguration
