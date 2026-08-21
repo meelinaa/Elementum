@@ -24,5 +24,6 @@ local.env
 docs/
 
 appsettings.json
+appsettings.Development.json
 
 

@@ -21,12 +21,14 @@ Background ingestion and data consolidation daemon for **Elementum**. Periodical
 
 ---
 
-## Configuration (`appsettings.json`)
+## Configuration (`appsettings.Development.json`)
+
+Copy `appsettings.Development.json.example` to `appsettings.Development.json` (gitignored, like `.env`) and replace the placeholders:
 
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost;Port=3307;Database=Elementum-Database;User=root;Password=rootpassword;"
+    "DefaultConnection": "Server=localhost;Port=3307;Database=Elementum-Database;User=<MYSQL_USER>;Password=<MYSQL_PASSWORD>;"
   },
   "WorkerSchedule": {
     "IngestionIntervalMinutes": 60,

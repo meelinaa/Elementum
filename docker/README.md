@@ -17,6 +17,7 @@ Docker Compose stack for **MySQL 8**, **Elementum.Api**, and **Elementum.Worker*
    cd docker
    cp .env.example .env
    ```
+   Set `MYSQL_ROOT_PASSWORD`, `MYSQL_USER`, and `MYSQL_PASSWORD` in `.env` before starting.
 2. Start the full stack in detached mode:
    ```bash
    docker compose up -d

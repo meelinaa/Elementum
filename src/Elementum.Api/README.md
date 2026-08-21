@@ -28,12 +28,14 @@ ASP.NET Core **REST API** for **Elementum**. It exposes clean, read-only access 
 
 ---
 
-## Configuration (`appsettings.json`)
+## Configuration (`appsettings.Development.json`)
+
+Copy `appsettings.Development.json.example` to `appsettings.Development.json` (gitignored, like `.env`) and replace the placeholders:
 
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost;Port=3307;Database=Elementum-Database;User=root;Password=rootpassword;"
+    "DefaultConnection": "Server=localhost;Port=3307;Database=Elementum-Database;User=<MYSQL_USER>;Password=<MYSQL_PASSWORD>;"
   },
   "MetalsApi": {
     "BaseUrl": "https://api.edelmetalle.de/public.json",

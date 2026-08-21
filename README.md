@@ -156,6 +156,9 @@ To stop all services cleanly, simply close the CLI window, press `Q` in the Powe
    ```bash
    cd docker
    cp .env.example .env
+   ```
+   Fill in `MYSQL_ROOT_PASSWORD`, `MYSQL_USER`, and `MYSQL_PASSWORD`, then:
+   ```bash
    docker compose up -d
    ```
 2. The API is available at **http://localhost:5000** (or the configured `API_PORT`).
@@ -171,15 +174,16 @@ To stop all services cleanly, simply close the CLI window, press `Q` in the Powe
 ### Option 3: Manual Local Development
 
 1. Start MySQL & Redis (e.g. `docker compose -f docker/docker-compose.yml up -d mysql redis`).
-2. Run the API:
+2. Copy `appsettings.Development.json.example` to `appsettings.Development.json` under Api and Worker, then set `<MYSQL_USER>` / `<MYSQL_PASSWORD>`.
+3. Run the API:
    ```bash
    dotnet run --project src/Elementum.Api
    ```
-3. Run the Worker:
+4. Run the Worker:
    ```bash
    dotnet run --project src/Elementum.Worker
    ```
-4. Run the CLI:
+5. Run the CLI:
    ```bash
    dotnet run --project src/Elementum.Cli
    ```
