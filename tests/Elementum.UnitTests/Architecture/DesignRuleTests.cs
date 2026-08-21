@@ -1,6 +1,7 @@
 using Elementum.Api.Inbound.Controllers;
 using Elementum.Application.Inbound.UseCases.Ingestion;
 using Elementum.Application.Inbound.UseCases.Prices;
+using Elementum.Domain.Ports.Outbound;
 using Elementum.Infrastructure.Outbound.Caching;
 using Microsoft.AspNetCore.Mvc;
 using NetArchTest.Rules;
@@ -95,5 +96,18 @@ public class DesignRuleTests
             .GetResult();
 
         Assert.True(result.IsSuccessful, "CachedGetPriceHistoryUseCase must implement IGetPriceHistoryUseCase");
+    }
+
+    [Fact]
+    public void IDistributedLock_Should_BeAsyncDisposableOnly()
+    {
+        var result = Types.InAssembly(typeof(IDistributedLock).Assembly)
+            .That()
+            .HaveName("IDistributedLock")
+            .ShouldNot()
+            .ImplementInterface(typeof(IDisposable))
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, "IDistributedLock must not implement IDisposable; release only via DisposeAsync");
     }
 }

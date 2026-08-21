@@ -180,6 +180,20 @@ public class EfCoreDistributedLockProviderTests
         Assert.False(handle.IsAcquired);
     }
 
+    // [C]ROSS-CHECK: lock handles are IAsyncDisposable only — sync Dispose would block on EF (sync-over-async)
+    [Fact]
+    public void IDistributedLock_DoesNotImplementIDisposable()
+    {
+        Assert.False(typeof(IDisposable).IsAssignableFrom(typeof(Elementum.Domain.Ports.Outbound.IDistributedLock)));
+
+        var nestedLocks = typeof(EfCoreDistributedLockProvider)
+            .GetNestedTypes(System.Reflection.BindingFlags.NonPublic)
+            .Where(t => typeof(Elementum.Domain.Ports.Outbound.IDistributedLock).IsAssignableFrom(t));
+
+        Assert.All(nestedLocks, t =>
+            Assert.False(typeof(IDisposable).IsAssignableFrom(t), $"{t.Name} must not implement IDisposable"));
+    }
+
     private sealed class ThrowingOnSaveDbContext(DbContextOptions<ElementumDbContext> options)
         : ElementumDbContext(options)
     {

@@ -2,9 +2,9 @@ namespace Elementum.Domain.Ports.Outbound;
 
 /// <summary>
 /// Represents an acquired or unacquired distributed lock handle.
-/// Disposing the handle releases the distributed lock.
+/// Release the lock with <see cref="IAsyncDisposable.DisposeAsync"/> (<c>await using</c>).
 /// </summary>
-public interface IDistributedLock : IAsyncDisposable, IDisposable
+public interface IDistributedLock : IAsyncDisposable
 {
     /// <summary>
     /// Gets a value indicating whether the distributed lock was successfully acquired.

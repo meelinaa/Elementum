@@ -212,17 +212,11 @@ public class EfCoreDistributedLockProvider : IDistributedLockProvider
                 DistributedLockLogMessages.LockReleaseError(_logger, _resource, ex);
             }
         }
-
-        public void Dispose()
-        {
-            DisposeAsync().AsTask().GetAwaiter().GetResult();
-        }
     }
 
     private sealed class NoOpDistributedLock : IDistributedLock
     {
         public bool IsAcquired => false;
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
-        public void Dispose() { }
     }
 }
