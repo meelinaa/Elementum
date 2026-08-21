@@ -1,6 +1,6 @@
 # Elementum.Worker
 
-Background ingestion and data consolidation daemon for **Elementum**. Periodically fetches precious metal spot prices, consolidates daily price candles, executes data retention cleanup, and exposes production metrics.
+Background ingestion and data consolidation daemon for **Elementum**. Periodically fetches precious metal spot prices, consolidates daily price candles, and executes data retention cleanup.
 
 ---
 
@@ -17,7 +17,7 @@ Background ingestion and data consolidation daemon for **Elementum**. Periodical
 4. **Fail-Fast Configuration (`WorkerScheduleOptions`):**
    - Startup validation via `ValidateDataAnnotations().ValidateOnStart()`.
 5. **Observability & Metrics (`IngestionMetrics`):**
-   - Emits .NET `System.Diagnostics.Metrics` for Prometheus / OpenTelemetry integration.
+   - Metrics are instrumented via `System.Diagnostics.Metrics` (`IngestionMetrics`), ready for OpenTelemetry export. No collector/exporter is wired up yet — this is a deliberate scope cut for the portfolio version.
 
 ---
 

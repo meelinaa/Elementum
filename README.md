@@ -54,7 +54,7 @@
 | **Elementum.Application** | Application | Use cases (`IngestPricesUseCase`, `LivePricesUseCase`, `GetPriceHistoryUseCase`), DTOs, mappers, and fail-fast options. |
 | **Elementum.Infrastructure** | Infrastructure (Driven Adapters) | EF Core `ElementumDbContext` (MySQL), Polly resilience retry policies, `MetalsApiClient`, HybridCache L1/L2 caching, and distributed locking. |
 | **Elementum.Api** | Presentation (Driving Adapter) | ASP.NET Core REST API exposing live prices, trading indicators, and historical data with IP-based Rate Limiting. |
-| **Elementum.Worker** | Presentation (Driving Adapter) | Background daemon for periodic price ingestion, candle consolidation, retention cleanup, and Prometheus/OpenTelemetry metrics. |
+| **Elementum.Worker** | Presentation (Driving Adapter) | Background daemon for periodic price ingestion, candle consolidation, retention cleanup, and `System.Diagnostics.Metrics` instrumentation (`IngestionMetrics`). |
 | **Elementum.Cli** | Presentation (Driving Adapter) | Interactive Console TUI client with real-time dashboard, trading indicators, metal master data, and charts. |
 | **docker** | Deployment | Docker Compose environment for MySQL, API, and Worker services. |
 
@@ -69,7 +69,7 @@
 - **Data & Persistence:** MySQL 8, Entity Framework Core, structured initialization & migrations
 - **Caching & Concurrency:** Microsoft HybridCache (L1 Memory + L2 Distributed Redis), distributed locking
 - **Resilience:** Polly v8 (retry pipelines with exponential backoff & jitter)
-- **Observability:** Serilog structured logging with `X-Correlation-ID` tracing, health checks (`/health/live`, `/health/ready`), `System.Diagnostics.Metrics`
+- **Observability:** Serilog structured logging with `X-Correlation-ID` tracing, health checks (`/health/live`, `/health/ready`). Metrics are instrumented via `System.Diagnostics.Metrics` (`IngestionMetrics`), ready for OpenTelemetry export. No collector/exporter is wired up yet — this is a deliberate scope cut for the portfolio version.
 - **Testing:** Automated xUnit test suite (Unit Tests, Integration Tests with WebApplicationFactory and Testcontainers)
 
 ---
