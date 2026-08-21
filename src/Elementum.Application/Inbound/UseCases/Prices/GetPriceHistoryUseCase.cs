@@ -88,10 +88,4 @@ public class GetPriceHistoryUseCase : IGetPriceHistoryUseCase
             To = lastDate
         };
     }
-
-    public async ValueTask<IEnumerable<PriceHistoryDto>> GetAggregatedAsync(string symbol, string aggregation, int count, CancellationToken ct = default)
-    {
-        var entities = await _repository.GetPriceHistoryMetalData(symbol, aggregation, count, ct);
-        return entities.Select(e => e.ToPriceHistoryDto());
-    }
 }

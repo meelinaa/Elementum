@@ -3,7 +3,7 @@ using Elementum.Application.DTOs;
 namespace Elementum.Application.Inbound.UseCases.Prices;
 
 /// <summary>
-/// Primary / Inbound Port: Queries price history, latest prices, trading data, and aggregations.
+/// Primary / Inbound Port: Queries price history, latest prices, and trading data.
 /// Uses <see cref="ValueTask{TResult}"/> to eliminate heap task allocations on synchronous cache hits.
 /// </summary>
 public interface IGetPriceHistoryUseCase
@@ -33,5 +33,4 @@ public interface IGetPriceHistoryUseCase
         int skip = 0,
         int? take = null,
         CancellationToken ct = default);
-    ValueTask<IEnumerable<PriceHistoryDto>> GetAggregatedAsync(string symbol, string aggregation, int count, CancellationToken ct = default);
 }

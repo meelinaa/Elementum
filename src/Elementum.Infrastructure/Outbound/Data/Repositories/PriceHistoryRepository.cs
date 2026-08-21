@@ -1,5 +1,3 @@
-using System.Globalization;
-using Elementum.Domain.Constants;
 using Elementum.Domain.Entities;
 using Elementum.Domain.Ports.Outbound;
 using Elementum.Infrastructure.Outbound.Data.Interfaces;
@@ -14,10 +12,6 @@ namespace Elementum.Infrastructure.Outbound.Data.Repositories;
 /// </summary>
 public class PriceHistoryRepository : IElementumDbContext
 {
-    private const int DefaultAggregationHistoryCount = 30;
-    private const int RoundingPrecision = 4;
-    private const int DaysPerWeekMultiplier = 7;
-
     private readonly ElementumDbContext _db;
     private readonly IDailyCandleAggregator _candleAggregator;
     private readonly IPriceHistoryPruner _pruner;
@@ -144,9 +138,6 @@ public class PriceHistoryRepository : IElementumDbContext
     public async Task<IReadOnlyList<Metals>> GetMetalsAsync(CancellationToken ct = default) =>
         await _db.Metals.ToListAsync(ct);
 
-    private Task<Metals?> GetMetalBySymbol(string symbol, CancellationToken ct) =>
-        _db.Metals.FirstOrDefaultAsync(x => x.Symbol == symbol, ct);
-
     /// <inheritdoc />
     public async Task<PriceHistory?> GetPriceHistoryByMetalSymbolLatest(string symbol, CancellationToken ct) =>
         await _db.PriceHistory
@@ -229,113 +220,5 @@ public class PriceHistoryRepository : IElementumDbContext
 
         var cur = currency.Trim().ToUpperInvariant();
         return query.Where(p => p.Currency == cur);
-    }
-
-    /// <inheritdoc />
-    public async Task<IReadOnlyList<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct)
-    {
-        var metal = await GetMetalBySymbol(metalSymbol, ct);
-        if (metal == null)
-            return [];
-
-        var effectiveCount = count <= 0 ? DefaultAggregationHistoryCount : count;
-        var agg = (aggregation ?? "daily").Trim().ToLowerInvariant();
-
-        if (agg == "daily")
-        {
-            var dailyRows = await _db.PriceHistory
-                .Include(x => x.Metal)
-                .Where(x => x.MetalId == metal.Id)
-                .OrderByDescending(x => x.EntryDate)
-                .Take(effectiveCount)
-                .ToListAsync(ct);
-
-            dailyRows.Reverse();
-            return dailyRows;
-        }
-        else if (agg == "monthly")
-        {
-            var monthGroups = await _db.PriceHistory
-                .Where(x => x.MetalId == metal.Id)
-                .GroupBy(x => new { x.EntryDate.Year, x.EntryDate.Month })
-                .OrderByDescending(g => g.Key.Year).ThenByDescending(g => g.Key.Month)
-                .Take(effectiveCount)
-                .Select(g => new
-                {
-                    g.Key.Year,
-                    g.Key.Month,
-                    AvgPrice = g.Average(p => p.Price),
-                    Currency = g.Max(p => p.Currency)
-                })
-                .ToListAsync(ct);
-
-            monthGroups.Reverse();
-
-            return monthGroups.Select(m => PriceHistory.Create(
-                metalId: metal.Id,
-                currency: m.Currency ?? DomainConstants.Currencies.Usd,
-                entryDate: new DateOnly(m.Year, m.Month, 1),
-                price: Math.Round(m.AvgPrice, RoundingPrecision, MidpointRounding.ToEven),
-                symbol: metalSymbol,
-                metal: metal)).ToList();
-        }
-        else if (agg == "yearly")
-        {
-            var yearGroups = await _db.PriceHistory
-                .Where(x => x.MetalId == metal.Id)
-                .GroupBy(x => x.EntryDate.Year)
-                .OrderByDescending(g => g.Key)
-                .Take(effectiveCount)
-                .Select(g => new
-                {
-                    Year = g.Key,
-                    AvgPrice = g.Average(p => p.Price),
-                    Currency = g.Max(p => p.Currency)
-                })
-                .ToListAsync(ct);
-
-            yearGroups.Reverse();
-
-            return yearGroups.Select(y => PriceHistory.Create(
-                metalId: metal.Id,
-                currency: y.Currency ?? DomainConstants.Currencies.Usd,
-                entryDate: new DateOnly(y.Year, 1, 1),
-                price: Math.Round(y.AvgPrice, RoundingPrecision, MidpointRounding.ToEven),
-                symbol: metalSymbol,
-                metal: metal)).ToList();
-        }
-        else // weekly
-        {
-            var recentRows = await _db.PriceHistory
-                .Where(x => x.MetalId == metal.Id)
-                .OrderByDescending(x => x.EntryDate)
-                .Take(effectiveCount * DaysPerWeekMultiplier)
-                .ToListAsync(ct);
-
-            recentRows.Reverse();
-
-            var dfi = DateTimeFormatInfo.CurrentInfo;
-            var cal = dfi.Calendar;
-
-            var weeklyGroups = recentRows
-                .GroupBy(x =>
-                {
-                    var dt = x.EntryDate.ToDateTime(TimeOnly.MinValue);
-                    var week = cal.GetWeekOfYear(dt, dfi.CalendarWeekRule, dfi.FirstDayOfWeek);
-                    return (x.EntryDate.Year, Week: week);
-                })
-                .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Week)
-                .TakeLast(effectiveCount)
-                .Select(g => PriceHistory.Create(
-                    metalId: metal.Id,
-                    currency: g.First().Currency,
-                    entryDate: g.First().EntryDate,
-                    price: Math.Round(g.Average(p => p.Price), RoundingPrecision, MidpointRounding.ToEven),
-                    symbol: metalSymbol,
-                    metal: metal))
-                .ToList();
-
-            return weeklyGroups;
-        }
     }
 }

@@ -76,52 +76,6 @@ public class PriceHistoryRepositoryTests
         Assert.Equal("USD", row.Currency);
     }
 
-    // [R]IGHT-BICEP: Verifies that daily price history queries return bounded and chronologically sorted records
-    [Fact]
-    public async Task GetPriceHistoryMetalData_Daily_ReturnsBoundedChronologicalRecords()
-    {
-        // Arrange
-        var (db, repo) = CreateTestSetup();
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        for (int i = 10; i >= 1; i--)
-        {
-            db.PriceHistory.Add(Tick(1, today.AddDays(-i), 2000m + i, symbol: "FOREXCOM:XAUUSD"));
-        }
-        await db.SaveChangesAsync();
-
-        // Act
-        var result = (await repo.GetPriceHistoryMetalData("XAU", "daily", 5, CancellationToken.None)).ToList();
-
-        // Assert
-        Assert.Equal(5, result.Count);
-        Assert.True(result[0].EntryDate < result[4].EntryDate); // Chronological order
-        Assert.Equal(today.AddDays(-1), result[4].EntryDate);
-    }
-
-    // [R]IGHT-BICEP: Verifies that monthly queries compute and return aggregated monthly averages
-    [Fact]
-    public async Task GetPriceHistoryMetalData_Monthly_ReturnsAggregatedAverages()
-    {
-        // Arrange
-        var (db, repo) = CreateTestSetup();
-        db.PriceHistory.AddRange(
-            Tick(1, new DateOnly(2026, 1, 10), 2000m),
-            Tick(1, new DateOnly(2026, 1, 20), 3000m),
-            Tick(1, new DateOnly(2026, 2, 15), 4000m)
-        );
-        await db.SaveChangesAsync();
-
-        // Act
-        var result = (await repo.GetPriceHistoryMetalData("XAU", "monthly", 12, CancellationToken.None)).ToList();
-
-        // Assert
-        Assert.Equal(2, result.Count);
-        Assert.Equal(new DateOnly(2026, 1, 1), result[0].EntryDate);
-        Assert.Equal(2500m, result[0].Price); // Average of 2000 and 3000
-        Assert.Equal(new DateOnly(2026, 2, 1), result[1].EntryDate);
-        Assert.Equal(4000m, result[1].Price);
-    }
-
     // [I]NVERSE / IDEMPOTENCY: Verifies that repeated saves with identical timestamp update existing records idempotently
     [Fact]
     public async Task SavePricesAsync_WhenCalledMultipleTimes_UpdatesExistingRowIdempotently()
@@ -285,20 +239,6 @@ public class PriceHistoryRepositoryTests
         Assert.Equal(200L, latest.Single(r => r.MetalId == 1).ReferenceTimestamp);
         Assert.Equal(32m, Assert.Single(latest, r => r.MetalId == 2).Price);
         Assert.Equal(80L, latest.Single(r => r.MetalId == 2).ReferenceTimestamp);
-    }
-
-    // [E]RROR: Verifies that querying price history for an unknown metal symbol returns empty collection
-    [Fact]
-    public async Task GetPriceHistoryMetalData_WhenMetalNotFound_ReturnsEmpty()
-    {
-        // Arrange
-        var (_, repo) = CreateTestSetup();
-
-        // Act
-        var result = await repo.GetPriceHistoryMetalData("NON_EXISTENT", "daily", 10, CancellationToken.None);
-
-        // Assert
-        Assert.Empty(result);
     }
 
     // [R]IGHT-BICEP: currency filter is applied in the repository, not via IQueryable composition in Application

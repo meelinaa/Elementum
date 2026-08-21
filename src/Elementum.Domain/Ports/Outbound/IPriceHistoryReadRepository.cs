@@ -43,9 +43,6 @@ public interface IPriceHistoryReadRepository
     /// <summary>Returns the latest price history ticks per metal, selected by MAX(ReferenceTimestamp) rather than MAX(Id).</summary>
     Task<IReadOnlyList<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken ct);
 
-    /// <summary>Returns aggregated price history for a metal (daily/weekly/monthly/yearly) with at most count entries.</summary>
-    Task<IReadOnlyList<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct);
-
     /// <summary>
     /// Returns daily candle summaries for all metals and currencies in the inclusive date range.
     /// Used by live-price orchestration so Application issues one filtered query instead of per-metal roundtrips.

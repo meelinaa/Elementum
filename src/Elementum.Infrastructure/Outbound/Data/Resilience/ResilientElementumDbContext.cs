@@ -53,9 +53,6 @@ public sealed class ResilientElementumDbContext : IElementumDbContext
     public Task<IReadOnlyList<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken ct) =>
         ExecuteAsync(innerCt => _inner.GetPriceHistoryAllLatest(innerCt), ct);
 
-    public Task<IReadOnlyList<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct) =>
-        ExecuteAsync(innerCt => _inner.GetPriceHistoryMetalData(metalSymbol, aggregation, count, innerCt), ct);
-
     public Task SavePricesAsync(IReadOnlyList<PriceHistory> prices, CancellationToken cancellationToken = default) =>
         ExecuteAsync(innerCt => _inner.SavePricesAsync(prices, innerCt), cancellationToken);
 

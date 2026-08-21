@@ -92,9 +92,4 @@ public class CachedGetPriceHistoryUseCase : IGetPriceHistoryUseCase
     {
         return _inner.GetByDateRangeAsync(symbol, firstDate, lastDate, currency, skip, take, ct);
     }
-
-    public ValueTask<IEnumerable<PriceHistoryDto>> GetAggregatedAsync(string symbol, string aggregation, int count, CancellationToken ct = default)
-    {
-        return _inner.GetAggregatedAsync(symbol, aggregation, count, ct);
-    }
 }
