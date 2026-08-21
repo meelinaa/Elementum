@@ -1,3 +1,4 @@
+using Elementum.Application.Exceptions;
 using Elementum.Application.Inbound.UseCases.Ingestion;
 using Elementum.Application.Models;
 using Elementum.Application.Options;
@@ -33,6 +34,8 @@ public class IngestPricesUseCaseTests
 
         _readRepositoryMock.Setup(r => r.GetMetalsAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(metals);
+        _readRepositoryMock.Setup(r => r.IsDataAlreadyIngestedToday(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
 
         _useCase = new IngestPricesUseCase(
             _apiClientMock.Object,
@@ -72,9 +75,9 @@ public class IngestPricesUseCaseTests
         _writeRepositoryMock.Verify(r => r.SavePricesAsync(It.Is<IReadOnlyList<PriceHistory>>(l => l.Count == 8), It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    // [E]RROR RIGHT-BICEP: validation failure on corrupted payload aborts persistence
+    // [E]RROR RIGHT-BICEP: validation failure on corrupted payload aborts persistence and is not a silent return
     [Fact]
-    public async Task ExecuteAsync_WhenEdelmetalleReturnsInvalidData_AbortsAndDoesNotSave()
+    public async Task ExecuteAsync_WhenEdelmetalleReturnsInvalidData_ThrowsUpstreamValidationException()
     {
         // Arrange
         var invalidResponse = new EdelmetalleApiResponse
@@ -87,10 +90,8 @@ public class IngestPricesUseCaseTests
         _apiClientMock.Setup(c => c.GetEdelmetallePricesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(invalidResponse);
 
-        // Act
-        await _useCase.ExecuteAsync(CancellationToken.None);
-
-        // Assert
+        // Act & Assert
+        await Assert.ThrowsAsync<UpstreamValidationException>(() => _useCase.ExecuteAsync(CancellationToken.None));
         _writeRepositoryMock.Verify(r => r.SavePricesAsync(It.IsAny<IReadOnlyList<PriceHistory>>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -99,6 +100,10 @@ public class IngestPricesUseCaseTests
     public async Task ExecuteAsync_WhenEdelmetalleNull_FallsBackToGetPricesAsync()
     {
         // Arrange
+        _readRepositoryMock.SetupSequence(r => r.IsDataAlreadyIngestedToday(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false)
+            .ReturnsAsync(true);
+
         _apiClientMock.Setup(c => c.GetEdelmetallePricesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync((EdelmetalleApiResponse?)null);
 
@@ -201,6 +206,8 @@ public class IngestPricesUseCaseTests
             .ReturnsAsync((EdelmetalleApiResponse?)null);
         _apiClientMock.Setup(c => c.GetPricesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<DailyPrices>());
+        _readRepositoryMock.Setup(r => r.IsDataAlreadyIngestedToday(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
 
         // Act
         await _useCase.ExecuteAsync(CancellationToken.None);
@@ -259,6 +266,49 @@ public class IngestPricesUseCaseTests
         // Assert
         Assert.NotNull(capturedThreshold);
         Assert.True(Math.Abs((capturedThreshold.Value - expectedThreshold).TotalMinutes) < 2);
+    }
+
+    // [R]IGHT-BICEP: complete catalog today skips a redundant fallback when the primary payload is empty
+    [Fact]
+    public async Task ExecuteAsync_WhenPrimaryNullAndCatalogComplete_SkipsFallbackFetch()
+    {
+        _apiClientMock.Setup(c => c.GetEdelmetallePricesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((EdelmetalleApiResponse?)null);
+        _readRepositoryMock.Setup(r => r.IsDataAlreadyIngestedToday(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        await _useCase.ExecuteAsync(CancellationToken.None);
+
+        _apiClientMock.Verify(c => c.GetPricesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _writeRepositoryMock.Verify(r => r.SavePricesAsync(It.IsAny<IReadOnlyList<PriceHistory>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // [E]RROR RIGHT-BICEP: a persist that does not cover every catalog metal is a countable upstream failure
+    [Fact]
+    public async Task ExecuteAsync_WhenSavedTicksDoNotCoverCatalog_ThrowsIncompleteDailyCatalog()
+    {
+        var response = new EdelmetalleApiResponse
+        {
+            GoldUsd = 2500m,
+            GoldEur = 2280m,
+            SilberUsd = 30m,
+            SilberEur = 28m,
+            PlatinUsd = 1000m,
+            PlatinEur = 910m,
+            PalladiumUsd = 1050m,
+            PalladiumEur = 960m,
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+            WechselkursUsdEur = 1.095m
+        };
+
+        _apiClientMock.Setup(c => c.GetEdelmetallePricesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(response);
+        _readRepositoryMock.Setup(r => r.IsDataAlreadyIngestedToday(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var ex = await Assert.ThrowsAsync<ExternalApiException>(() => _useCase.ExecuteAsync(CancellationToken.None));
+        Assert.Contains("complete metals catalog", ex.Message, StringComparison.Ordinal);
+        _writeRepositoryMock.Verify(r => r.SavePricesAsync(It.IsAny<IReadOnlyList<PriceHistory>>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // [I]NVERSE RIGHT-BICEP: after a partial run (ticks saved, rollup skipped), the next run completes rollup and prune

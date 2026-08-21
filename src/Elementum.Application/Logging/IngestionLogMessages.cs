@@ -44,6 +44,12 @@ public static partial class IngestionLogMessages
     public static partial void NoPriceDataReturned(ILogger logger);
 
     [LoggerMessage(
+        EventId = 2010,
+        Level = LogLevel.Information,
+        Message = "Primary upstream payload was empty, but today's metals catalog is already complete. Skipping fallback fetch.")]
+    public static partial void SkippingFallbackCatalogComplete(ILogger logger);
+
+    [LoggerMessage(
         EventId = 2007,
         Level = LogLevel.Information,
         Message = "Aggregating daily {RollupHour}:00 candle summary for {Today}...")]

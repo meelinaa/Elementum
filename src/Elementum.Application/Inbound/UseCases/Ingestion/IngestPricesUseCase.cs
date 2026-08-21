@@ -1,3 +1,4 @@
+using Elementum.Application.Exceptions;
 using Elementum.Application.Logging;
 using Elementum.Application.Mapping;
 using Elementum.Application.Models;
@@ -63,23 +64,28 @@ public class IngestPricesUseCase : IIngestPricesUseCase
             {
                 var errors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
                 IngestionLogMessages.UpstreamValidationFailed(_logger, errors);
-                return;
+                throw UpstreamValidationException.FromErrors(errors);
             }
 
             var priceEntities = edelmetalleData.ToPriceHistoryEntities(metals, today);
             IngestionLogMessages.SavingHourlyQuotes(_logger);
             await _writeRepository.SavePricesAsync(priceEntities, cancellationToken);
             IngestionLogMessages.HourlyIngestionSuccess(_logger);
+            await EnsureCatalogCompleteAsync(cancellationToken);
+        }
+        else if (await _readRepository.IsDataAlreadyIngestedToday(cancellationToken))
+        {
+            IngestionLogMessages.SkippingFallbackCatalogComplete(_logger);
         }
         else
         {
-            // Fallback to general GetPricesAsync
             var prices = await _apiClient.GetPricesAsync(cancellationToken);
             if (prices != null && prices.Count > 0)
             {
                 var priceEntities = prices.ToPriceHistoryEntities(metals, today);
                 IngestionLogMessages.SavingFallbackPrices(_logger, priceEntities.Count);
                 await _writeRepository.SavePricesAsync(priceEntities, cancellationToken);
+                await EnsureCatalogCompleteAsync(cancellationToken);
             }
             else
             {
@@ -100,5 +106,11 @@ public class IngestPricesUseCase : IIngestPricesUseCase
             var prunedCount = await _writeRepository.PruneHourlyDataOlderThanAsync(retentionThreshold, cancellationToken);
             IngestionLogMessages.RetentionCleanupCompleted(_logger, prunedCount);
         }
+    }
+
+    private async Task EnsureCatalogCompleteAsync(CancellationToken cancellationToken)
+    {
+        if (!await _readRepository.IsDataAlreadyIngestedToday(cancellationToken))
+            throw ExternalApiException.IncompleteDailyCatalog();
     }
 }

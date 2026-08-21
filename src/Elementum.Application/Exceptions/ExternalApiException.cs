@@ -9,4 +9,7 @@ public sealed class ExternalApiException : ApplicationException
 
     public static ExternalApiException EmptyLiveQuoteResponse() =>
         new("External metals API returned an empty live quote response.");
+
+    public static ExternalApiException IncompleteDailyCatalog() =>
+        new("Price ingestion did not persist a complete metals catalog for today.");
 }

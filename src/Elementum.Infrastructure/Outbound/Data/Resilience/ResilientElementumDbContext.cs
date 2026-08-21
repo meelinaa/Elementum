@@ -25,6 +25,9 @@ public sealed class ResilientElementumDbContext : IElementumDbContext
     public Task<IReadOnlyList<Metals>> GetMetalsAsync(CancellationToken ct = default) =>
         ExecuteAsync(innerCt => _inner.GetMetalsAsync(innerCt), ct);
 
+    public Task<bool> IsDataAlreadyIngestedToday(CancellationToken ct = default) =>
+        ExecuteAsync(innerCt => _inner.IsDataAlreadyIngestedToday(innerCt), ct);
+
     public Task<IReadOnlyList<PriceHistory>> GetPriceHistoryByMetalSymbolAsync(
         string symbol,
         string? currency = null,

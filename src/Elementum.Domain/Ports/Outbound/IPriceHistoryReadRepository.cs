@@ -9,6 +9,12 @@ namespace Elementum.Domain.Ports.Outbound;
 /// </summary>
 public interface IPriceHistoryReadRepository
 {
+    /// <summary>
+    /// Returns whether every metal in the catalog has at least one <c>price_history</c> row for today (UTC).
+    /// Used by ingestion to skip a redundant fallback fetch when the daily catalog is already complete.
+    /// </summary>
+    Task<bool> IsDataAlreadyIngestedToday(CancellationToken ct = default);
+
     /// <summary>Returns the full metals catalog.</summary>
     Task<IReadOnlyList<Metals>> GetMetalsAsync(CancellationToken ct = default);
 
