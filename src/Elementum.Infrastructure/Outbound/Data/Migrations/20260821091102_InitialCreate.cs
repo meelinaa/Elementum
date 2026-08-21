@@ -87,7 +87,7 @@ namespace Elementum.Infrastructure.Outbound.Data.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     metal_id = table.Column<int>(type: "int", nullable: false),
-                    Currency = table.Column<string>(type: "varchar(3)", maxLength: 3, nullable: false)
+                    currency = table.Column<string>(type: "varchar(3)", maxLength: 3, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Symbol = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
@@ -120,14 +120,14 @@ namespace Elementum.Infrastructure.Outbound.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_price_history_metal_id_Currency_entry_date",
+                name: "IX_price_history_metal_id_currency_entry_date",
                 table: "price_history",
-                columns: new[] { "metal_id", "Currency", "entry_date" });
+                columns: new[] { "metal_id", "currency", "entry_date" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_price_history_metal_id_Currency_reference_timestamp",
+                name: "IX_price_history_metal_id_currency_reference_timestamp",
                 table: "price_history",
-                columns: new[] { "metal_id", "Currency", "reference_timestamp" },
+                columns: new[] { "metal_id", "currency", "reference_timestamp" },
                 unique: true);
         }
 

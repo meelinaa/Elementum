@@ -132,7 +132,8 @@ namespace Elementum.Infrastructure.Outbound.Data.Migrations
                     b.Property<string>("Currency")
                         .IsRequired()
                         .HasMaxLength(3)
-                        .HasColumnType("varchar(3)");
+                        .HasColumnType("varchar(3)")
+                        .HasColumnName("currency");
 
                     b.Property<DateOnly>("EntryDate")
                         .HasColumnType("date")
@@ -177,10 +178,12 @@ namespace Elementum.Infrastructure.Outbound.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MetalId", "Currency", "EntryDate");
+                    b.HasIndex("MetalId", "Currency", "EntryDate")
+                        .HasDatabaseName("IX_price_history_metal_id_currency_entry_date");
 
                     b.HasIndex("MetalId", "Currency", "ReferenceTimestamp")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("IX_price_history_metal_id_currency_reference_timestamp");
 
                     b.ToTable("price_history", (string)null);
                 });

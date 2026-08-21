@@ -44,13 +44,16 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
         {
             e.ToTable("price_history");
             e.HasKey(x => x.Id);
-            e.HasIndex(x => new { x.MetalId, x.Currency, x.ReferenceTimestamp }).IsUnique();
-            e.HasIndex(x => new { x.MetalId, x.Currency, x.EntryDate });
+            e.HasIndex(x => new { x.MetalId, x.Currency, x.ReferenceTimestamp })
+                .IsUnique()
+                .HasDatabaseName("IX_price_history_metal_id_currency_reference_timestamp");
+            e.HasIndex(x => new { x.MetalId, x.Currency, x.EntryDate })
+                .HasDatabaseName("IX_price_history_metal_id_currency_entry_date");
             e.HasOne(x => x.Metal).WithMany(m => m.PriceHistory).HasForeignKey(x => x.MetalId).OnDelete(DeleteBehavior.Cascade);
 
-            e.Property(x => x.Currency).HasMaxLength(3).IsRequired();
+            e.Property(x => x.Currency).HasColumnName("currency").HasMaxLength(3).IsRequired();
             e.Property(x => x.MetalId).HasColumnName("metal_id");
-            e.Property(x => x.ReferenceTimestamp).HasColumnName("reference_timestamp");
+            e.Property(x => x.ReferenceTimestamp).HasColumnName("reference_timestamp").HasColumnType("bigint");
             e.Property(x => x.EntryDate).HasColumnName("entry_date");
             e.Property(x => x.Price).HasColumnName("price");
             e.Property(x => x.PrevClosePrice).HasColumnName("prev_close_price");

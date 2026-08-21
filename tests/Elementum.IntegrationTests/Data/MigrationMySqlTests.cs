@@ -95,12 +95,41 @@ public sealed class MigrationMySqlTests
         }
 
         Assert.Equal("bigint", columns["reference_timestamp"], StringComparer.OrdinalIgnoreCase);
-        Assert.StartsWith("varchar(3)", columns["Currency"], StringComparison.OrdinalIgnoreCase);
+        Assert.StartsWith("varchar(3)", columns["currency"], StringComparison.OrdinalIgnoreCase);
         Assert.Equal("decimal(18,4)", columns["price"], StringComparer.OrdinalIgnoreCase);
         Assert.False(columns.ContainsKey("Ask"));
         Assert.False(columns.ContainsKey("Bid"));
         Assert.False(columns.ContainsKey("Exchange"));
         Assert.False(columns.ContainsKey("price_gram_24k"));
         Assert.Empty(await db.Database.GetPendingMigrationsAsync());
+    }
+
+    // [R]IGHT-BICEP: the applied InitialCreate creates UNIQUE (metal_id, currency, reference_timestamp)
+    [Fact]
+    public async Task MigrateAsync_CreatesUniqueIndexOnMetalCurrencyReferenceTimestamp()
+    {
+        await MySqlTestContext.DropAllTablesAsync(_connectionString);
+
+        await using var db = MySqlTestContext.Create(_connectionString);
+        await db.Database.MigrateAsync();
+        await db.Database.OpenConnectionAsync();
+
+        await using var command = db.Database.GetDbConnection().CreateCommand();
+        command.CommandText = """
+            SELECT LOWER(column_name)
+            FROM information_schema.statistics
+            WHERE table_schema = DATABASE()
+              AND LOWER(table_name) = 'price_history'
+              AND LOWER(index_name) = 'ix_price_history_metal_id_currency_reference_timestamp'
+              AND non_unique = 0
+            ORDER BY seq_in_index
+            """;
+
+        var columns = new List<string>();
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+            columns.Add(reader.GetString(0));
+
+        Assert.Equal(["metal_id", "currency", "reference_timestamp"], columns);
     }
 }
