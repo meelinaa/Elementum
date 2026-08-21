@@ -1,0 +1,7 @@
+# TLS terminates here. The API container listens HTTP on the Docker network (api:8080).
+{$SITE_ADDRESS:https://localhost} {
+	reverse_proxy api:8080
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	}
+}

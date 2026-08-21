@@ -6,7 +6,7 @@ using System.Text.Json;
 namespace Elementum.Api.Hosting;
 
 /// <summary>
-/// Configures the HTTP request pipeline: correlation IDs, timeouts, logging, exception handling, CORS, rate limiting, and health endpoints.
+/// Configures the HTTP request pipeline: forwarded headers, correlation IDs, timeouts, logging, exception handling, CORS, rate limiting, and health endpoints.
 /// </summary>
 public static class ApiApplicationPipelineExtensions
 {
@@ -15,6 +15,9 @@ public static class ApiApplicationPipelineExtensions
     /// </summary>
     public static void UseElementumApiPipeline(this WebApplication app)
     {
+        // Honor X-Forwarded-For / X-Forwarded-Proto from the TLS-terminating reverse proxy.
+        app.UseForwardedHeaders();
+
         // Propagate or generate X-Correlation-ID for distributed tracing in logs.
         app.UseMiddleware<CorrelationIdMiddleware>();
 
@@ -44,8 +47,12 @@ public static class ApiApplicationPipelineExtensions
         }
         else
         {
-            app.UseHttpsRedirection();
             app.UseCors("FrontendPolicy");
+            // TLS terminates at the reverse proxy (Compose Caddy / load balancer). Do not redirect
+            // HTTP→HTTPS inside the container — that would loop or fail on the internal HTTP port.
+            var httpsTerminatesAtProxy = app.Configuration.GetValue("ReverseProxy:TerminateHttps", false);
+            if (!httpsTerminatesAtProxy)
+                app.UseHttpsRedirection();
         }
 
         // Apply global IP-based rate limiting (the abuse control for this public read API; there is no auth).

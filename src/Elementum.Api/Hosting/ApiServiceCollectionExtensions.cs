@@ -5,6 +5,7 @@ using Elementum.Application.Options;
 using Elementum.Infrastructure.Outbound.Data;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Timeouts;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
@@ -108,8 +109,11 @@ public static class ApiServiceCollectionExtensions
             });
         });
 
-        // CORS
-        var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["http://localhost:3000"];
+        // CORS: Development uses AllowAnyOrigin in the pipeline; Production uses this named policy.
+        var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+        if (allowedOrigins is not { Length: > 0 })
+            allowedOrigins = ["http://localhost:3000"];
+
         services.AddCors(options =>
         {
             options.AddPolicy("FrontendPolicy", policy =>
@@ -118,6 +122,14 @@ public static class ApiServiceCollectionExtensions
                     .AllowAnyMethod()
                     .AllowAnyHeader();
             });
+        });
+
+        // Reverse proxy (Compose Caddy / cloud LB) terminates TLS and sets X-Forwarded-*.
+        services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            options.KnownIPNetworks.Clear();
+            options.KnownProxies.Clear();
         });
 
         // Kubernetes-style probes

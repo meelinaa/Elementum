@@ -90,7 +90,8 @@ graph TD
 - **Fail-Fast Configuration:** Zero silent fallbacks. Missing connection strings, invalid URLs, or out-of-range intervals immediately abort host startup with descriptive error messages.
 - **Contract Decoupling (DTOs):** Domain and EF entities are never exposed across HTTP boundaries. All responses are projected via `PriceHistoryMapper`.
 - **IP-Based Rate Limiting:** Built-in partition-based rate limiter returns `429 Too Many Requests` with RFC 7807 ProblemDetails when limits are exceeded.
-- **Public read API (no auth, by design):** All HTTP endpoints are GET-only market quotes (Gold, Silver, Platinum, Palladium) sourced from a public upstream (`api.edelmetalle.de`). There are no accounts, personal data, or writes to authorize. Rate limiting is the abuse control; identity would be added only if write/admin routes appear.
+- **Public read API (no auth, by design):** All HTTP endpoints are GET-only market quotes (Gold, Silver, Platinum, Palladium) sourced from a public upstream (`api.edelmetalle.de`). There are no accounts, personal data, or writes to authorize. Rate limiting is the abuse control.
+- **Production CORS & TLS:** Compose sets `Cors__AllowedOrigins` from `CORS_ALLOWED_ORIGIN`. HTTPS terminates at Caddy (`docker compose --profile edge`); the API stays HTTP internally and honors `X-Forwarded-Proto`.
 
 ---
 
@@ -98,8 +99,9 @@ graph TD
 
 ```
 Elementum/
-├── docker/                             # Docker Compose (MySQL + API + Worker)
+├── docker/                             # Docker Compose (MySQL + Redis + API + Worker + optional Caddy)
 │   ├── docker-compose.yml
+│   ├── Caddyfile                       # TLS termination (profile: edge)
 │   ├── .env.example
 │   └── README.md
 ├── src/                                # Source projects

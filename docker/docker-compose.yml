@@ -69,6 +69,10 @@ services:
       ConnectionStrings__DefaultConnection: "Server=mysql;Port=3306;Database=${MYSQL_DATABASE};User=${MYSQL_USER};Password=${MYSQL_PASSWORD};"
       ConnectionStrings__Redis: "redis:6379"
       ASPNETCORE_ENVIRONMENT: Production
+      # Production CORS: browser origins only. CLI/server callers are unaffected.
+      Cors__AllowedOrigins__0: "${CORS_ALLOWED_ORIGIN:-http://localhost:3000}"
+      # TLS is terminated at the reverse proxy (profile "edge"), not in this container.
+      ReverseProxy__TerminateHttps: "true"
     depends_on:
       mysql:
         condition: service_healthy
@@ -100,5 +104,28 @@ services:
       redis:
         condition: service_healthy
 
+  # ---------------------------------------------------------------------------
+  # Reverse proxy: HTTPS termination (Let's Encrypt / local TLS). API stays HTTP.
+  # Start with: docker compose --profile edge up -d
+  # ---------------------------------------------------------------------------
+  proxy:
+    image: caddy:2-alpine
+    container_name: elementum-proxy
+    restart: unless-stopped
+    profiles: ["edge"]
+    ports:
+      - "${PROXY_HTTP_PORT:-80}:80"
+      - "${PROXY_HTTPS_PORT:-443}:443"
+    environment:
+      SITE_ADDRESS: "${SITE_ADDRESS:-https://localhost}"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+
 volumes:
   mysql_data:
+  caddy_data:
+  caddy_config:
