@@ -48,6 +48,7 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
             e.HasIndex(x => new { x.MetalId, x.Currency, x.EntryDate });
             e.HasOne(x => x.Metal).WithMany(m => m.PriceHistory).HasForeignKey(x => x.MetalId).OnDelete(DeleteBehavior.Cascade);
 
+            e.Property(x => x.Currency).HasMaxLength(3).IsRequired();
             e.Property(x => x.MetalId).HasColumnName("metal_id");
             e.Property(x => x.ReferenceTimestamp).HasColumnName("reference_timestamp");
             e.Property(x => x.EntryDate).HasColumnName("entry_date");

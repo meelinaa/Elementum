@@ -1,0 +1,78 @@
+using Elementum.Application.Mapping;
+using Elementum.Application.Models;
+using Elementum.Domain.Entities;
+using Elementum.Infrastructure.Outbound.Data;
+using Elementum.Infrastructure.Outbound.Data.Repositories;
+using Elementum.Infrastructure.Outbound.Data.Services;
+using Elementum.IntegrationTests.Fixtures;
+using Microsoft.EntityFrameworkCore;
+
+namespace Elementum.IntegrationTests.Data;
+
+[Collection(MySqlCollection.Name)]
+public sealed class PriceHistoryRepositoryMySqlTests : IAsyncLifetime
+{
+    private readonly string _connectionString;
+
+    public PriceHistoryRepositoryMySqlTests(MySqlContainerFixture fixture)
+    {
+        _connectionString = fixture.ConnectionString;
+    }
+
+    public Task InitializeAsync() => MySqlTestContext.ResetSchemaAsync(_connectionString);
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
+    // [I]NVERSE / IDEMPOTENCY: MySQL upsert keeps a single tick per (metal, currency, timestamp)
+    [Fact]
+    public async Task SavePricesAsync_WhenRunTwiceWithSameTimestamp_DoesNotCreateDuplicateTicks()
+    {
+        await using var db = MySqlTestContext.Create(_connectionString);
+        var repository = new PriceHistoryRepository(db, new DailyCandleAggregator(), new PriceHistoryPruner());
+        var entities = CreateTickSet(db, timestamp: 1_723_900_000);
+
+        await repository.SavePricesAsync(entities);
+        var countAfterFirstRun = await db.PriceHistory.CountAsync();
+
+        await repository.SavePricesAsync(entities);
+        var countAfterSecondRun = await db.PriceHistory.CountAsync();
+
+        Assert.Equal(8, countAfterFirstRun);
+        Assert.Equal(8, countAfterSecondRun);
+    }
+
+    // [B]OUNDARY: a different ReferenceTimestamp on the same day inserts additional ticks
+    [Fact]
+    public async Task SavePricesAsync_WhenSameDayButDifferentTimestamp_CreatesAdditionalTicks()
+    {
+        await using var db = MySqlTestContext.Create(_connectionString);
+        var repository = new PriceHistoryRepository(db, new DailyCandleAggregator(), new PriceHistoryPruner());
+        var first = CreateTickSet(db, timestamp: 1_723_900_000);
+        var second = CreateTickSet(db, timestamp: 1_723_903_600);
+
+        await repository.SavePricesAsync(first);
+        await repository.SavePricesAsync(second);
+
+        Assert.Equal(16, await db.PriceHistory.CountAsync());
+    }
+
+    private static IReadOnlyList<PriceHistory> CreateTickSet(ElementumDbContext db, long timestamp)
+    {
+        var payload = new EdelmetalleApiResponse
+        {
+            GoldUsd = 2500.00m,
+            GoldEur = 2280.00m,
+            SilberUsd = 30.00m,
+            SilberEur = 27.00m,
+            PlatinUsd = 1000.00m,
+            PlatinEur = 910.00m,
+            PalladiumUsd = 1050.00m,
+            PalladiumEur = 960.00m,
+            WechselkursUsdEur = 1.095m,
+            Timestamp = timestamp
+        };
+
+        var metalsMap = db.Metals.ToDictionary(m => m.Symbol, m => m.Id);
+        return payload.ToPriceHistoryEntities(metalsMap, DateOnly.FromDateTime(DateTime.UtcNow));
+    }
+}
