@@ -87,34 +87,19 @@ namespace Elementum.Infrastructure.Outbound.Data.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     metal_id = table.Column<int>(type: "int", nullable: false),
-                    Currency = table.Column<string>(type: "longtext", nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    Exchange = table.Column<string>(type: "longtext", nullable: false)
+                    Currency = table.Column<string>(type: "varchar(3)", maxLength: 3, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Symbol = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    reference_timestamp = table.Column<string>(type: "longtext", nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    reference_timestamp = table.Column<long>(type: "bigint", nullable: false),
                     entry_date = table.Column<DateOnly>(type: "date", nullable: false),
-                    Price = table.Column<decimal>(type: "decimal(65,30)", nullable: false),
-                    prev_close_price = table.Column<decimal>(type: "decimal(65,30)", nullable: true),
-                    open_price = table.Column<decimal>(type: "decimal(65,30)", nullable: true),
-                    low_price = table.Column<decimal>(type: "decimal(65,30)", nullable: true),
-                    high_price = table.Column<decimal>(type: "decimal(65,30)", nullable: true),
-                    open_time = table.Column<string>(type: "longtext", nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    Ch = table.Column<decimal>(type: "decimal(65,30)", nullable: true),
-                    Chp = table.Column<decimal>(type: "decimal(65,30)", nullable: true),
-                    Ask = table.Column<decimal>(type: "decimal(65,30)", nullable: true),
-                    Bid = table.Column<decimal>(type: "decimal(65,30)", nullable: true),
-                    price_gram_24k = table.Column<decimal>(type: "decimal(65,30)", nullable: true),
-                    price_gram_22k = table.Column<decimal>(type: "decimal(65,30)", nullable: true),
-                    price_gram_21k = table.Column<decimal>(type: "decimal(65,30)", nullable: true),
-                    price_gram_20k = table.Column<decimal>(type: "decimal(65,30)", nullable: true),
-                    price_gram_18k = table.Column<decimal>(type: "decimal(65,30)", nullable: true),
-                    price_gram_16k = table.Column<decimal>(type: "decimal(65,30)", nullable: true),
-                    price_gram_14k = table.Column<decimal>(type: "decimal(65,30)", nullable: true),
-                    price_gram_10k = table.Column<decimal>(type: "decimal(65,30)", nullable: true)
+                    price = table.Column<decimal>(type: "decimal(18,4)", precision: 18, scale: 4, nullable: false),
+                    prev_close_price = table.Column<decimal>(type: "decimal(18,4)", precision: 18, scale: 4, nullable: true),
+                    open_price = table.Column<decimal>(type: "decimal(18,4)", precision: 18, scale: 4, nullable: true),
+                    low_price = table.Column<decimal>(type: "decimal(18,4)", precision: 18, scale: 4, nullable: true),
+                    high_price = table.Column<decimal>(type: "decimal(18,4)", precision: 18, scale: 4, nullable: true),
+                    ch = table.Column<decimal>(type: "decimal(18,4)", precision: 18, scale: 4, nullable: true),
+                    chp = table.Column<decimal>(type: "decimal(18,4)", precision: 18, scale: 4, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -135,9 +120,15 @@ namespace Elementum.Infrastructure.Outbound.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_price_history_metal_id",
+                name: "IX_price_history_metal_id_Currency_entry_date",
                 table: "price_history",
-                column: "metal_id");
+                columns: new[] { "metal_id", "Currency", "entry_date" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_price_history_metal_id_Currency_reference_timestamp",
+                table: "price_history",
+                columns: new[] { "metal_id", "Currency", "reference_timestamp" },
+                unique: true);
         }
 
         /// <inheritdoc />

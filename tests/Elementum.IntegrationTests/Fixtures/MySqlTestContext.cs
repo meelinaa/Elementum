@@ -47,7 +47,7 @@ internal static class MySqlTestContext
     {
         await DropAllTablesAsync(connectionString, cancellationToken);
         await using var db = Create(connectionString);
-        await db.Database.EnsureCreatedAsync(cancellationToken);
+        await db.Database.MigrateAsync(cancellationToken);
         await SeedMetalsAsync(db, cancellationToken);
     }
 

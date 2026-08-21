@@ -68,4 +68,39 @@ public sealed class MigrationMySqlTests
         Assert.Contains("distributed_locks", tables);
         Assert.Contains("__efmigrationshistory", tables);
     }
+
+    // [R]IGHT-BICEP: InitialCreate matches the Fluent model (bigint timestamp, varchar(3) currency, decimal(18,4), no karat/ask/bid)
+    [Fact]
+    public async Task MigrateAsync_CreatesPriceHistoryColumnsMatchingCurrentModel()
+    {
+        await MySqlTestContext.DropAllTablesAsync(_connectionString);
+
+        await using var db = MySqlTestContext.Create(_connectionString);
+        await db.Database.MigrateAsync();
+        await db.Database.OpenConnectionAsync();
+
+        await using var command = db.Database.GetDbConnection().CreateCommand();
+        command.CommandText = """
+            SELECT column_name, column_type
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+              AND LOWER(table_name) = 'price_history'
+            """;
+
+        var columns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        await using (var reader = await command.ExecuteReaderAsync())
+        {
+            while (await reader.ReadAsync())
+                columns[reader.GetString(0)] = reader.GetString(1);
+        }
+
+        Assert.Equal("bigint", columns["reference_timestamp"], StringComparer.OrdinalIgnoreCase);
+        Assert.StartsWith("varchar(3)", columns["Currency"], StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("decimal(18,4)", columns["price"], StringComparer.OrdinalIgnoreCase);
+        Assert.False(columns.ContainsKey("Ask"));
+        Assert.False(columns.ContainsKey("Bid"));
+        Assert.False(columns.ContainsKey("Exchange"));
+        Assert.False(columns.ContainsKey("price_gram_24k"));
+        Assert.Empty(await db.Database.GetPendingMigrationsAsync());
+    }
 }

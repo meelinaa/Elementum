@@ -20,12 +20,6 @@ public static partial class DatabaseLogMessages
     public static partial void MigrationsAppliedSuccessfully(ILogger logger);
 
     [LoggerMessage(
-        EventId = 3204,
-        Level = LogLevel.Warning,
-        Message = "Relational migration skipped (non-relational or mock provider detected). Ensuring database created.")]
-    public static partial void RelationalMigrationSkipped(ILogger logger, Exception ex);
-
-    [LoggerMessage(
         EventId = 3205,
         Level = LogLevel.Information,
         Message = "Seeding master metals catalog (Gold, Silver, Platinum, Palladium)...")]

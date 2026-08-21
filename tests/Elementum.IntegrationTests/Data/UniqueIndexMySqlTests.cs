@@ -53,7 +53,7 @@ public sealed class UniqueIndexMySqlTests : IAsyncLifetime
         Assert.Equal(1062, ((MySqlException)ex.InnerException!).Number);
     }
 
-    // [R]IGHT-BICEP: EnsureCreated materializes the Fluent unique index on price_history
+    // [R]IGHT-BICEP: the applied migration materializes the Fluent unique index on price_history
     [Fact]
     public async Task PriceHistory_UniqueIndex_ExistsOnMetalCurrencyTimestamp()
     {

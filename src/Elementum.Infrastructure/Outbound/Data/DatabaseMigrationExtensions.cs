@@ -13,7 +13,9 @@ namespace Elementum.Infrastructure.Outbound.Data;
 public static class DatabaseMigrationExtensions
 {
     /// <summary>
-    /// Ensures that database schema and tables exist, pending EF Core migrations are applied, and master catalog (metals) is seeded.
+    /// Applies pending EF Core migrations on relational databases. Model/schema drift fails the host
+    /// (no <c>EnsureCreated</c> fallback). Non-relational test providers use <c>EnsureCreated</c>.
+    /// Seeds the metals catalog when empty.
     /// </summary>
     public static async Task ApplyMigrationsAndSeedAsync(this IServiceProvider serviceProvider, CancellationToken cancellationToken = default)
     {
@@ -25,20 +27,13 @@ public static class DatabaseMigrationExtensions
         {
             if (db.Database.IsRelational())
             {
-                try
-                {
-                    DatabaseLogMessages.ApplyingMigrations(logger);
-                    await db.Database.MigrateAsync(cancellationToken);
-                    DatabaseLogMessages.MigrationsAppliedSuccessfully(logger);
-                }
-                catch (InvalidOperationException ex)
-                {
-                    DatabaseLogMessages.RelationalMigrationSkipped(logger, ex);
-                    await db.Database.EnsureCreatedAsync(cancellationToken);
-                }
+                DatabaseLogMessages.ApplyingMigrations(logger);
+                await db.Database.MigrateAsync(cancellationToken);
+                DatabaseLogMessages.MigrationsAppliedSuccessfully(logger);
             }
             else
             {
+                // In-memory / test providers have no migrations pipeline.
                 await db.Database.EnsureCreatedAsync(cancellationToken);
             }
 
