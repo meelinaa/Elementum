@@ -1,7 +1,8 @@
 # Elementum.Api — REST API Endpoints
 
 Base URL for all API routes: **`/api/v1`**.  
-All business responses are JSON and mapped to dedicated DTOs from `Elementum.Application.DTOs`.
+All business responses are JSON and mapped to dedicated DTOs from `Elementum.Application.DTOs`.  
+The API is **public and read-only** (no authentication). Protection against overload is IP rate limiting — see [Rate Limiting & Error Responses](#rate-limiting--error-responses).
 
 ---
 
