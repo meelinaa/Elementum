@@ -36,10 +36,10 @@ public interface IPriceHistoryReadRepository
     Task<PriceHistory?> GetPriceHistoryByMetalSymbolLatest(string symbol, CancellationToken ct);
 
     /// <summary>Returns the latest price history entry per metal (grouped by symbol).</summary>
-    Task<IEnumerable<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken ct);
+    Task<IReadOnlyList<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken ct);
 
     /// <summary>Returns aggregated price history for a metal (daily/weekly/monthly/yearly) with at most count entries.</summary>
-    Task<IEnumerable<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct);
+    Task<IReadOnlyList<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct);
 
     /// <summary>
     /// Returns daily candle summaries for all metals and currencies in the inclusive date range.

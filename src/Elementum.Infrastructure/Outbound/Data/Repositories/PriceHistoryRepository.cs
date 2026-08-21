@@ -143,7 +143,7 @@ public class PriceHistoryRepository : IElementumDbContext
             .FirstOrDefaultAsync(ct);
 
     /// <inheritdoc />
-    public async Task<IEnumerable<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken ct)
+    public async Task<IReadOnlyList<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken ct)
     {
         var latestIds = await _db.PriceHistory
             .GroupBy(x => x.MetalId)
@@ -211,7 +211,7 @@ public class PriceHistoryRepository : IElementumDbContext
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct)
+    public async Task<IReadOnlyList<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct)
     {
         var metal = await GetMetalBySymbol(metalSymbol, ct);
         if (metal == null)

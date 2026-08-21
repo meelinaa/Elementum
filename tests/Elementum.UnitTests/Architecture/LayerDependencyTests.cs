@@ -52,14 +52,32 @@ public class LayerDependencyTests
         var queryableMethods = typeof(Elementum.Domain.Ports.Outbound.IPriceHistoryReadRepository).Assembly
             .GetTypes()
             .Where(t => t.IsInterface && t.Namespace is not null && t.Namespace.StartsWith("Elementum.Domain.Ports", StringComparison.Ordinal))
-            .SelectMany(t => t.GetMethods())
-            .Where(m => typeof(IQueryable).IsAssignableFrom(m.ReturnType))
-            .Select(m => $"{m.DeclaringType!.Name}.{m.Name}")
+            .SelectMany(QueryableBoundaryRules.DeferredQueryMethods)
             .ToList();
 
         Assert.True(
             queryableMethods.Count == 0,
             $"Domain ports must not return IQueryable: {string.Join(", ", queryableMethods)}");
+    }
+
+    [Fact]
+    public void ResilienceDecoratorAndPorts_ShouldNot_PassThroughIQueryable()
+    {
+        // Query* passthrough on the decorator would execute EF outside Polly retry.
+        var leaks = QueryableBoundaryRules.ProductionDeferredQueryMethods();
+
+        Assert.True(
+            leaks.Count == 0,
+            $"Ports and ResilientElementumDbContext must return materialized collections, not IQueryable: {string.Join(", ", leaks)}");
+    }
+
+    [Fact]
+    public void QueryablePassthroughProbe_IsReportedAsDeferredQuery()
+    {
+        // Negative lock: the helper must fail open IQueryable methods, not only empty production types.
+        var leaks = QueryableBoundaryRules.DeferredQueryMethods(typeof(Probes.QueryablePassthroughProbe));
+
+        Assert.Contains("QueryablePassthroughProbe.QueryPriceHistoryAll", leaks);
     }
 
     [Fact]

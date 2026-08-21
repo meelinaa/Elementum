@@ -5,8 +5,8 @@ using Polly;
 namespace Elementum.Infrastructure.Outbound.Data.Resilience;
 
 /// <summary>
-/// Decorator that implements <see cref="IElementumDbContext"/> and wraps every call in a Polly retry policy.
-/// When a transient MySQL error occurs, the operation is retried according to <see cref="ElementumDbContextResilienceOptions"/>.
+/// Decorator that implements <see cref="IElementumDbContext"/> and wraps every port call in a Polly retry policy.
+/// Queries are materialized inside the inner repository so retry covers the actual database work — there is no IQueryable passthrough.
 /// </summary>
 public sealed class ResilientElementumDbContext : IElementumDbContext
 {
@@ -45,10 +45,10 @@ public sealed class ResilientElementumDbContext : IElementumDbContext
     public Task<PriceHistory?> GetPriceHistoryByMetalSymbolLatest(string symbol, CancellationToken ct) =>
         ExecuteAsync(innerCt => _inner.GetPriceHistoryByMetalSymbolLatest(symbol, innerCt), ct);
 
-    public Task<IEnumerable<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken ct) =>
+    public Task<IReadOnlyList<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken ct) =>
         ExecuteAsync(innerCt => _inner.GetPriceHistoryAllLatest(innerCt), ct);
 
-    public Task<IEnumerable<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct) =>
+    public Task<IReadOnlyList<PriceHistory>> GetPriceHistoryMetalData(string metalSymbol, string aggregation, int count, CancellationToken ct) =>
         ExecuteAsync(innerCt => _inner.GetPriceHistoryMetalData(metalSymbol, aggregation, count, innerCt), ct);
 
     public Task SavePricesAsync(IReadOnlyList<PriceHistory> prices, CancellationToken cancellationToken = default) =>
