@@ -1,10 +1,11 @@
 using Elementum.Application.Requests;
+using Elementum.Domain.Constants;
 using FluentValidation;
 
 namespace Elementum.Application.Validation;
 
 /// <summary>
-/// Syntactic checks for the currency query parameter. Supported ISO codes are enforced in the domain.
+/// Validates the currency query parameter at the HTTP boundary (USD or EUR only), analog to <see cref="SymbolRequestValidator"/>.
 /// </summary>
 public class CurrencyRequestValidator : AbstractValidator<CurrencyRequest>
 {
@@ -13,11 +14,17 @@ public class CurrencyRequestValidator : AbstractValidator<CurrencyRequest>
         When(x => !string.IsNullOrWhiteSpace(x.Currency), () =>
         {
             RuleFor(x => x.Currency)
-                .Must(BeThreeLetterCode)
-                .WithMessage("Currency must be a 3-letter ISO code (USD or EUR).");
+                .Must(BeSupportedCurrency)
+                .WithMessage("Currency must be USD or EUR.");
         });
     }
 
-    private static bool BeThreeLetterCode(string? currency) =>
-        currency is not null && currency.Trim().Length == 3 && currency.Trim().All(char.IsAsciiLetter);
+    private static bool BeSupportedCurrency(string? currency)
+    {
+        if (string.IsNullOrWhiteSpace(currency))
+            return false;
+
+        var code = currency.Trim().ToUpperInvariant();
+        return code is DomainConstants.Currencies.Usd or DomainConstants.Currencies.Eur;
+    }
 }

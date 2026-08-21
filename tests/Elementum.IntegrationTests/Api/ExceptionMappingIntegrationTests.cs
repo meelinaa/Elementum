@@ -49,11 +49,13 @@ public class ExceptionMappingIntegrationTests : IClassFixture<CustomWebApplicati
         Assert.Equal(404, problem.Status);
     }
 
-    // [E]RROR RIGHT-BICEP: syntactically invalid currency is rejected at the HTTP boundary (400)
-    [Fact]
-    public async Task GetLiveTradingAnalysis_WhenCurrencyMalformed_Returns400ValidationProblemDetails()
+    // [E]RROR RIGHT-BICEP: currency other than USD/EUR is rejected at the HTTP boundary (400), analog to SymbolRequest
+    [Theory]
+    [InlineData("EURO")]
+    [InlineData("GBP")]
+    public async Task GetLiveTradingAnalysis_WhenCurrencyUnsupported_Returns400ValidationProblemDetails(string currency)
     {
-        var response = await _client.GetAsync("/api/v1/prices/live/trading/XAU?currency=EURO");
+        var response = await _client.GetAsync($"/api/v1/prices/live/trading/XAU?currency={currency}");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var problem = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
@@ -63,34 +65,18 @@ public class ExceptionMappingIntegrationTests : IClassFixture<CustomWebApplicati
         Assert.True(problem.Errors.ContainsKey("Currency"));
     }
 
-    // [E]RROR RIGHT-BICEP: supported-shape but unknown ISO code hits domain Currency.FromCode and maps to 422
+    // [E]RROR RIGHT-BICEP: history uses the same CurrencyRequest validator as trading
     [Fact]
-    public async Task GetLiveTradingAnalysis_WhenCurrencyUnsupported_Returns422ProblemDetails()
-    {
-        var response = await _client.GetAsync("/api/v1/prices/live/trading/XAU?currency=GBP");
-
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
-        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
-        Assert.NotNull(problem);
-        Assert.Equal(422, problem.Status);
-        Assert.Equal("Domain validation error", problem.Title);
-        Assert.Equal("https://tools.ietf.org/html/rfc4918#section-11.2", problem.Type);
-        Assert.Equal("GET /api/v1/prices/live/trading/XAU", problem.Instance);
-        Assert.Contains("GBP", problem.Detail, StringComparison.Ordinal);
-    }
-
-    // [E]RROR RIGHT-BICEP: history query uses the same domain 422 path for unsupported currency
-    [Fact]
-    public async Task GetPriceHistory_WhenCurrencyUnsupported_Returns422ProblemDetails()
+    public async Task GetPriceHistory_WhenCurrencyUnsupported_Returns400ValidationProblemDetails()
     {
         var response = await _client.GetAsync("/api/v1/history/XAU?currency=GBP");
 
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
-        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
         Assert.NotNull(problem);
-        Assert.Equal(422, problem.Status);
-        Assert.Equal("Domain validation error", problem.Title);
-        Assert.Equal("https://tools.ietf.org/html/rfc4918#section-11.2", problem.Type);
+        Assert.Equal(400, problem.Status);
+        Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.5.1", problem.Type);
+        Assert.True(problem.Errors.ContainsKey("Currency"));
     }
 }
 

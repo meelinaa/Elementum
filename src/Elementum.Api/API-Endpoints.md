@@ -74,7 +74,7 @@ Retrieves a real-time market overview for all 4 precious metals (Gold, Silver, P
 Calculates real-time trading metrics and technical indicators (OHLC, spread, volatility, bullish/bearish status) for a given metal.
 
 - **Route Parameter:** `symbol` (e.g. `XAU`, `XAG`, `XPT`, `XPD`)
-- **Query Parameter:** `currency` (optional: `EUR` [default] or `USD`)
+- **Query Parameter:** `currency` (optional: `EUR` [default] or `USD`; other values return `400`)
 - **Response:**
   - `200 OK` → `TradingPriceDto`
   - `404 Not Found` → `ProblemDetails` (when symbol is not recognized)
@@ -113,7 +113,7 @@ Calculates real-time trading metrics and technical indicators (OHLC, spread, vol
 Returns the historical price tick series for a specific metal and currency.
 
 - **Route Parameter:** `symbol` (e.g. `XAU`, `XAG`)
-- **Query Parameter:** `currency` (optional, e.g. `USD` or `EUR`)
+- **Query Parameter:** `currency` (optional: `USD` or `EUR`; omitted = all currencies; other values return `400`)
 - **Timeout Policy:** `DataCruncher` (60s)
 - **Response:** `200 OK` → `List<PriceHistoryDto>`
 

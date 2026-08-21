@@ -14,32 +14,35 @@ public class CurrencyRequestValidatorTests
     [InlineData("  ")]
     public void Validate_WhenCurrencyMissing_PassesValidation(string? currency)
     {
-        var result = _validator.Validate(new CurrencyRequest { Currency = currency });
+        var result = _validator.Validate(new CurrencyRequest(currency));
 
         Assert.True(result.IsValid);
     }
 
-    // [R]IGHT-BICEP: three-letter codes pass the syntactic filter (supported set is domain)
+    // [R]IGHT-BICEP: only USD and EUR pass inbound FluentValidation (case-insensitive)
     [Theory]
     [InlineData("USD")]
+    [InlineData("usd")]
+    [InlineData("EUR")]
     [InlineData("eur")]
-    [InlineData("GBP")]
-    public void Validate_WhenThreeLetterCode_PassesValidation(string currency)
+    public void Validate_WhenCurrencyIsUsdOrEur_PassesValidation(string currency)
     {
-        var result = _validator.Validate(new CurrencyRequest { Currency = currency });
+        var result = _validator.Validate(new CurrencyRequest(currency));
 
         Assert.True(result.IsValid);
     }
 
-    // [E]RROR RIGHT-BICEP: non-ISO shapes fail at the HTTP boundary before the domain
+    // [E]RROR RIGHT-BICEP: unsupported or malformed codes fail at the HTTP boundary before the domain
     [Theory]
+    [InlineData("GBP")]
+    [InlineData("JPY")]
     [InlineData("US")]
     [InlineData("EURO")]
     [InlineData("US$")]
     [InlineData("123")]
-    public void Validate_WhenNotThreeLetters_FailsValidation(string currency)
+    public void Validate_WhenCurrencyUnsupported_FailsValidation(string currency)
     {
-        var result = _validator.Validate(new CurrencyRequest { Currency = currency });
+        var result = _validator.Validate(new CurrencyRequest(currency));
 
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors, e => e.PropertyName == nameof(CurrencyRequest.Currency));
