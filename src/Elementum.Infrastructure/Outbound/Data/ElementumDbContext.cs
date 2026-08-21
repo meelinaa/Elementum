@@ -37,6 +37,8 @@ public class ElementumDbContext(DbContextOptions<ElementumDbContext> options) : 
         {
             e.ToTable("metals");
             e.HasKey(x => x.Id);
+            e.Property(x => x.Symbol).HasColumnName("symbol").HasMaxLength(8).IsRequired();
+            e.HasIndex(x => x.Symbol).IsUnique().HasDatabaseName("IX_metals_symbol");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
         });
 

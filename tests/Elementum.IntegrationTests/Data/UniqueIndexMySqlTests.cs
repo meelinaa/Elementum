@@ -73,4 +73,49 @@ public sealed class UniqueIndexMySqlTests : IAsyncLifetime
         var columnCount = Convert.ToInt32(await command.ExecuteScalarAsync());
         Assert.Equal(3, columnCount);
     }
+
+    // [E]RROR RIGHT-BICEP: duplicate metals.symbol is rejected by the unique index
+    [Fact]
+    public async Task Metals_DuplicateSymbol_ThrowsDbUpdateException()
+    {
+        await using var db = MySqlTestContext.Create(_connectionString);
+
+        db.Metals.Add(new Metals { Symbol = "XAU", Name = "Gold again" });
+        var ex = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+
+        Assert.IsType<MySqlException>(ex.InnerException);
+        Assert.Equal(1062, ((MySqlException)ex.InnerException!).Number);
+    }
+
+    // [R]IGHT-BICEP: applied migrations map metals.symbol as unique varchar, not longtext
+    [Fact]
+    public async Task Metals_Symbol_IsUniqueVarchar()
+    {
+        await using var db = MySqlTestContext.Create(_connectionString);
+        await db.Database.OpenConnectionAsync();
+        await using var command = db.Database.GetDbConnection().CreateCommand();
+        command.CommandText = """
+            SELECT column_type
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+              AND LOWER(table_name) = 'metals'
+              AND LOWER(column_name) = 'symbol'
+            """;
+
+        var columnType = Convert.ToString(await command.ExecuteScalarAsync());
+        Assert.StartsWith("varchar(8)", columnType, StringComparison.OrdinalIgnoreCase);
+
+        command.CommandText = """
+            SELECT COUNT(*)
+            FROM information_schema.statistics
+            WHERE table_schema = DATABASE()
+              AND LOWER(table_name) = 'metals'
+              AND non_unique = 0
+              AND LOWER(index_name) <> 'primary'
+              AND LOWER(column_name) = 'symbol'
+            """;
+
+        var uniqueColumns = Convert.ToInt32(await command.ExecuteScalarAsync());
+        Assert.Equal(1, uniqueColumns);
+    }
 }

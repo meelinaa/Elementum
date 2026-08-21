@@ -4,6 +4,7 @@ using Elementum.Infrastructure.Outbound.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Elementum.Infrastructure.Outbound.Data.Migrations
 {
     [DbContext(typeof(ElementumDbContext))]
-    partial class ElementumDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260821092731_ConstrainMetalsSymbol")]
+    partial class ConstrainMetalsSymbol
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

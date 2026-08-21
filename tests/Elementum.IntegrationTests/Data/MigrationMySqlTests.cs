@@ -37,6 +37,7 @@ public sealed class MigrationMySqlTests
         Assert.Contains(applied, name => name.Contains("InitialCreate", StringComparison.Ordinal));
         Assert.Equal(4, await db.Metals.CountAsync());
         Assert.Contains(await db.Metals.ToListAsync(), m => m.Symbol == "XAU");
+        Assert.Empty(await db.Database.GetPendingMigrationsAsync());
     }
 
     // [R]IGHT-BICEP: MigrateAsync creates the lock and price tables from the migrations assembly
