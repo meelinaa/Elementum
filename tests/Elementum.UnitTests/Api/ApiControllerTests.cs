@@ -82,7 +82,7 @@ public class ApiControllerTests
         // Act
         var result = await _livePricesController.GetLiveTradingAnalysis(
             request,
-            new CurrencyRequest { Currency = "EUR" },
+            new CurrencyRequest(),
             CancellationToken.None);
 
         // Assert
@@ -117,9 +117,7 @@ public class ApiControllerTests
         // Act
         var result = await _priceHistoryController.GetPriceHistoryByMetalSymbol(
             request,
-            new CurrencyRequest(),
-            new DateRangeRequest(),
-            new HistoryPageRequest(),
+            new HistoryQueryRequest(),
             CancellationToken.None);
 
         // Assert
@@ -149,9 +147,7 @@ public class ApiControllerTests
         // Act
         var result = await _priceHistoryController.GetPriceHistoryByMetalSymbol(
             request,
-            new CurrencyRequest { Currency = "EUR" },
-            new DateRangeRequest(),
-            new HistoryPageRequest(),
+            new HistoryQueryRequest { Currency = "EUR" },
             CancellationToken.None);
 
         // Assert

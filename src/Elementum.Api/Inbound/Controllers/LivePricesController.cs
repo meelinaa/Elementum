@@ -38,7 +38,7 @@ public class LivePricesController : ControllerBase
     {
         var dto = await _livePricesUseCase.GetLiveTradingAnalysisAsync(
             symbolRequest.Symbol.Trim(),
-            currencyRequest.Currency ?? "EUR",
+            currencyRequest.ForTrading(),
             cancellationToken);
         if (dto == null)
         {

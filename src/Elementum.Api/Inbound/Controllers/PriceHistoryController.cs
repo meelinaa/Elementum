@@ -29,18 +29,16 @@ public class PriceHistoryController : ControllerBase
     [RequestTimeout("DataCruncher")]
     public async Task<ActionResult<PriceHistoryPageDto>> GetPriceHistoryByMetalSymbol(
         [FromRoute] SymbolRequest symbolRequest,
-        [FromQuery] CurrencyRequest currencyRequest,
-        [FromQuery] DateRangeRequest dateRange,
-        [FromQuery] HistoryPageRequest page,
+        [FromQuery] HistoryQueryRequest query,
         CancellationToken cancellationToken)
     {
         var historyData = await _priceHistoryUseCase.GetBySymbolAsync(
             symbolRequest.Symbol.Trim(),
-            currencyRequest.Currency,
-            dateRange.From,
-            dateRange.To,
-            page.Skip,
-            page.Take,
+            query.NormalizedCurrency,
+            query.From,
+            query.To,
+            query.Skip,
+            query.Take,
             cancellationToken);
         return Ok(historyData);
     }
