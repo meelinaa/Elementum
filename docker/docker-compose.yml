@@ -59,8 +59,8 @@ services:
   # ---------------------------------------------------------------------------
   api:
     build:
-      context: ../src
-      dockerfile: Elementum.Api/Dockerfile
+      context: ..
+      dockerfile: src/Elementum.Api/Dockerfile
     container_name: elementum-api
     restart: unless-stopped
     ports:
@@ -69,23 +69,27 @@ services:
       ConnectionStrings__DefaultConnection: "Server=mysql;Port=3306;Database=${MYSQL_DATABASE};User=${MYSQL_USER};Password=${MYSQL_PASSWORD};"
       ConnectionStrings__Redis: "redis:6379"
       ASPNETCORE_ENVIRONMENT: Production
-      # Production CORS: browser origins only. CLI/server callers are unaffected.
       Cors__AllowedOrigins__0: "${CORS_ALLOWED_ORIGIN:-http://localhost:3000}"
-      # TLS is terminated at the reverse proxy (profile "edge"), not in this container.
       ReverseProxy__TerminateHttps: "true"
     depends_on:
       mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
 
   # ---------------------------------------------------------------------------
   # Elementum.Worker (Background worker)
   # ---------------------------------------------------------------------------
   worker:
     build:
-      context: ../src
-      dockerfile: Elementum.Worker/Dockerfile
+      context: ..
+      dockerfile: src/Elementum.Worker/Dockerfile
     container_name: elementum-worker
     restart: unless-stopped
     ports:
@@ -93,8 +97,8 @@ services:
     env_file:
       - ../src/Elementum.Worker/.env
     environment:
-      # Worker listens on this port (Program.cs uses configuration key "Urls")
-      Urls: "http://+:${WORKER_PORT:-5094}"
+      # Listen on the container port (host maps WORKER_PORT → 5094).
+      Urls: "http://+:5094"
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__DefaultConnection: "Server=mysql;Port=3306;Database=${MYSQL_DATABASE};User=${MYSQL_USER};Password=${MYSQL_PASSWORD};"
       ConnectionStrings__Redis: "redis:6379"
@@ -103,6 +107,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:5094/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
 
   # ---------------------------------------------------------------------------
   # Reverse proxy: HTTPS termination (Let's Encrypt / local TLS). API stays HTTP.
@@ -123,7 +133,8 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
 volumes:
   mysql_data:

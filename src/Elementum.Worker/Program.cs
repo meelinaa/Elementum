@@ -3,6 +3,7 @@ using Elementum.Worker.Hosting;
 using Elementum.Worker.Jobs;
 using Elementum.Worker.Logging;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
@@ -37,7 +38,8 @@ try
         return 0;
     }
 
-    // Standard Daemon Mode: listen for health checks and execute on schedule
+    // Liveness for Compose/orchestrators (process-up). Full checks stay on /health.
+    app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
     app.MapHealthChecks("/health");
     WorkerLogMessages.DaemonStarting(logger);
     await app.RunAsync();

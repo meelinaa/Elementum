@@ -134,7 +134,7 @@ public static class ApiServiceCollectionExtensions
 
         // Kubernetes-style probes
         services.AddHealthChecks()
-            .AddDbContextCheck<ElementumDbContext>("database", failureStatus: HealthStatus.Unhealthy, tags: new[] { "ready" });
+            .AddDbContextCheck<ElementumDbContext>("database", failureStatus: HealthStatus.Unhealthy, tags: ["ready"]);
 
         // Per-request timeouts
         services.AddRequestTimeouts(options =>

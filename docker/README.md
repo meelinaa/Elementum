@@ -52,6 +52,17 @@ Do not expose `API_PORT` on a public interface when `proxy` is the edge; keep 80
 
 ---
 
+## Health checks
+
+| Service | Probe | Path |
+|---------|--------|------|
+| **API** | Compose `healthcheck` | `GET /health/live` (process-up; `/health/ready` still checks MySQL) |
+| **Worker** | Compose `healthcheck` | `GET /health/live` (process-up; `GET /health` still runs DB + upstream checks) |
+
+Images use floating tags (`mysql:8`, `redis:7-alpine`, `caddy:2-alpine`, `dotnet/sdk:10.0`). Pin by digest when a release must be bit-reproducible.
+
+---
+
 ## Common Commands
 
 ### View Logs

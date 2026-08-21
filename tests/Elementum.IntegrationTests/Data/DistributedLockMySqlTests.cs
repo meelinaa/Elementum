@@ -8,16 +8,11 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Elementum.IntegrationTests.Data;
 
 [Collection(MySqlCollection.Name)]
-public sealed class DistributedLockMySqlTests : IAsyncLifetime
+public sealed class DistributedLockMySqlTests(MySqlContainerFixture fixture) : IAsyncLifetime
 {
-    private readonly string _connectionString;
+    private readonly string _connectionString = fixture.ConnectionString;
     private ServiceProvider _services = null!;
     private EfCoreDistributedLockProvider _lockProvider = null!;
-
-    public DistributedLockMySqlTests(MySqlContainerFixture fixture)
-    {
-        _connectionString = fixture.ConnectionString;
-    }
 
     public async Task InitializeAsync()
     {

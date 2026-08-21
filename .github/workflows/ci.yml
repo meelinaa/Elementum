@@ -46,7 +46,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', 'Elementum.slnx') }}
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', 'Directory.Packages.props', 'Elementum.slnx') }}
           restore-keys: |
             ${{ runner.os }}-nuget-
 
@@ -56,10 +56,9 @@ jobs:
 
       - name: Build Solution (Release)
         run: dotnet build Elementum.slnx --configuration Release --no-restore
-        # Blocking: compile errors fail here. Warnings are advisory unless
-        # TreatWarningsAsErrors is enabled in a project (currently it is not).
+        # Blocking: compile errors and warnings fail here (TreatWarningsAsErrors in Release).
 
-      # --- 2. Tests (blocking; includes NetArchTest architecture rules) ---
+      # --- 2. Tests (blocking; includes NetArchTest architecture rules on real production types) ---
       - name: Run Test Suite
         run: >
           dotnet test Elementum.slnx
@@ -88,7 +87,8 @@ jobs:
           name: code-coverage
           path: "${{ runner.temp }}/test-results/**/coverage.cobertura.xml"
           if-no-files-found: ignore
-        # Advisory: coverage is collected and uploaded; no regression gate configured.
+        # Advisory: coverage is collected. No % gate — architecture tests now match real types,
+        # but a numeric threshold would still be cosmetic until a baseline is chosen.
 
       # --- 5. Security — vulnerable packages (blocking on High/Critical) ---
       - name: Check NuGet Vulnerabilities
@@ -159,3 +159,16 @@ jobs:
             echo "| Code formatting | ${{ steps.format.outcome }} | no |"
             echo "| Analyzer/style | ${{ steps.analyzers.outcome }} | no |"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  docker-build:
+    name: Docker build (no push)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build API image
+        run: docker build -f src/Elementum.Api/Dockerfile -t elementum-api:ci .
+
+      - name: Build Worker image
+        run: docker build -f src/Elementum.Worker/Dockerfile -t elementum-worker:ci .

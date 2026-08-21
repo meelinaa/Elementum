@@ -10,14 +10,9 @@ using Microsoft.EntityFrameworkCore;
 namespace Elementum.IntegrationTests.Data;
 
 [Collection(MySqlCollection.Name)]
-public sealed class PriceHistoryRepositoryMySqlTests : IAsyncLifetime
+public sealed class PriceHistoryRepositoryMySqlTests(MySqlContainerFixture fixture) : IAsyncLifetime
 {
-    private readonly string _connectionString;
-
-    public PriceHistoryRepositoryMySqlTests(MySqlContainerFixture fixture)
-    {
-        _connectionString = fixture.ConnectionString;
-    }
+    private readonly string _connectionString = fixture.ConnectionString;
 
     public Task InitializeAsync() => MySqlTestContext.ResetSchemaAsync(_connectionString);
 

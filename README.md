@@ -104,6 +104,9 @@ Elementum/
 │   ├── Caddyfile                       # TLS termination (profile: edge)
 │   ├── .env.example
 │   └── README.md
+├── Directory.Build.props               # TreatWarningsAsErrors (Release), Central Package Management
+├── Directory.Packages.props            # Single NuGet version list (EF 9 vs net10 skew)
+├── nuget.config
 ├── src/                                # Source projects
 │   ├── Elementum.Domain/               # Domain entities, value objects, constants & ports
 │   ├── Elementum.Application/          # Use cases, DTOs, mappers & configuration options

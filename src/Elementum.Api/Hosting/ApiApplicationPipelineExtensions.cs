@@ -81,7 +81,7 @@ public static class ApiApplicationPipelineExtensions
                     {
                         Component = e.Key,
                         Status = e.Value.Status.ToString(),
-                        Description = e.Value.Description
+                        e.Value.Description
                     }),
                     Duration = report.TotalDuration
                 };

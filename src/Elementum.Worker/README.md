@@ -18,6 +18,7 @@ Background ingestion and data consolidation daemon for **Elementum**. Periodical
    - Startup validation via `ValidateDataAnnotations().ValidateOnStart()`.
 5. **Observability & Metrics (`IngestionMetrics`):**
    - Metrics are instrumented via `System.Diagnostics.Metrics` (`IngestionMetrics`), ready for OpenTelemetry export. No collector/exporter is wired up yet — this is a deliberate scope cut for the portfolio version.
+6. **Health:** `GET /health/live` (process-up, used by Compose). `GET /health` runs database and upstream checks.
 
 ---
 
