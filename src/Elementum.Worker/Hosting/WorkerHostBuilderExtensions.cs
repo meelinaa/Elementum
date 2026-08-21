@@ -55,9 +55,12 @@ public static class WorkerHostBuilderExtensions
         if (string.IsNullOrWhiteSpace(connectionString))
             throw Elementum.Application.Exceptions.ConfigurationException.MissingConnectionString("DefaultConnection");
 
-        // Infrastructure & Application
-        services.AddElementumInfrastructure(connectionString);
         services.AddElementumApplication();
+
+        var redisConnectionString = configuration.GetConnectionString("Redis")
+            ?? configuration["REDIS_CONNECTION_STRING"];
+
+        services.AddElementumInfrastructure(connectionString, configureResilience: _ => { }, redisConnectionString);
 
         services.AddHealthChecks()
             .AddDbContextCheck<ElementumDbContext>("database", failureStatus: HealthStatus.Unhealthy, tags: new[] { "ready" })
