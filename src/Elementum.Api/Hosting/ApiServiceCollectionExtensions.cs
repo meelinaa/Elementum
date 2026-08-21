@@ -1,5 +1,6 @@
 using System.Threading.RateLimiting;
 using Elementum.Api.Exceptions;
+using Elementum.Api.OpenApi;
 using Elementum.Application;
 using Elementum.Application.Options;
 using Elementum.Infrastructure.Outbound.Data;
@@ -60,7 +61,10 @@ public static class ApiServiceCollectionExtensions
         {
             options.Filters.Add<Filters.ValidationFilter>();
         });
-        services.AddOpenApi();
+        services.AddOpenApi(options =>
+        {
+            options.AddOperationTransformer<ErrorResponsesOperationTransformer>();
+        });
 
         // RFC 7807 ProblemDetails for validation errors and exception handler integration.
         services.AddProblemDetails();
