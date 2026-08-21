@@ -76,6 +76,46 @@ public sealed class PriceHistoryRepositoryMySqlTests : IAsyncLifetime
         Assert.Equal(200L, tick.ReferenceTimestamp);
     }
 
+    // [R]IGHT-BICEP: bulk upsert updates the existing tick price without inserting a second row
+    [Fact]
+    public async Task SavePricesAsync_WhenSameKeyWithNewPrice_UpdatesExistingRow()
+    {
+        await using var db = MySqlTestContext.Create(_connectionString);
+        var repository = new PriceHistoryRepository(db, new DailyCandleAggregator(), new PriceHistoryPruner());
+        var date = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        await repository.SavePricesAsync(
+            [PriceHistory.Create(1, "USD", date, 2500m, "XAU", referenceTimestamp: 1_723_900_000)]);
+        await repository.SavePricesAsync(
+            [PriceHistory.Create(1, "USD", date, 2510m, "XAU", referenceTimestamp: 1_723_900_000)]);
+
+        var row = Assert.Single(await db.PriceHistory.ToListAsync());
+        Assert.Equal(2510m, row.Price);
+    }
+
+    // [B]OUNDARY: ExecuteDeleteAsync removes only ticks strictly older than the cutoff date
+    [Fact]
+    public async Task PruneHourlyDataOlderThanAsync_DeletesRowsOlderThanCutoffViaExecuteDelete()
+    {
+        await using var db = MySqlTestContext.Create(_connectionString);
+        var repository = new PriceHistoryRepository(db, new DailyCandleAggregator(), new PriceHistoryPruner());
+        var cutoff = DateTime.UtcNow.AddDays(-7);
+        var cutoffDate = DateOnly.FromDateTime(cutoff);
+
+        db.PriceHistory.AddRange(
+            PriceHistory.Create(1, "USD", cutoffDate.AddDays(-1), 2000m, "XAU", referenceTimestamp: 1L),
+            PriceHistory.Create(1, "USD", cutoffDate, 2100m, "XAU", referenceTimestamp: 2L),
+            PriceHistory.Create(1, "USD", cutoffDate.AddDays(1), 2200m, "XAU", referenceTimestamp: 3L));
+        await db.SaveChangesAsync();
+
+        var deleted = await repository.PruneHourlyDataOlderThanAsync(cutoff);
+
+        Assert.Equal(1, deleted);
+        var remaining = await db.PriceHistory.AsNoTracking().ToListAsync();
+        Assert.Equal(2, remaining.Count);
+        Assert.DoesNotContain(remaining, p => p.EntryDate < cutoffDate);
+    }
+
     private static IReadOnlyList<PriceHistory> CreateTickSet(ElementumDbContext db, long timestamp)
     {
         var payload = new EdelmetalleApiResponse

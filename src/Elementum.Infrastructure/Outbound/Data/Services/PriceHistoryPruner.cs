@@ -12,16 +12,19 @@ public class PriceHistoryPruner : IPriceHistoryPruner
     public async Task<int> PruneHourlyDataOlderThanAsync(ElementumDbContext db, DateTime thresholdUtc, CancellationToken ct = default)
     {
         var thresholdDate = DateOnly.FromDateTime(thresholdUtc);
+        var stale = db.PriceHistory.Where(p => p.EntryDate < thresholdDate);
 
-        var staleRecords = await db.PriceHistory
-            .Where(p => p.EntryDate < thresholdDate)
-            .ToListAsync(ct);
+        if (!db.Database.IsRelational())
+        {
+            var staleRecords = await stale.ToListAsync(ct);
+            if (staleRecords.Count == 0)
+                return 0;
 
-        if (staleRecords.Count == 0)
-            return 0;
+            db.PriceHistory.RemoveRange(staleRecords);
+            await db.SaveChangesAsync(ct);
+            return staleRecords.Count;
+        }
 
-        db.PriceHistory.RemoveRange(staleRecords);
-        await db.SaveChangesAsync(ct);
-        return staleRecords.Count;
+        return await stale.ExecuteDeleteAsync(ct);
     }
 }

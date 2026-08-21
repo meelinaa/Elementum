@@ -59,18 +59,31 @@ public class PriceHistoryRepository : IElementumDbContext
         if (prices == null || prices.Count == 0)
             return;
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var candidates = prices
+            .Where(p => p is { MetalId: > 0, Price: > 0 })
+            .ToList();
+        if (candidates.Count == 0)
+            return;
+
+        var metalIds = candidates.Select(p => p.MetalId).Distinct().ToList();
+        var currencies = candidates.Select(p => p.Currency).Distinct().ToList();
+        var timestamps = candidates.Select(p => p.ReferenceTimestamp).Distinct().ToList();
+
+        var existingRows = await _db.PriceHistory
+            .Where(x => metalIds.Contains(x.MetalId)
+                        && currencies.Contains(x.Currency)
+                        && timestamps.Contains(x.ReferenceTimestamp))
+            .ToListAsync(cancellationToken);
+
+        var existingByKey = existingRows
+            .GroupBy(x => (x.MetalId, x.Currency, x.ReferenceTimestamp))
+            .ToDictionary(g => g.Key, g => g.First());
         var isCloseHour = DateTime.UtcNow.Hour >= 22;
 
-        foreach (var price in prices)
+        foreach (var price in candidates)
         {
-            if (price == null || price.MetalId <= 0 || price.Price <= 0)
-                continue;
-
-            var existingRow = await _db.PriceHistory
-                .FirstOrDefaultAsync(x => x.MetalId == price.MetalId && x.Currency == price.Currency && x.ReferenceTimestamp == price.ReferenceTimestamp, cancellationToken);
-
-            if (existingRow != null)
+            var key = (price.MetalId, price.Currency, price.ReferenceTimestamp);
+            if (existingByKey.TryGetValue(key, out var existingRow))
             {
                 existingRow.UpdatePrices(
                     price: price.Price,
@@ -86,9 +99,9 @@ public class PriceHistoryRepository : IElementumDbContext
             else
             {
                 _db.PriceHistory.Add(price);
+                existingByKey[key] = price;
             }
 
-            // Real-time update of DailyPriceSummary candle
             await _candleAggregator.UpdateSummaryForTickAsync(
                 _db, price.MetalId, price.Currency, price.EntryDate, price.Price, 1.0m, isCloseHour, cancellationToken);
         }

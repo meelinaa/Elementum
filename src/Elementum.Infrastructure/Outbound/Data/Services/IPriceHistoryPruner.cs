@@ -8,7 +8,7 @@ namespace Elementum.Infrastructure.Outbound.Data.Services;
 public interface IPriceHistoryPruner
 {
     /// <summary>
-    /// Deletes hourly price_history records older than the specified UTC timestamp.
+    /// Deletes hourly <c>price_history</c> rows older than the cutoff via <c>ExecuteDeleteAsync</c> (no tracked load).
     /// </summary>
     Task<int> PruneHourlyDataOlderThanAsync(ElementumDbContext db, DateTime thresholdUtc, CancellationToken ct = default);
 }
