@@ -1,7 +1,7 @@
+using Elementum.Api.Exceptions;
 using Elementum.Application.DTOs;
 using Elementum.Application.Inbound.UseCases.Prices;
 using Elementum.Application.Requests;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Elementum.Api.Inbound.Controllers;
@@ -42,13 +42,10 @@ public class LivePricesController : ControllerBase
             cancellationToken);
         if (dto == null)
         {
-            return NotFound(new ProblemDetails
-            {
-                Title = "Not Found",
-                Status = StatusCodes.Status404NotFound,
-                Detail = $"No trading analysis found for symbol '{symbolRequest.Symbol}'.",
-                Instance = $"{Request.Method} {Request.Path}"
-            });
+            var problem = ExceptionStatusMapper.ForNotFound().ToProblemDetails(
+                detail: $"No trading analysis found for symbol '{symbolRequest.Symbol}'.",
+                instance: $"{Request.Method} {Request.Path}");
+            return NotFound(problem);
         }
 
         return Ok(dto);

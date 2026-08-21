@@ -77,7 +77,7 @@ Calculates real-time trading metrics and technical indicators (OHLC, spread, vol
 - **Query Parameter:** `currency` (optional: `EUR` [default] or `USD`; other values return `400`)
 - **Response:**
   - `200 OK` → `TradingPriceDto`
-  - `404 Not Found` → `ProblemDetails` (when symbol is not recognized)
+  - `404 Not Found` → `ProblemDetails` with type `https://tools.ietf.org/html/rfc7231#section-6.5.4` (same mapper as the exception path)
 
 **Payload Schema:**
 ```json

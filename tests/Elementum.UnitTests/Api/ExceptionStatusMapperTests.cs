@@ -71,6 +71,23 @@ public class ExceptionStatusMapperTests
         Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.5.4", mapping.TypeUri);
     }
 
+    // [C]ROSS-CHECK RIGHT-BICEP: controller 404s reuse the KeyNotFoundException mapping, including type URI
+    [Fact]
+    public void ForNotFound_MatchesKeyNotFoundExceptionMapping()
+    {
+        var fromException = ExceptionStatusMapper.Map(new KeyNotFoundException("metal symbol"));
+        var fromHelper = ExceptionStatusMapper.ForNotFound();
+
+        Assert.Equal(fromException, fromHelper);
+
+        var problem = fromHelper.ToProblemDetails(detail: "missing", instance: "GET /x");
+        Assert.Equal(fromHelper.StatusCode, problem.Status);
+        Assert.Equal(fromHelper.Title, problem.Title);
+        Assert.Equal(fromHelper.TypeUri, problem.Type);
+        Assert.Equal("missing", problem.Detail);
+        Assert.Equal("GET /x", problem.Instance);
+    }
+
     // [R]IGHT-BICEP: empty upstream live quote maps to 502 bad gateway for the primary live-price failure path
     [Fact]
     public void Map_WhenExternalApiReturnsEmpty_Returns502WithBadGatewayTypeUri()

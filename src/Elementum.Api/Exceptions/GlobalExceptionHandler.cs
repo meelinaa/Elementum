@@ -27,14 +27,9 @@ public sealed class GlobalExceptionHandler(
 
         httpContext.Response.StatusCode = mapping.StatusCode;
 
-        var problemDetails = new ProblemDetails
-        {
-            Status = mapping.StatusCode,
-            Title = mapping.Title,
-            Type = mapping.TypeUri,
-            Detail = environment.IsDevelopment() ? exception.Message : null,
-            Instance = $"{httpContext.Request.Method} {httpContext.Request.Path}"
-        };
+        var problemDetails = mapping.ToProblemDetails(
+            detail: environment.IsDevelopment() ? exception.Message : null,
+            instance: $"{httpContext.Request.Method} {httpContext.Request.Path}");
 
         await problemDetailsService.WriteAsync(new ProblemDetailsContext
         {

@@ -110,5 +110,7 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
         Assert.NotNull(problem);
         Assert.Equal(404, problem.Status);
+        Assert.Equal("Resource not found", problem.Title);
+        Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.5.4", problem.Type);
     }
 }

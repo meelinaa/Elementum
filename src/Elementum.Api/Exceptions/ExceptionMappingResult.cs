@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Mvc;
+
 namespace Elementum.Api.Exceptions;
 
 /// <summary>
@@ -6,4 +8,20 @@ namespace Elementum.Api.Exceptions;
 public sealed record ExceptionMappingResult(
     int StatusCode,
     string Title,
-    string? TypeUri);
+    string? TypeUri)
+{
+    /// <summary>
+    /// Builds a ProblemDetails document with the mapped status, title, and type URI.
+    /// Used by the global exception handler and by controllers that return mapped errors without throwing.
+    /// </summary>
+    public ProblemDetails ToProblemDetails(string? detail = null, string? instance = null) =>
+        new()
+        {
+            Status = StatusCode,
+            Title = Title,
+            Type = TypeUri,
+            Detail = detail,
+            Instance = instance
+        };
+}
+

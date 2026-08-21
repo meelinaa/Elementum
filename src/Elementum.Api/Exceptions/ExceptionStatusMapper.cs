@@ -44,6 +44,11 @@ public static class ExceptionStatusMapper
             _ => Map500(TitleInternalError)
         };
 
+    /// <summary>
+    /// Same 404 mapping as <see cref="KeyNotFoundException"/> so controllers do not invent a second ProblemDetails shape.
+    /// </summary>
+    public static ExceptionMappingResult ForNotFound() => Map(new KeyNotFoundException());
+
     private static ExceptionMappingResult Map400(string title) =>
         new(StatusCodes.Status400BadRequest, title, GetTypeUri(StatusCodes.Status400BadRequest));
 

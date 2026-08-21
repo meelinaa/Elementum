@@ -47,6 +47,8 @@ public class ExceptionMappingIntegrationTests : IClassFixture<CustomWebApplicati
         var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
         Assert.NotNull(problem);
         Assert.Equal(404, problem.Status);
+        Assert.Equal("Resource not found", problem.Title);
+        Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.5.4", problem.Type);
     }
 
     // [E]RROR RIGHT-BICEP: currency other than USD/EUR is rejected at the HTTP boundary (400), analog to SymbolRequest

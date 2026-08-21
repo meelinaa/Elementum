@@ -1,3 +1,4 @@
+using Elementum.Api.Exceptions;
 using Elementum.Api.Inbound.Controllers;
 using Elementum.Application.DTOs;
 using Elementum.Application.Inbound.UseCases.Prices;
@@ -87,7 +88,11 @@ public class ApiControllerTests
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result.Result);
         var details = Assert.IsType<ProblemDetails>(notFound.Value);
-        Assert.Equal(404, details.Status);
+        var expected = ExceptionStatusMapper.ForNotFound();
+        Assert.Equal(expected.StatusCode, details.Status);
+        Assert.Equal(expected.Title, details.Title);
+        Assert.Equal(expected.TypeUri, details.Type);
+        Assert.Equal("No trading analysis found for symbol 'XYZ'.", details.Detail);
     }
 
     // [R]IGHT-BICEP: Verifies that GetPriceHistoryByMetalSymbol returns HTTP 200 with historical data collection
