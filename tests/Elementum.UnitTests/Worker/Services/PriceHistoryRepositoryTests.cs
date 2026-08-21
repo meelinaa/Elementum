@@ -265,6 +265,28 @@ public class PriceHistoryRepositoryTests
         Assert.Equal(4420m, candle.ClosePrice);
     }
 
+    // [R]IGHT-BICEP: latest tick is MAX(ReferenceTimestamp) per metal, not the highest auto-increment Id
+    [Fact]
+    public async Task GetPriceHistoryAllLatest_WhenNewerIdHasOlderTimestamp_ReturnsMaxReferenceTimestamp()
+    {
+        var (db, repo) = CreateTestSetup();
+        var date = new DateOnly(2026, 8, 21);
+        db.PriceHistory.Add(Tick(1, date, 2500m, timestamp: 200L));
+        db.PriceHistory.Add(Tick(2, date, 30m, currency: "USD", symbol: "XAG", timestamp: 50L));
+        await db.SaveChangesAsync();
+        db.PriceHistory.Add(Tick(1, date, 2400m, timestamp: 100L));
+        db.PriceHistory.Add(Tick(2, date, 32m, currency: "USD", symbol: "XAG", timestamp: 80L));
+        await db.SaveChangesAsync();
+
+        var latest = (await repo.GetPriceHistoryAllLatest(CancellationToken.None)).ToList();
+
+        Assert.Equal(2, latest.Count);
+        Assert.Equal(2500m, Assert.Single(latest, r => r.MetalId == 1).Price);
+        Assert.Equal(200L, latest.Single(r => r.MetalId == 1).ReferenceTimestamp);
+        Assert.Equal(32m, Assert.Single(latest, r => r.MetalId == 2).Price);
+        Assert.Equal(80L, latest.Single(r => r.MetalId == 2).ReferenceTimestamp);
+    }
+
     // [E]RROR: Verifies that querying price history for an unknown metal symbol returns empty collection
     [Fact]
     public async Task GetPriceHistoryMetalData_WhenMetalNotFound_ReturnsEmpty()

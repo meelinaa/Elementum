@@ -145,18 +145,17 @@ public class PriceHistoryRepository : IElementumDbContext
     /// <inheritdoc />
     public async Task<IReadOnlyList<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken ct)
     {
-        var latestIds = await _db.PriceHistory
+        var latestByMetal = _db.PriceHistory
             .GroupBy(x => x.MetalId)
-            .Select(g => g.Max(x => x.Id))
-            .ToListAsync(ct);
+            .Select(g => new { MetalId = g.Key, MaxTimestamp = g.Max(x => x.ReferenceTimestamp) });
 
-        if (latestIds.Count == 0)
-            return [];
-
-        return await _db.PriceHistory
-            .Include(x => x.Metal)
-            .Where(x => latestIds.Contains(x.Id))
-            .ToListAsync(ct);
+        return await (
+            from p in _db.PriceHistory.Include(x => x.Metal)
+            join latest in latestByMetal
+                on new { p.MetalId, p.ReferenceTimestamp }
+                equals new { latest.MetalId, ReferenceTimestamp = latest.MaxTimestamp }
+            select p
+        ).ToListAsync(ct);
     }
 
     /// <inheritdoc />

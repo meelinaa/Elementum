@@ -35,7 +35,7 @@ public interface IPriceHistoryReadRepository
     /// <summary>Returns the most recent price history entry for a metal by symbol.</summary>
     Task<PriceHistory?> GetPriceHistoryByMetalSymbolLatest(string symbol, CancellationToken ct);
 
-    /// <summary>Returns the latest price history entry per metal (grouped by symbol).</summary>
+    /// <summary>Returns the latest price history ticks per metal, selected by MAX(ReferenceTimestamp) rather than MAX(Id).</summary>
     Task<IReadOnlyList<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken ct);
 
     /// <summary>Returns aggregated price history for a metal (daily/weekly/monthly/yearly) with at most count entries.</summary>

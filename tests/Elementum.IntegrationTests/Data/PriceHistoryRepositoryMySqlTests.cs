@@ -56,6 +56,26 @@ public sealed class PriceHistoryRepositoryMySqlTests : IAsyncLifetime
         Assert.Equal(16, await db.PriceHistory.CountAsync());
     }
 
+    // [R]IGHT-BICEP: MySQL latest query uses MAX(reference_timestamp), so a later insert with an older tick is ignored
+    [Fact]
+    public async Task GetPriceHistoryAllLatest_WhenNewerIdHasOlderTimestamp_ReturnsMaxReferenceTimestamp()
+    {
+        await using var db = MySqlTestContext.Create(_connectionString);
+        var repository = new PriceHistoryRepository(db, new DailyCandleAggregator(), new PriceHistoryPruner());
+        var date = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        db.PriceHistory.Add(PriceHistory.Create(1, "USD", date, 2500m, "XAU", referenceTimestamp: 200L));
+        await db.SaveChangesAsync();
+        db.PriceHistory.Add(PriceHistory.Create(1, "USD", date, 2400m, "XAU", referenceTimestamp: 100L));
+        await db.SaveChangesAsync();
+
+        var latest = await repository.GetPriceHistoryAllLatest(CancellationToken.None);
+
+        var tick = Assert.Single(latest);
+        Assert.Equal(2500m, tick.Price);
+        Assert.Equal(200L, tick.ReferenceTimestamp);
+    }
+
     private static IReadOnlyList<PriceHistory> CreateTickSet(ElementumDbContext db, long timestamp)
     {
         var payload = new EdelmetalleApiResponse
