@@ -23,11 +23,10 @@
 - [Project Overview](#project-overview)
 - [Tech Stack](#tech-stack)
 - [Architecture & Design](#architecture--design)
-- [Core Features](#core-features)
 - [Repository Structure](#repository-structure)
 - [Prerequisites](#prerequisites)
 - [Getting Started](#getting-started)
-- [API Reference](#api-reference)
+- [Running Automated Tests](#running-automated-tests)
 - [Screenshots](#screenshots)
 - [Related Documentation](#related-documentation)
 
@@ -52,11 +51,11 @@
 |-----------|-------|-------------|
 | **Elementum.Domain** | Domain | Pure enterprise business models (`Metals`, `PriceHistory`, `DailyPriceSummary`), value object (`Currency`), domain service (`TradingAnalysisCalculator`), domain constants, and ports (`IPriceHistoryRepository`, `IMetalsApiClient`, `IDistributedLockProvider`). |
 | **Elementum.Application** | Application | Use cases (`IngestPricesUseCase`, `LivePricesUseCase`, `GetPriceHistoryUseCase`), DTOs, mappers, and fail-fast options. |
-| **Elementum.Infrastructure** | Infrastructure (Driven Adapters) | EF Core `ElementumDbContext` (MySQL), Polly resilience retry policies, `MetalsApiClient`, HybridCache L1/L2 caching, and distributed locking. |
+| **Elementum.Infrastructure** | Infrastructure (Driven Adapters) | EF Core MySQL, Polly 7, `MetalsApiClient`, HybridCache preview (L1 + optional Redis L2), EF distributed lock. |
 | **Elementum.Api** | Presentation (Driving Adapter) | ASP.NET Core REST API exposing live prices, trading indicators, and historical data with IP-based Rate Limiting. |
 | **Elementum.Worker** | Presentation (Driving Adapter) | Background daemon for periodic price ingestion, candle consolidation, retention cleanup, and `System.Diagnostics.Metrics` instrumentation (`IngestionMetrics`). |
 | **Elementum.Cli** | Presentation (Driving Adapter) | Interactive Console TUI client with real-time dashboard, trading indicators, metal master data, and charts. |
-| **docker** | Deployment | Docker Compose environment for MySQL, API, and Worker services. |
+| **docker** | Deployment | Docker Compose: MySQL, Redis, API, Worker, optional Caddy. |
 
 ---
 
@@ -67,10 +66,10 @@
 - **API & Security:** ASP.NET Core (REST), OpenAPI, IP-based Rate Limiting (`Microsoft.AspNetCore.RateLimiting`), RFC 7807 `ProblemDetails`, per-request timeouts
 - **Configuration:** Fail-Fast Options Pattern with DataAnnotations validation (`ValidateDataAnnotations().ValidateOnStart()`)
 - **Data & Persistence:** MySQL 8, Entity Framework Core, structured initialization & migrations
-- **Caching & Concurrency:** Microsoft HybridCache (L1 Memory + L2 Distributed Redis), distributed locking
-- **Resilience:** Polly v8 (retry pipelines with exponential backoff & jitter)
-- **Observability:** Serilog structured logging with `X-Correlation-ID` tracing, health checks (`/health/live`, `/health/ready`). Metrics are instrumented via `System.Diagnostics.Metrics` (`IngestionMetrics`), ready for OpenTelemetry export. No collector/exporter is wired up yet — this is a deliberate scope cut for the portfolio version.
-- **Testing:** Automated xUnit test suite (Unit Tests, Integration Tests with WebApplicationFactory and Testcontainers)
+- **Caching & Concurrency:** Microsoft HybridCache **preview** (`9.0.0-preview.9.24556.5`): L1 memory + optional L2 Redis. Distributed locking is **MySQL/EF**, not Redis.
+- **Resilience:** Polly **7.2.4** (not v8): HTTP timeout + retry + circuit breaker; database retries via Polly 7 on the port decorator.
+- **Observability:** Serilog with `X-Correlation-ID`, health probes (`/health/live`, `/health/ready`). Worker metrics are `System.Diagnostics.Metrics` (`IngestionMetrics`) only — **no OpenTelemetry SDK, collector, or Prometheus endpoint**.
+- **Testing:** xUnit. HTTP tests use `WebApplicationFactory` + EF **InMemory**. Persistence/migration tests use **Testcontainers MySQL**.
 
 ---
 
@@ -83,7 +82,7 @@ graph TD
     API -->|Use Cases| APP
     APP -->|Domain Models & Ports| DOMAIN[Elementum.Domain]
     INFRA[Elementum.Infrastructure] -->|Implements Ports| DOMAIN
-    INFRA -->|EF Core / Polly| DB[(MySQL 8)]
+    INFRA -->|EF Core / Polly 7| DB[(MySQL 8)]
     INFRA -->|HTTP / Resilience| EXT[External Metals API]
 ```
 
@@ -120,7 +119,7 @@ Elementum/
 │       └── README.md
 ├── tests/                              # Test suites
 │   ├── Elementum.UnitTests/            # Domain, Application, and API unit tests
-│   └── Elementum.IntegrationTests/     # E2E API & Rate Limiting integration tests
+│   └── Elementum.IntegrationTests/     # HTTP (InMemory) + MySQL Testcontainers
 ├── Elementum.slnx                      # Central .NET solution
 └── README.md                           # This file
 ```

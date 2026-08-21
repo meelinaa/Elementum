@@ -34,7 +34,7 @@ Authentication is **intentionally omitted**. Elementum.Api is a public, read-onl
 
 ## Configuration (`appsettings.Development.json`)
 
-Copy `appsettings.Development.json.example` to `appsettings.Development.json` (gitignored, like `.env`) and replace the placeholders:
+Copy `appsettings.Development.json.example` to `appsettings.Development.json` (gitignored, like `.env`). Examples use placeholders only — never commit real passwords:
 
 ```json
 {
