@@ -72,15 +72,19 @@ public static class ApiServiceCollectionExtensions
             options.OnRejected = async (context, cancellationToken) =>
             {
                 context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-                context.HttpContext.Response.ContentType = "application/problem+json";
                 var problemDetails = new ProblemDetails
                 {
+                    Type = "https://tools.ietf.org/html/rfc9110#section-15.5.20",
                     Title = "Too Many Requests",
                     Status = StatusCodes.Status429TooManyRequests,
                     Detail = "Rate limit exceeded. Please try again later.",
                     Instance = $"{context.HttpContext.Request.Method} {context.HttpContext.Request.Path}"
                 };
-                await context.HttpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken: cancellationToken);
+                await context.HttpContext.Response.WriteAsJsonAsync(
+                    problemDetails,
+                    options: null,
+                    contentType: "application/problem+json",
+                    cancellationToken: cancellationToken);
             };
 
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>

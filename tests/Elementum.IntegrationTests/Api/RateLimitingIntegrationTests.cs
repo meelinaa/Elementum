@@ -47,10 +47,14 @@ public class RateLimitingIntegrationTests : IClassFixture<CustomWebApplicationFa
         Assert.Equal(HttpStatusCode.OK, res1.StatusCode);
         Assert.Equal(HttpStatusCode.OK, res2.StatusCode);
         Assert.Equal(HttpStatusCode.TooManyRequests, res3.StatusCode);
+        Assert.Equal("application/problem+json", res3.Content.Headers.ContentType?.MediaType);
 
         var problem = await res3.Content.ReadFromJsonAsync<ProblemDetails>();
         Assert.NotNull(problem);
         Assert.Equal(StatusCodes.Status429TooManyRequests, problem.Status);
         Assert.Equal("Too Many Requests", problem.Title);
+        Assert.Equal("Rate limit exceeded. Please try again later.", problem.Detail);
+        Assert.Equal("GET /api/v1/prices/live", problem.Instance);
+        Assert.Equal("https://tools.ietf.org/html/rfc9110#section-15.5.20", problem.Type);
     }
 }
