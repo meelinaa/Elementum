@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 using Elementum.Application.DTOs;
+using Elementum.Application.Requests;
 using Elementum.Cli.Exceptions;
 using Elementum.Cli.Logging;
 using Microsoft.Extensions.Caching.Memory;
@@ -75,9 +76,11 @@ public sealed class HttpCall : IHttpCall
     {
         try
         {
-            return await SendRequestAsync<List<PriceHistoryDto>>(
-                $"history/{metalSymbol}?currency={currency}",
+            var from = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-365).ToString(HistoryQueryLimits.DateFormat);
+            var page = await SendRequestAsync<PriceHistoryPageDto>(
+                $"history/{metalSymbol}?currency={Uri.EscapeDataString(currency)}&from={from}&take={HistoryQueryLimits.MaxTake}",
                 cancellationToken);
+            return page.Items?.ToList() ?? [];
         }
         catch (Exception ex)
         {

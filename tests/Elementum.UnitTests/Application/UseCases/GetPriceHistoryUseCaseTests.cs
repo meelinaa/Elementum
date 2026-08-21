@@ -1,4 +1,5 @@
 using Elementum.Application.Inbound.UseCases.Prices;
+using Elementum.Application.Requests;
 using Elementum.Domain.Entities;
 using Elementum.Domain.Exceptions;
 using Elementum.Domain.Ports.Outbound;
@@ -70,26 +71,35 @@ public class GetPriceHistoryUseCaseTests
         Assert.Null(result);
     }
 
-    // [R]IGHT-BICEP: Verifies that GetBySymbolAsync maps repository ticks for a metal and optional currency
+    // [R]IGHT-BICEP: Verifies that GetBySymbolAsync maps a paged date-range query with currency
     [Fact]
     public async Task GetBySymbolAsync_WhenCurrencyProvided_PassesFilterToRepository()
     {
         // Arrange
+        var first = new DateOnly(2026, 8, 1);
+        var last = new DateOnly(2026, 8, 17);
         var entities = new List<PriceHistory>
         {
-            PriceHistory.Create(1, "EUR", new DateOnly(2026, 8, 17), 2300m, "XAU", referenceTimestamp: 1000L)
+            PriceHistory.Create(1, "EUR", last, 2300m, "XAU", referenceTimestamp: 1000L)
         };
 
-        _repositoryMock.Setup(r => r.GetPriceHistoryByMetalSymbolAsync("XAU", "EUR", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(entities);
+        _repositoryMock.Setup(r => r.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+                "XAU", first, last, "EUR", 0, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((entities, entities.Count));
 
         // Act
-        var result = (await _useCase.GetBySymbolAsync("XAU", "EUR")).ToList();
+        var page = await _useCase.GetBySymbolAsync("XAU", "EUR", "2026-08-01", "2026-08-17", skip: 0, take: 10);
 
         // Assert
-        Assert.Single(result);
-        Assert.Equal(2300m, result[0].Price);
-        _repositoryMock.Verify(r => r.GetPriceHistoryByMetalSymbolAsync("XAU", "EUR", It.IsAny<CancellationToken>()), Times.Once);
+        var item = Assert.Single(page.Items);
+        Assert.Equal(2300m, item.Price);
+        Assert.False(page.HasMore);
+        Assert.Equal(1, page.TotalCount);
+        Assert.Equal(10, page.Take);
+        _repositoryMock.Verify(
+            r => r.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+                "XAU", first, last, "EUR", 0, 10, It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     // [E]RROR RIGHT-BICEP: unsupported currency never reaches the repository
@@ -100,8 +110,76 @@ public class GetPriceHistoryUseCaseTests
             () => _useCase.GetBySymbolAsync("XAU", "GBP").AsTask());
 
         _repositoryMock.Verify(
-            r => r.GetPriceHistoryByMetalSymbolAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
+            r => r.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+                It.IsAny<string>(),
+                It.IsAny<DateOnly>(),
+                It.IsAny<DateOnly>(),
+                It.IsAny<string?>(),
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()),
             Times.Never);
+    }
+
+    // [B]OUNDARY: omitted from/to defaults to the last 30 UTC days with take clamped to DefaultTake
+    [Fact]
+    public async Task GetBySymbolAsync_WhenDatesOmitted_DefaultsToLastThirtyDays()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var expectedFrom = today.AddDays(-HistoryQueryLimits.DefaultLookbackDays);
+
+        _repositoryMock.Setup(r => r.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+                "XAU", expectedFrom, today, null, 0, HistoryQueryLimits.DefaultTake, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Array.Empty<PriceHistory>(), 0));
+
+        var page = await _useCase.GetBySymbolAsync("XAU");
+
+        Assert.Equal(expectedFrom, page.From);
+        Assert.Equal(today, page.To);
+        Assert.Equal(HistoryQueryLimits.DefaultTake, page.Take);
+        Assert.Empty(page.Items);
+    }
+
+    // [B]OUNDARY: take above MaxTake is clamped, not rejected
+    [Fact]
+    public async Task GetByDateRangeAsync_WhenTakeExceedsCap_ClampsToMaxTake()
+    {
+        var first = new DateOnly(2026, 8, 1);
+        var last = new DateOnly(2026, 8, 17);
+
+        _repositoryMock.Setup(r => r.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+                "XAU", first, last, null, 0, HistoryQueryLimits.MaxTake, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Array.Empty<PriceHistory>(), 0));
+
+        var page = await _useCase.GetByDateRangeAsync("XAU", first, last, take: HistoryQueryLimits.MaxTake + 500);
+
+        Assert.Equal(HistoryQueryLimits.MaxTake, page.Take);
+        _repositoryMock.Verify(
+            r => r.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+                "XAU", first, last, null, 0, HistoryQueryLimits.MaxTake, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    // [R]IGHT-BICEP: hasMore is true when skip + page size is below the unpaged total
+    [Fact]
+    public async Task GetByDateRangeAsync_WhenMoreRowsExist_SetsHasMore()
+    {
+        var first = new DateOnly(2026, 8, 1);
+        var last = new DateOnly(2026, 8, 17);
+        var entities = new List<PriceHistory>
+        {
+            PriceHistory.Create(1, "USD", first, 2500m, "XAU", referenceTimestamp: 1000L)
+        };
+
+        _repositoryMock.Setup(r => r.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+                "XAU", first, last, null, 0, 1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((entities, 5));
+
+        var page = await _useCase.GetByDateRangeAsync("XAU", first, last, skip: 0, take: 1);
+
+        Assert.True(page.HasMore);
+        Assert.Equal(5, page.TotalCount);
+        Assert.Single(page.Items);
     }
 
     // [R]IGHT-BICEP: Verifies that GetByDateRangeAsync maps the inclusive date-range query
@@ -116,15 +194,17 @@ public class GetPriceHistoryUseCaseTests
             PriceHistory.Create(1, "USD", first, 2500m, "XAU", referenceTimestamp: 1000L)
         };
 
-        _repositoryMock.Setup(r => r.GetPriceHistoryByMetalSymbolAndDateRangeAsync("XAU", first, last, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(entities);
+        _repositoryMock.Setup(r => r.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+                "XAU", first, last, null, 0, HistoryQueryLimits.DefaultTake, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((entities, 1));
 
         // Act
-        var result = (await _useCase.GetByDateRangeAsync("XAU", first, last)).ToList();
+        var result = await _useCase.GetByDateRangeAsync("XAU", first, last);
 
         // Assert
-        Assert.Single(result);
-        Assert.Equal(2500m, result[0].Price);
+        var item = Assert.Single(result.Items);
+        Assert.Equal(2500m, item.Price);
+        Assert.False(result.HasMore);
     }
 
     // [R]IGHT-BICEP: Verifies that GetTradingLatestAsync computes and exposes technical indicators

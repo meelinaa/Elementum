@@ -39,7 +39,7 @@
 > **Solution:** **Elementum** automates periodic background price ingestion, consolidates daily candle data, and exposes real-time market overviews and technical trading indicators through a high-performance REST API and an interactive Terminal UI (CLI) — powered by a shared MySQL database with Polly resilience, HybridCache L1/L2 caching, distributed locking, and IP-based rate limiting.
 
 - **Stack:** .NET 10 (C# 13), ASP.NET Core, MySQL 8, Entity Framework Core, Docker & Docker Compose.
-- **Key Capabilities:** Versioned endpoints (`/api/v1`), live market overviews (USD & EUR), real-time technical trading metrics (OHLC, spread, volatility %, bullish/bearish indicators), historical tick queries, fail-fast configuration validation, Kubernetes-style health probes (`/health/live`, `/health/ready`), and 1-command Docker Compose deployment.
+- **Key Capabilities:** Versioned endpoints (`/api/v1`), live market overviews (USD & EUR), real-time technical trading metrics (OHLC, spread, volatility %, bullish/bearish indicators), historical tick queries with `from`/`to` and `skip`/`take`, fail-fast configuration validation, Kubernetes-style health probes (`/health/live`, `/health/ready`), and 1-command Docker Compose deployment.
 
 ---
 

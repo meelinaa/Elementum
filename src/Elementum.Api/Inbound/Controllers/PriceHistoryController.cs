@@ -21,17 +21,26 @@ public class PriceHistoryController : ControllerBase
         _priceHistoryUseCase = priceHistoryUseCase;
     }
 
-    /// <summary>GET /api/v1/history/{symbol}?currency={currency} — price history for one metal as <see cref="PriceHistoryDto"/> array.</summary>
+    /// <summary>
+    /// GET /api/v1/history/{symbol}?from=&amp;to=&amp;take=&amp;skip=&amp;currency= —
+    /// bounded tick page as <see cref="PriceHistoryPageDto"/>.
+    /// </summary>
     [HttpGet("{symbol}", Order = 10)]
     [RequestTimeout("DataCruncher")]
-    public async Task<ActionResult<IEnumerable<PriceHistoryDto>>> GetPriceHistoryByMetalSymbol(
+    public async Task<ActionResult<PriceHistoryPageDto>> GetPriceHistoryByMetalSymbol(
         [FromRoute] SymbolRequest symbolRequest,
         [FromQuery] CurrencyRequest currencyRequest,
+        [FromQuery] DateRangeRequest dateRange,
+        [FromQuery] HistoryPageRequest page,
         CancellationToken cancellationToken)
     {
         var historyData = await _priceHistoryUseCase.GetBySymbolAsync(
             symbolRequest.Symbol.Trim(),
             currencyRequest.Currency,
+            dateRange.From,
+            dateRange.To,
+            page.Skip,
+            page.Take,
             cancellationToken);
         return Ok(historyData);
     }

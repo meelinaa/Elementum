@@ -25,7 +25,13 @@ public static class DatabaseMigrationExtensions
 
         try
         {
-            if (db.Database.IsRelational())
+            var isInMemory = string.Equals(
+                db.Database.ProviderName,
+                "Microsoft.EntityFrameworkCore.InMemory",
+                StringComparison.Ordinal);
+
+            // InMemory + UseInternalServiceProvider can make IsRelational() true while MigrateAsync still fails.
+            if (!isInMemory && db.Database.IsRelational())
             {
                 DatabaseLogMessages.ApplyingMigrations(logger);
                 await db.Database.MigrateAsync(cancellationToken);

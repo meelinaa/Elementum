@@ -9,9 +9,29 @@ namespace Elementum.Application.Inbound.UseCases.Prices;
 public interface IGetPriceHistoryUseCase
 {
     ValueTask<IEnumerable<PriceHistoryDto>> GetLatestAllAsync(CancellationToken ct = default);
-    ValueTask<IEnumerable<PriceHistoryDto>> GetBySymbolAsync(string symbol, string? currency = null, CancellationToken ct = default);
+
+    /// <summary>
+    /// Paged history for one metal. Omitted <paramref name="from"/>/<paramref name="to"/> default to the last 30 days;
+    /// omitted <paramref name="take"/> defaults to 500 and is capped at 2000.
+    /// </summary>
+    ValueTask<PriceHistoryPageDto> GetBySymbolAsync(
+        string symbol,
+        string? currency = null,
+        string? from = null,
+        string? to = null,
+        int skip = 0,
+        int? take = null,
+        CancellationToken ct = default);
+
     ValueTask<PriceHistoryDto?> GetLatestBySymbolAsync(string symbol, CancellationToken ct = default);
     ValueTask<TradingPriceDto?> GetTradingLatestAsync(string symbol, CancellationToken ct = default);
-    ValueTask<IEnumerable<PriceHistoryDto>> GetByDateRangeAsync(string symbol, DateOnly firstDate, DateOnly lastDate, CancellationToken ct = default);
+    ValueTask<PriceHistoryPageDto> GetByDateRangeAsync(
+        string symbol,
+        DateOnly firstDate,
+        DateOnly lastDate,
+        string? currency = null,
+        int skip = 0,
+        int? take = null,
+        CancellationToken ct = default);
     ValueTask<IEnumerable<PriceHistoryDto>> GetAggregatedAsync(string symbol, string aggregation, int count, CancellationToken ct = default);
 }

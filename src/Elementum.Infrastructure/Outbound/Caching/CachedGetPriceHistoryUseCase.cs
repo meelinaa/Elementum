@@ -37,15 +37,26 @@ public class CachedGetPriceHistoryUseCase : IGetPriceHistoryUseCase
             cancellationToken: ct);
     }
 
-    public async ValueTask<IEnumerable<PriceHistoryDto>> GetBySymbolAsync(string symbol, string? currency = null, CancellationToken ct = default)
+    public async ValueTask<PriceHistoryPageDto> GetBySymbolAsync(
+        string symbol,
+        string? currency = null,
+        string? from = null,
+        string? to = null,
+        int skip = 0,
+        int? take = null,
+        CancellationToken ct = default)
     {
         var normalized = (symbol ?? string.Empty).Trim().ToUpperInvariant();
         var cur = (currency ?? string.Empty).Trim().ToUpperInvariant();
-        var cacheKey = string.IsNullOrEmpty(cur) ? $"prices:symbol:{normalized}" : $"prices:symbol:{normalized}:{cur}";
+        var fromKey = (from ?? string.Empty).Trim();
+        var toKey = (to ?? string.Empty).Trim();
+        var effectiveSkip = skip < 0 ? 0 : skip;
+        var effectiveTake = take ?? 0;
+        var cacheKey = $"prices:symbol:{normalized}:{cur}:{fromKey}:{toKey}:{effectiveSkip}:{effectiveTake}";
 
         return await _cache.GetOrCreateAsync(
             cacheKey,
-            async token => (await _inner.GetBySymbolAsync(normalized, currency, token)).ToList(),
+            async token => await _inner.GetBySymbolAsync(normalized, currency, from, to, skip, take, token),
             SpotPriceOptions,
             cancellationToken: ct);
     }
@@ -70,9 +81,16 @@ public class CachedGetPriceHistoryUseCase : IGetPriceHistoryUseCase
             cancellationToken: ct);
     }
 
-    public ValueTask<IEnumerable<PriceHistoryDto>> GetByDateRangeAsync(string symbol, DateOnly firstDate, DateOnly lastDate, CancellationToken ct = default)
+    public ValueTask<PriceHistoryPageDto> GetByDateRangeAsync(
+        string symbol,
+        DateOnly firstDate,
+        DateOnly lastDate,
+        string? currency = null,
+        int skip = 0,
+        int? take = null,
+        CancellationToken ct = default)
     {
-        return _inner.GetByDateRangeAsync(symbol, firstDate, lastDate, ct);
+        return _inner.GetByDateRangeAsync(symbol, firstDate, lastDate, currency, skip, take, ct);
     }
 
     public ValueTask<IEnumerable<PriceHistoryDto>> GetAggregatedAsync(string symbol, string aggregation, int count, CancellationToken ct = default)

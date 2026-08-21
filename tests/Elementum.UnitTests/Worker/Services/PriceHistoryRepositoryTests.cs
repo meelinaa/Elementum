@@ -341,13 +341,34 @@ public class PriceHistoryRepositoryTests
 
         // Act
         var result = await repo.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
-            "XAU", new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 10), "USD", CancellationToken.None);
+            "XAU", new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 10), "USD", skip: 0, take: 100, CancellationToken.None);
 
         // Assert
-        Assert.Equal(2, result.Count);
-        Assert.All(result, row => Assert.Equal("USD", row.Currency));
-        Assert.Equal(2400m, result[0].Price);
-        Assert.Equal(2500m, result[1].Price);
+        Assert.Equal(2, result.TotalCount);
+        Assert.Equal(2, result.Items.Count);
+        Assert.All(result.Items, row => Assert.Equal("USD", row.Currency));
+        Assert.Equal(2400m, result.Items[0].Price);
+        Assert.Equal(2500m, result.Items[1].Price);
+    }
+
+    // [B]OUNDARY: skip/take page the filtered set and report the unpaged total
+    [Fact]
+    public async Task GetPriceHistoryByMetalSymbolAndDateRangeAsync_WhenSkipAndTake_ReturnsPageAndTotalCount()
+    {
+        var (db, repo) = CreateTestSetup();
+        db.PriceHistory.AddRange(
+            Tick(1, new DateOnly(2026, 8, 1), 2400m, timestamp: 1L),
+            Tick(1, new DateOnly(2026, 8, 2), 2500m, timestamp: 2L),
+            Tick(1, new DateOnly(2026, 8, 3), 2600m, timestamp: 3L)
+        );
+        await db.SaveChangesAsync();
+
+        var result = await repo.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+            "XAU", new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 3), "USD", skip: 1, take: 1, CancellationToken.None);
+
+        Assert.Equal(3, result.TotalCount);
+        var row = Assert.Single(result.Items);
+        Assert.Equal(2500m, row.Price);
     }
 
     // [R]IGHT-BICEP: metals catalog is returned as a materialized list

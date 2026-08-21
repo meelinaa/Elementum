@@ -96,15 +96,26 @@ public class ApiControllerTests
     {
         // Arrange
         var request = new SymbolRequest { Symbol = "XPT" };
-        var history = new List<PriceHistoryDto>
+        var history = new PriceHistoryPageDto
         {
-            new() { Id = 1, MetalId = 3, Currency = "USD", EntryDate = DateOnly.FromDateTime(DateTime.UtcNow) }
+            Items =
+            [
+                new PriceHistoryDto { Id = 1, MetalId = 3, Currency = "USD", EntryDate = DateOnly.FromDateTime(DateTime.UtcNow) }
+            ],
+            Take = HistoryQueryLimits.DefaultTake,
+            TotalCount = 1
         };
-        _priceHistoryUseCaseMock.Setup(s => s.GetBySymbolAsync("XPT", null, It.IsAny<CancellationToken>()))
+        _priceHistoryUseCaseMock.Setup(s => s.GetBySymbolAsync(
+                "XPT", null, null, null, 0, null, It.IsAny<CancellationToken>()))
                        .ReturnsAsync(history);
 
         // Act
-        var result = await _priceHistoryController.GetPriceHistoryByMetalSymbol(request, new CurrencyRequest(), CancellationToken.None);
+        var result = await _priceHistoryController.GetPriceHistoryByMetalSymbol(
+            request,
+            new CurrencyRequest(),
+            new DateRangeRequest(),
+            new HistoryPageRequest(),
+            CancellationToken.None);
 
         // Assert
         var ok = Assert.IsType<OkObjectResult>(result.Result);
@@ -117,15 +128,26 @@ public class ApiControllerTests
     {
         // Arrange
         var request = new SymbolRequest { Symbol = "XAU" };
-        var history = new List<PriceHistoryDto>
+        var history = new PriceHistoryPageDto
         {
-            new() { Id = 2, MetalId = 1, Currency = "EUR", EntryDate = DateOnly.FromDateTime(DateTime.UtcNow) }
+            Items =
+            [
+                new PriceHistoryDto { Id = 2, MetalId = 1, Currency = "EUR", EntryDate = DateOnly.FromDateTime(DateTime.UtcNow) }
+            ],
+            Take = HistoryQueryLimits.DefaultTake,
+            TotalCount = 1
         };
-        _priceHistoryUseCaseMock.Setup(s => s.GetBySymbolAsync("XAU", "EUR", It.IsAny<CancellationToken>()))
+        _priceHistoryUseCaseMock.Setup(s => s.GetBySymbolAsync(
+                "XAU", "EUR", null, null, 0, null, It.IsAny<CancellationToken>()))
                        .ReturnsAsync(history);
 
         // Act
-        var result = await _priceHistoryController.GetPriceHistoryByMetalSymbol(request, new CurrencyRequest { Currency = "EUR" }, CancellationToken.None);
+        var result = await _priceHistoryController.GetPriceHistoryByMetalSymbol(
+            request,
+            new CurrencyRequest { Currency = "EUR" },
+            new DateRangeRequest(),
+            new HistoryPageRequest(),
+            CancellationToken.None);
 
         // Assert
         var ok = Assert.IsType<OkObjectResult>(result.Result);

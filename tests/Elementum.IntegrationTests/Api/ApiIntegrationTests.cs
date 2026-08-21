@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Elementum.Application.DTOs;
+using Elementum.Application.Requests;
 using Elementum.IntegrationTests.Fixtures;
 using Microsoft.AspNetCore.Mvc;
 
@@ -68,9 +69,33 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var list = await response.Content.ReadFromJsonAsync<List<PriceHistoryDto>>();
-        Assert.NotNull(list);
-        Assert.NotEmpty(list);
+        var page = await response.Content.ReadFromJsonAsync<PriceHistoryPageDto>();
+        Assert.NotNull(page);
+        Assert.NotEmpty(page.Items);
+        Assert.All(page.Items, item => Assert.Equal("USD", item.Currency));
+        Assert.False(page.HasMore);
+        Assert.Equal(page.Items.Count, page.TotalCount);
+    }
+
+    // [B]OUNDARY: take above the hard cap is accepted and the response reports the clamped take
+    [Fact]
+    public async Task GetPriceHistoryByMetalSymbol_WhenTakeExceedsCap_ReturnsClampedTake()
+    {
+        var response = await _client.GetAsync($"/api/v1/history/XAU?currency=USD&take={HistoryQueryLimits.MaxTake + 1}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var page = await response.Content.ReadFromJsonAsync<PriceHistoryPageDto>();
+        Assert.NotNull(page);
+        Assert.Equal(HistoryQueryLimits.MaxTake, page.Take);
+    }
+
+    // [E]RROR: invalid from date is rejected with 400 before the query runs
+    [Fact]
+    public async Task GetPriceHistoryByMetalSymbol_WhenFromInvalid_Returns400()
+    {
+        var response = await _client.GetAsync("/api/v1/history/XAU?from=not-a-date");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     // [E]RROR: non-existent trading symbol returns HTTP 404 ProblemDetails

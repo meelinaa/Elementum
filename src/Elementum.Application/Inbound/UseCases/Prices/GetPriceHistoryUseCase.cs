@@ -1,5 +1,6 @@
 using Elementum.Application.DTOs;
 using Elementum.Application.Mapping;
+using Elementum.Application.Requests;
 using Elementum.Domain.Ports.Outbound;
 using Elementum.Domain.ValueObjects;
 
@@ -25,13 +26,18 @@ public class GetPriceHistoryUseCase : IGetPriceHistoryUseCase
         return entities.Select(e => e.ToPriceHistoryDto());
     }
 
-    public async ValueTask<IEnumerable<PriceHistoryDto>> GetBySymbolAsync(string symbol, string? currency = null, CancellationToken ct = default)
+    public async ValueTask<PriceHistoryPageDto> GetBySymbolAsync(
+        string symbol,
+        string? currency = null,
+        string? from = null,
+        string? to = null,
+        int skip = 0,
+        int? take = null,
+        CancellationToken ct = default)
     {
-        if (!string.IsNullOrWhiteSpace(currency))
-            currency = Currency.FromCode(currency).Code;
-
-        var entities = await _repository.GetPriceHistoryByMetalSymbolAsync(symbol, currency, ct);
-        return entities.Select(e => e.ToPriceHistoryDto());
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var (resolvedFrom, resolvedTo) = HistoryQueryLimits.ResolveRange(from, to, today);
+        return await GetByDateRangeAsync(symbol, resolvedFrom, resolvedTo, currency, skip, take, ct);
     }
 
     public async ValueTask<PriceHistoryDto?> GetLatestBySymbolAsync(string symbol, CancellationToken ct = default)
@@ -46,10 +52,41 @@ public class GetPriceHistoryUseCase : IGetPriceHistoryUseCase
         return entity?.ToTradingPriceDto();
     }
 
-    public async ValueTask<IEnumerable<PriceHistoryDto>> GetByDateRangeAsync(string symbol, DateOnly firstDate, DateOnly lastDate, CancellationToken ct = default)
+    public async ValueTask<PriceHistoryPageDto> GetByDateRangeAsync(
+        string symbol,
+        DateOnly firstDate,
+        DateOnly lastDate,
+        string? currency = null,
+        int skip = 0,
+        int? take = null,
+        CancellationToken ct = default)
     {
-        var entities = await _repository.GetPriceHistoryByMetalSymbolAndDateRangeAsync(symbol, firstDate, lastDate, currency: null, ct);
-        return entities.Select(e => e.ToPriceHistoryDto());
+        if (!string.IsNullOrWhiteSpace(currency))
+            currency = Currency.FromCode(currency).Code;
+
+        var effectiveSkip = HistoryQueryLimits.ClampSkip(skip);
+        var effectiveTake = HistoryQueryLimits.ClampTake(take);
+
+        var (entities, totalCount) = await _repository.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+            symbol,
+            firstDate,
+            lastDate,
+            currency,
+            effectiveSkip,
+            effectiveTake,
+            ct);
+
+        var items = entities.Select(e => e.ToPriceHistoryDto()).ToList();
+        return new PriceHistoryPageDto
+        {
+            Items = items,
+            Skip = effectiveSkip,
+            Take = effectiveTake,
+            TotalCount = totalCount,
+            HasMore = effectiveSkip + items.Count < totalCount,
+            From = firstDate,
+            To = lastDate
+        };
     }
 
     public async ValueTask<IEnumerable<PriceHistoryDto>> GetAggregatedAsync(string symbol, string aggregation, int count, CancellationToken ct = default)

@@ -34,13 +34,18 @@ public sealed class ResilientElementumDbContext : IElementumDbContext
         CancellationToken ct = default) =>
         ExecuteAsync(innerCt => _inner.GetPriceHistoryByMetalSymbolAsync(symbol, currency, innerCt), ct);
 
-    public Task<IReadOnlyList<PriceHistory>> GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+    public Task<(IReadOnlyList<PriceHistory> Items, int TotalCount)> GetPriceHistoryByMetalSymbolAndDateRangeAsync(
         string symbol,
         DateOnly firstDate,
         DateOnly lastDate,
-        string? currency = null,
+        string? currency,
+        int skip,
+        int take,
         CancellationToken ct = default) =>
-        ExecuteAsync(innerCt => _inner.GetPriceHistoryByMetalSymbolAndDateRangeAsync(symbol, firstDate, lastDate, currency, innerCt), ct);
+        ExecuteAsync(
+            innerCt => _inner.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+                symbol, firstDate, lastDate, currency, skip, take, innerCt),
+            ct);
 
     public Task<PriceHistory?> GetPriceHistoryByMetalSymbolLatest(string symbol, CancellationToken ct) =>
         ExecuteAsync(innerCt => _inner.GetPriceHistoryByMetalSymbolLatest(symbol, innerCt), ct);

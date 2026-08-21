@@ -191,11 +191,13 @@ public class PriceHistoryRepository : IElementumDbContext
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<PriceHistory>> GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+    public async Task<(IReadOnlyList<PriceHistory> Items, int TotalCount)> GetPriceHistoryByMetalSymbolAndDateRangeAsync(
         string symbol,
         DateOnly firstDate,
         DateOnly lastDate,
-        string? currency = null,
+        string? currency,
+        int skip,
+        int take,
         CancellationToken ct = default)
     {
         var query = _db.PriceHistory
@@ -207,10 +209,17 @@ public class PriceHistoryRepository : IElementumDbContext
 
         query = ApplyCurrencyFilter(query, currency);
 
-        return await query
-            .OrderBy(p => p.ReferenceTimestamp)
+        var totalCount = await query.CountAsync(ct);
+
+        var items = await query
+            .OrderBy(p => p.EntryDate)
+            .ThenBy(p => p.ReferenceTimestamp)
             .ThenBy(p => p.Id)
+            .Skip(skip)
+            .Take(take)
             .ToListAsync(ct);
+
+        return (items, totalCount);
     }
 
     private static IQueryable<PriceHistory> ApplyCurrencyFilter(IQueryable<PriceHistory> query, string? currency)

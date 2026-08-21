@@ -5,55 +5,80 @@ using FluentValidation;
 namespace Elementum.Application.Validation;
 
 /// <summary>
-/// Validates date range requests to ensure ISO yyyy-MM-dd format and Start &lt;= End &lt;= Today.
+/// Validates optional history date bounds: ISO yyyy-MM-dd when present, From &lt;= To, To not in the future.
+/// Both omitted is valid (use-case default of the last 30 days).
 /// </summary>
 public class DateRangeRequestValidator : AbstractValidator<DateRangeRequest>
 {
-    private const string DateFormat = "yyyy-MM-dd";
-
     public DateRangeRequestValidator()
     {
-        RuleFor(x => x.FirstDate)
-            .NotEmpty().WithMessage("FirstDate (start date) is required.")
-            .Must(BeValidIsoDate).WithMessage("FirstDate must be a valid date in ISO format yyyy-MM-dd.");
+        When(x => !string.IsNullOrWhiteSpace(x.From), () =>
+        {
+            RuleFor(x => x.From)
+                .Must(BeValidIsoDate!)
+                .WithMessage("From must be a valid date in ISO format yyyy-MM-dd.");
+        });
 
-        RuleFor(x => x.LastDate)
-            .NotEmpty().WithMessage("LastDate (end date) is required.")
-            .Must(BeValidIsoDate).WithMessage("LastDate must be a valid date in ISO format yyyy-MM-dd.");
+        When(x => !string.IsNullOrWhiteSpace(x.To), () =>
+        {
+            RuleFor(x => x.To)
+                .Must(BeValidIsoDate!)
+                .WithMessage("To must be a valid date in ISO format yyyy-MM-dd.");
+        });
 
         RuleFor(x => x)
             .Must(HaveValidChronologicalRange)
-            .WithMessage("FirstDate cannot be after LastDate.")
-            .When(x => BeValidIsoDate(x.FirstDate) && BeValidIsoDate(x.LastDate));
+            .WithMessage("From cannot be after To.")
+            .When(x => BeValidIsoDate(x.From) && BeValidIsoDate(x.To));
 
-        RuleFor(x => x.LastDate)
-            .Must(NotBeInTheFuture)
-            .WithMessage("LastDate cannot be in the future.")
-            .When(x => BeValidIsoDate(x.LastDate));
+        RuleFor(x => x.To)
+            .Must(NotBeInTheFuture!)
+            .WithMessage("To cannot be in the future.")
+            .When(x => BeValidIsoDate(x.To));
+
+        RuleFor(x => x.From)
+            .Must(NotBeInTheFuture!)
+            .WithMessage("From cannot be in the future.")
+            .When(x => BeValidIsoDate(x.From) && string.IsNullOrWhiteSpace(x.To));
     }
 
-    private static bool BeValidIsoDate(string dateStr)
+    private static bool BeValidIsoDate(string? dateStr)
     {
-        return DateOnly.TryParseExact(dateStr, DateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
+        if (string.IsNullOrWhiteSpace(dateStr))
+            return false;
+
+        return DateOnly.TryParseExact(
+            dateStr.Trim(),
+            HistoryQueryLimits.DateFormat,
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.None,
+            out _);
     }
 
     private static bool HaveValidChronologicalRange(DateRangeRequest req)
     {
-        if (DateOnly.TryParseExact(req.FirstDate, DateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var start) &&
-            DateOnly.TryParseExact(req.LastDate, DateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var end))
+        if (DateOnly.TryParseExact(req.From!.Trim(), HistoryQueryLimits.DateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var start) &&
+            DateOnly.TryParseExact(req.To!.Trim(), HistoryQueryLimits.DateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var end))
         {
             return start <= end;
         }
+
         return false;
     }
 
-    private static bool NotBeInTheFuture(string lastDateStr)
+    private static bool NotBeInTheFuture(string dateStr)
     {
-        if (DateOnly.TryParseExact(lastDateStr, DateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var lastDate))
+        if (DateOnly.TryParseExact(
+                dateStr.Trim(),
+                HistoryQueryLimits.DateFormat,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out var date))
         {
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
-            return lastDate <= today;
+            return date <= today;
         }
+
         return false;
     }
 }

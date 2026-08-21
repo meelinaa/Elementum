@@ -24,12 +24,17 @@ public interface IPriceHistoryReadRepository
         string? currency = null,
         CancellationToken ct = default);
 
-    /// <summary>Returns price history ticks for a metal symbol in an inclusive date range, optionally filtered by currency.</summary>
-    Task<IReadOnlyList<PriceHistory>> GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+    /// <summary>
+    /// Returns a page of price history ticks for a metal in an inclusive date range, optionally filtered by currency.
+    /// <paramref name="skip"/>/<paramref name="take"/> are applied after the filter; TotalCount is the unpaged match count.
+    /// </summary>
+    Task<(IReadOnlyList<PriceHistory> Items, int TotalCount)> GetPriceHistoryByMetalSymbolAndDateRangeAsync(
         string symbol,
         DateOnly firstDate,
         DateOnly lastDate,
-        string? currency = null,
+        string? currency,
+        int skip,
+        int take,
         CancellationToken ct = default);
 
     /// <summary>Returns the most recent price history entry for a metal by symbol.</summary>

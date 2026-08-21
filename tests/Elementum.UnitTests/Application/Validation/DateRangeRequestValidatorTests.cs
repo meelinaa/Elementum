@@ -21,6 +21,15 @@ public class DateRangeRequestValidatorTests
         Assert.True(result.IsValid);
     }
 
+    // [B]OUNDARY: omitted from/to is valid — the use case applies the last-30-days default
+    [Fact]
+    public void Validate_WhenBothDatesOmitted_PassesValidation()
+    {
+        var result = _validator.Validate(new DateRangeRequest());
+
+        Assert.True(result.IsValid);
+    }
+
     // [B]OUNDARY: Verifies that identical start and end dates (single day query) pass validation
     [Fact]
     public void Validate_SingleDayRange_PassesValidation()
@@ -47,7 +56,7 @@ public class DateRangeRequestValidatorTests
 
         // Assert
         Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.ErrorMessage.Contains("FirstDate cannot be after LastDate"));
+        Assert.Contains(result.Errors, e => e.ErrorMessage.Contains("From cannot be after To"));
     }
 
     // [E]RROR: Verifies that invalid date formats (non ISO-8601) fail validation

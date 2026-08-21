@@ -108,34 +108,48 @@ Calculates real-time trading metrics and technical indicators (OHLC, spread, vol
 
 ## Price History Endpoints (`PriceHistoryController`)
 
-### 3. GET `/api/v1/history/{symbol}?currency={currency}`
+### 3. GET `/api/v1/history/{symbol}`
 
-Returns the historical price tick series for a specific metal and currency.
+Returns a **bounded** historical tick page for a metal. Unbounded dumps are rejected by a date window plus a hard `take` cap.
 
 - **Route Parameter:** `symbol` (e.g. `XAU`, `XAG`)
-- **Query Parameter:** `currency` (optional: `USD` or `EUR`; omitted = all currencies; other values return `400`)
+- **Query Parameters:**
+  - `currency` (optional: `USD` or `EUR`; omitted = all currencies; other values return `400`)
+  - `from` / `to` (optional, ISO `yyyy-MM-dd`). Omitted = last 30 UTC days. `to` cannot be in the future; `from` cannot be after `to`.
+  - `skip` (optional, default `0`, must be ≥ 0)
+  - `take` (optional, default `500`). Values above **2000** are **clamped** to 2000 (HTTP 200, not 400).
 - **Timeout Policy:** `DataCruncher` (60s)
-- **Response:** `200 OK` → `List<PriceHistoryDto>`
+- **Response:** `200 OK` → `PriceHistoryPageDto`
+
+**Example:** `GET /api/v1/history/XAU?from=2026-01-01&to=2026-02-01&take=500&skip=0`
 
 **Payload Schema:**
 ```json
-[
-  {
-    "id": 42,
-    "metalId": 1,
-    "currency": "USD",
-    "symbol": "XAUUSD",
-    "referenceTimestamp": "1723900000",
-    "entryDate": "2026-08-18",
-    "price": 2500.50,
-    "chp": 0.62,
-    "metal": {
-      "id": 1,
-      "symbol": "XAU",
-      "name": "Gold"
+{
+  "items": [
+    {
+      "id": 42,
+      "metalId": 1,
+      "currency": "USD",
+      "symbol": "XAUUSD",
+      "referenceTimestamp": "1723900000",
+      "entryDate": "2026-08-18",
+      "price": 2500.50,
+      "chp": 0.62,
+      "metal": {
+        "id": 1,
+        "symbol": "XAU",
+        "name": "Gold"
+      }
     }
-  }
-]
+  ],
+  "skip": 0,
+  "take": 500,
+  "totalCount": 1,
+  "hasMore": false,
+  "from": "2026-07-22",
+  "to": "2026-08-21"
+}
 ```
 
 ---
@@ -177,4 +191,4 @@ If a client IP exceeds the configured request limit (e.g. >100 req / min), the A
 | GET | `/health/ready` | HealthCheck | Readiness probe (database connectivity). |
 | GET | `/api/v1/prices/live` | `LivePricesController` | Real-time market overview for all metals in USD & EUR. |
 | GET | `/api/v1/prices/live/trading/{symbol}` | `LivePricesController` | Live trading analysis & technical indicators. |
-| GET | `/api/v1/history/{symbol}` | `PriceHistoryController` | Historical price ticks for a metal. |
+| GET | `/api/v1/history/{symbol}` | `PriceHistoryController` | Paged historical ticks (`from`/`to`, `skip`/`take`). |
