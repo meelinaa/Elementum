@@ -59,7 +59,10 @@ public class ApiControllerTests
             .ReturnsAsync(dto);
 
         // Act
-        var result = await _livePricesController.GetLiveTradingAnalysis(request, "EUR", CancellationToken.None);
+        var result = await _livePricesController.GetLiveTradingAnalysis(
+            request,
+            new CurrencyRequest { Currency = "EUR" },
+            CancellationToken.None);
 
         // Assert
         var ok = Assert.IsType<OkObjectResult>(result.Result);
@@ -76,7 +79,10 @@ public class ApiControllerTests
             .ReturnsAsync((TradingPriceDto?)null);
 
         // Act
-        var result = await _livePricesController.GetLiveTradingAnalysis(request, "EUR", CancellationToken.None);
+        var result = await _livePricesController.GetLiveTradingAnalysis(
+            request,
+            new CurrencyRequest { Currency = "EUR" },
+            CancellationToken.None);
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result.Result);
@@ -98,7 +104,7 @@ public class ApiControllerTests
                        .ReturnsAsync(history);
 
         // Act
-        var result = await _priceHistoryController.GetPriceHistoryByMetalSymbol(request, null, CancellationToken.None);
+        var result = await _priceHistoryController.GetPriceHistoryByMetalSymbol(request, new CurrencyRequest(), CancellationToken.None);
 
         // Assert
         var ok = Assert.IsType<OkObjectResult>(result.Result);
@@ -119,7 +125,7 @@ public class ApiControllerTests
                        .ReturnsAsync(history);
 
         // Act
-        var result = await _priceHistoryController.GetPriceHistoryByMetalSymbol(request, "EUR", CancellationToken.None);
+        var result = await _priceHistoryController.GetPriceHistoryByMetalSymbol(request, new CurrencyRequest { Currency = "EUR" }, CancellationToken.None);
 
         // Assert
         var ok = Assert.IsType<OkObjectResult>(result.Result);

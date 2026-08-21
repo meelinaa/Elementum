@@ -5,6 +5,7 @@ using Elementum.Domain.Constants;
 using Elementum.Domain.Entities;
 using Elementum.Domain.Ports.Outbound;
 using Elementum.Domain.Services;
+using Elementum.Domain.ValueObjects;
 
 namespace Elementum.Application.Inbound.UseCases.Prices;
 
@@ -47,9 +48,8 @@ public class LivePricesUseCase : ILivePricesUseCase
         CancellationToken cancellationToken = default)
     {
         var normSymbol = symbol.Trim().ToUpperInvariant();
-        var normCurrency = currency.Trim().ToUpperInvariant();
-        if (normCurrency != DomainConstants.Currencies.Usd && normCurrency != DomainConstants.Currencies.Eur)
-            normCurrency = DomainConstants.Currencies.Eur;
+        var normCurrency = Currency.FromCode(
+            string.IsNullOrWhiteSpace(currency) ? DomainConstants.Currencies.Eur : currency).Code;
 
         var overview = await GetLiveMarketOverviewAsync(cancellationToken);
         var metal = overview.Items.FirstOrDefault(i => i.Symbol.Equals(normSymbol, StringComparison.OrdinalIgnoreCase));

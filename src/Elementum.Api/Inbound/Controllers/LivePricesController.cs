@@ -33,10 +33,13 @@ public class LivePricesController : ControllerBase
     [HttpGet("live/trading/{symbol}")]
     public async Task<ActionResult<TradingPriceDto>> GetLiveTradingAnalysis(
         [FromRoute] SymbolRequest symbolRequest,
-        [FromQuery] string currency = "EUR",
+        [FromQuery] CurrencyRequest currencyRequest,
         CancellationToken cancellationToken = default)
     {
-        var dto = await _livePricesUseCase.GetLiveTradingAnalysisAsync(symbolRequest.Symbol.Trim(), currency, cancellationToken);
+        var dto = await _livePricesUseCase.GetLiveTradingAnalysisAsync(
+            symbolRequest.Symbol.Trim(),
+            currencyRequest.Currency ?? "EUR",
+            cancellationToken);
         if (dto == null)
         {
             return NotFound(new ProblemDetails

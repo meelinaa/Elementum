@@ -47,11 +47,23 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         Assert.True(dto.Price > 0);
     }
 
-    // [R]IGHT-BICEP: history query returns price list for existing metal
+    // [R]IGHT-BICEP: currency query parameter selects the USD quote on the trading endpoint
     [Fact]
-    public async Task GetPriceHistoryByMetalSymbol_WhenExists_ReturnsHistoryList()
+    public async Task GetLiveTradingAnalysis_WhenCurrencyUsd_ReturnsUsdPrice()
     {
-        // Arrange & Act
+        var response = await _client.GetAsync("/api/v1/prices/live/trading/XAU?currency=USD");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var dto = await response.Content.ReadFromJsonAsync<TradingPriceDto>();
+        Assert.NotNull(dto);
+        Assert.Equal("USD", dto.Currency);
+        Assert.Equal(2500.50m, dto.Price);
+    }
+
+    // [R]IGHT-BICEP: history currency filter returns only ticks in the requested code
+    [Fact]
+    public async Task GetPriceHistoryByMetalSymbol_WhenCurrencyUsd_ReturnsUsdTicks()
+    {
         var response = await _client.GetAsync("/api/v1/history/XAU?currency=USD");
 
         // Assert

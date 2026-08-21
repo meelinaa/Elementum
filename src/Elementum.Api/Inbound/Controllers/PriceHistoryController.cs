@@ -26,10 +26,13 @@ public class PriceHistoryController : ControllerBase
     [RequestTimeout("DataCruncher")]
     public async Task<ActionResult<IEnumerable<PriceHistoryDto>>> GetPriceHistoryByMetalSymbol(
         [FromRoute] SymbolRequest symbolRequest,
-        [FromQuery] string? currency,
+        [FromQuery] CurrencyRequest currencyRequest,
         CancellationToken cancellationToken)
     {
-        var historyData = await _priceHistoryUseCase.GetBySymbolAsync(symbolRequest.Symbol.Trim(), currency, cancellationToken);
+        var historyData = await _priceHistoryUseCase.GetBySymbolAsync(
+            symbolRequest.Symbol.Trim(),
+            currencyRequest.Currency,
+            cancellationToken);
         return Ok(historyData);
     }
 }

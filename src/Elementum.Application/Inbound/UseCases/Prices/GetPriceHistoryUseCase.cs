@@ -1,6 +1,7 @@
 using Elementum.Application.DTOs;
 using Elementum.Application.Mapping;
 using Elementum.Domain.Ports.Outbound;
+using Elementum.Domain.ValueObjects;
 
 namespace Elementum.Application.Inbound.UseCases.Prices;
 
@@ -26,6 +27,9 @@ public class GetPriceHistoryUseCase : IGetPriceHistoryUseCase
 
     public async ValueTask<IEnumerable<PriceHistoryDto>> GetBySymbolAsync(string symbol, string? currency = null, CancellationToken ct = default)
     {
+        if (!string.IsNullOrWhiteSpace(currency))
+            currency = Currency.FromCode(currency).Code;
+
         var entities = await _repository.GetPriceHistoryByMetalSymbolAsync(symbol, currency, ct);
         return entities.Select(e => e.ToPriceHistoryDto());
     }

@@ -39,9 +39,9 @@ public class ExceptionStatusMapperTests
         Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.5.1", mapping.TypeUri);
     }
 
-    // [R]IGHT-BICEP: ArgumentException arm (separate switch branch) maps format errors to 400 bad request
+    // [R]IGHT-BICEP: unsupported currency is a domain invariant and maps to 422 unprocessable entity
     [Fact]
-    public void Map_WhenArgumentException_Returns400WithBadRequestTypeUri()
+    public void Map_WhenUnsupportedCurrency_Returns422WithUnprocessableEntityTypeUri()
     {
         // Arrange
         var exception = UnsupportedCurrencyException.ForCode("GBP");
@@ -50,9 +50,9 @@ public class ExceptionStatusMapperTests
         var mapping = ExceptionStatusMapper.Map(exception);
 
         // Assert
-        Assert.Equal(StatusCodes.Status400BadRequest, mapping.StatusCode);
-        Assert.Equal("Invalid request", mapping.Title);
-        Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.5.1", mapping.TypeUri);
+        Assert.Equal(422, mapping.StatusCode);
+        Assert.Equal("Domain validation error", mapping.Title);
+        Assert.Equal("https://tools.ietf.org/html/rfc4918#section-11.2", mapping.TypeUri);
     }
 
     // [R]IGHT-BICEP: missing resources map to 404 not found with RFC 7231 section 6.5.4 type URI
@@ -205,13 +205,14 @@ public class ExceptionStatusMapperTests
     {
         // Arrange
         const string validationFilterBadRequestType = "https://tools.ietf.org/html/rfc7231#section-6.5.1";
-        var exception = UnsupportedCurrencyException.ForCode("GBP");
+        var exception = new ArgumentException("malformed input");
 
         // Act
         var mapping = ExceptionStatusMapper.Map(exception);
 
         // Assert
         Assert.Equal(validationFilterBadRequestType, mapping.TypeUri);
+        Assert.Equal(StatusCodes.Status400BadRequest, mapping.StatusCode);
     }
 
     private sealed class TestUpstreamApplicationException : Elementum.Application.Exceptions.ApplicationException

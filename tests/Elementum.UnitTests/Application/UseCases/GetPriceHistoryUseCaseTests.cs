@@ -1,5 +1,6 @@
 using Elementum.Application.Inbound.UseCases.Prices;
 using Elementum.Domain.Entities;
+using Elementum.Domain.Exceptions;
 using Elementum.Domain.Ports.Outbound;
 using Moq;
 
@@ -89,6 +90,18 @@ public class GetPriceHistoryUseCaseTests
         Assert.Single(result);
         Assert.Equal(2300m, result[0].Price);
         _repositoryMock.Verify(r => r.GetPriceHistoryByMetalSymbolAsync("XAU", "EUR", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    // [E]RROR RIGHT-BICEP: unsupported currency never reaches the repository
+    [Fact]
+    public async Task GetBySymbolAsync_WhenCurrencyUnsupported_ThrowsUnsupportedCurrencyException()
+    {
+        await Assert.ThrowsAsync<UnsupportedCurrencyException>(
+            () => _useCase.GetBySymbolAsync("XAU", "GBP").AsTask());
+
+        _repositoryMock.Verify(
+            r => r.GetPriceHistoryByMetalSymbolAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     // [R]IGHT-BICEP: Verifies that GetByDateRangeAsync maps the inclusive date-range query

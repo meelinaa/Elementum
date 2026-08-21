@@ -4,6 +4,7 @@ using Elementum.Application.Services;
 using Elementum.Application.Exceptions;
 using Elementum.Domain.Constants;
 using Elementum.Domain.Entities;
+using Elementum.Domain.Exceptions;
 using Elementum.Domain.Ports.Outbound;
 using Elementum.Domain.Services;
 using Moq;
@@ -125,6 +126,15 @@ public class LivePricesUseCaseTests
         Assert.Equal("EUR", result.Currency);
         Assert.Equal(2300m, result.Price);
         Assert.Equal(DomainConstants.Trading.BullishStatus, result.Status);
+    }
+
+    // [E]RROR RIGHT-BICEP: unsupported ISO codes fail in the domain instead of silently falling back to EUR
+    [Fact]
+    public async Task GetLiveTradingAnalysisAsync_WhenCurrencyUnsupported_ThrowsUnsupportedCurrencyException()
+    {
+        await Assert.ThrowsAsync<UnsupportedCurrencyException>(
+            () => _useCase.GetLiveTradingAnalysisAsync("XAU", "GBP", CancellationToken.None));
+        _quotesProviderMock.Verify(q => q.GetLiveQuoteAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     // [E]RROR RIGHT-BICEP: provider failures propagate unchanged to API exception handler boundary
