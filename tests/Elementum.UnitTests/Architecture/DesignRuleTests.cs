@@ -18,7 +18,7 @@ public class DesignRuleTests
     {
         var result = Types.InAssembly(typeof(LivePricesController).Assembly)
             .That()
-            .ResideInNamespace("Elementum.Api.Controllers")
+            .ResideInNamespace("Elementum.Api.Inbound.Controllers")
             .And()
             .AreClasses()
             .Should()

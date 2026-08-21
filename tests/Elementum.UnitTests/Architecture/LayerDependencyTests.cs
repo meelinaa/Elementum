@@ -111,7 +111,7 @@ public class LayerDependencyTests
         // Controllers in Elementum.Api must consume Application Use Cases, not DbContext directly
         var result = Types.InAssembly(typeof(LivePricesController).Assembly)
             .That()
-            .ResideInNamespace("Elementum.Api.Controllers")
+            .ResideInNamespace("Elementum.Api.Inbound.Controllers")
             .ShouldNot()
             .HaveDependencyOn("Elementum.Infrastructure.Outbound.Data.ElementumDbContext")
             .GetResult();
