@@ -47,6 +47,8 @@ public class PriceHistoryController : ControllerBase
             query.Skip,
             query.Take,
             cancellationToken);
+
+        Response.Headers.CacheControl = "public, max-age=60";
         return Ok(historyData);
     }
 }

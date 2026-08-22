@@ -69,6 +69,16 @@ public class LivePricesController : ControllerBase
             return NotFound(problem);
         }
 
+        // HTTP Caching: Cache-Control & Weak ETag based on quote timestamp
+        Response.Headers.CacheControl = "public, max-age=30, stale-while-revalidate=60";
+        var etag = $"W/\"{dto.ReferenceTimestamp}\"";
+        Response.Headers.ETag = etag;
+
+        if (Request.Headers.IfNoneMatch.ToString() == etag)
+        {
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
+
         return Ok(dto);
     }
 }
