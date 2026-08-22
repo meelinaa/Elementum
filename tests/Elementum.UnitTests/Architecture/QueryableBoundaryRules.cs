@@ -1,6 +1,5 @@
 using System.Reflection;
 using Elementum.Domain.Ports.Outbound;
-using Elementum.Infrastructure.Outbound.Data.Interfaces;
 using Elementum.Infrastructure.Outbound.Data.Resilience;
 using Elementum.Infrastructure.Outbound.Data.Repositories;
 
@@ -25,7 +24,6 @@ internal static class QueryableBoundaryRules
             typeof(IPriceHistoryReadRepository),
             typeof(IPriceHistoryWriteRepository),
             typeof(IPriceHistoryRepository),
-            typeof(IElementumDbContext),
             typeof(ResilientElementumDbContext),
             typeof(PriceHistoryRepository)
         ];

@@ -3,7 +3,6 @@ using Elementum.Application.Ports.Outbound;
 using Elementum.Application.Services;
 using Elementum.Domain.Ports.Outbound;
 using Elementum.Infrastructure.Outbound.Caching;
-using Elementum.Infrastructure.Outbound.Data.Interfaces;
 using Elementum.Infrastructure.Outbound.Data.Repositories;
 using Elementum.Infrastructure.Outbound.Data.Resilience;
 using Elementum.Infrastructure.Outbound.Data.Services;
@@ -33,10 +32,9 @@ public static class ServiceCollectionExtensions
     {
         services.AddElementumDbContext(connectionString, configureResilience);
 
-        // Register Driven / Secondary Ports (ISP / CQRS Segregated Interfaces)
-        services.AddScoped<IPriceHistoryRepository>(sp => sp.GetRequiredService<IElementumDbContext>());
-        services.AddScoped<IPriceHistoryReadRepository>(sp => sp.GetRequiredService<IElementumDbContext>());
-        services.AddScoped<IPriceHistoryWriteRepository>(sp => sp.GetRequiredService<IElementumDbContext>());
+        // Register ISP-segregated secondary ports — resolved from the already-registered IPriceHistoryRepository.
+        services.AddScoped<IPriceHistoryReadRepository>(sp => sp.GetRequiredService<IPriceHistoryRepository>());
+        services.AddScoped<IPriceHistoryWriteRepository>(sp => sp.GetRequiredService<IPriceHistoryRepository>());
         services.AddSingleton<IMetalsApiClient, MetalsApiClient>();
         services.AddSingleton<IDistributedLockProvider, EfCoreDistributedLockProvider>();
 
@@ -137,7 +135,7 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registers <see cref="ElementumDbContext"/>, repository, services, and <see cref="IElementumDbContext"/>.
+    /// Registers <see cref="ElementumDbContext"/>, repository, services, and <see cref="IPriceHistoryRepository"/>.
     /// </summary>
     public static IServiceCollection AddElementumDbContext(
         this IServiceCollection services,
@@ -154,7 +152,7 @@ public static class ServiceCollectionExtensions
         if (configureResilience != null)
         {
             services.Configure(configureResilience);
-            services.AddScoped<IElementumDbContext>(sp =>
+            services.AddScoped<IPriceHistoryRepository>(sp =>
             {
                 var inner = sp.GetRequiredService<PriceHistoryRepository>();
                 var opts = sp.GetRequiredService<IOptions<ElementumDbContextResilienceOptions>>().Value;
@@ -164,7 +162,7 @@ public static class ServiceCollectionExtensions
         }
         else
         {
-            services.AddScoped<IElementumDbContext, PriceHistoryRepository>();
+            services.AddScoped<IPriceHistoryRepository, PriceHistoryRepository>();
         }
 
         return services;

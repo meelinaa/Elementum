@@ -1,19 +1,20 @@
 using Elementum.Domain.Entities;
-using Elementum.Infrastructure.Outbound.Data.Interfaces;
+using Elementum.Domain.Ports.Outbound;
 using Polly;
 
 namespace Elementum.Infrastructure.Outbound.Data.Resilience;
 
 /// <summary>
-/// Decorator that implements <see cref="IElementumDbContext"/> and wraps every port call in a Polly v8 resilience pipeline.
-/// Queries are materialized inside the inner repository so retry covers the actual database work — there is no IQueryable passthrough.
+/// Decorator that wraps <see cref="IPriceHistoryRepository"/> and retries every port call
+/// through a Polly v8 resilience pipeline. Queries are materialized inside the inner repository
+/// so retry covers the actual database work — there is no IQueryable passthrough.
 /// </summary>
-public sealed class ResilientElementumDbContext : IElementumDbContext
+public sealed class ResilientElementumDbContext : IPriceHistoryRepository
 {
-    private readonly IElementumDbContext _inner;
+    private readonly IPriceHistoryRepository _inner;
     private readonly ResiliencePipeline _pipeline;
 
-    public ResilientElementumDbContext(IElementumDbContext inner, ResiliencePipeline pipeline)
+    public ResilientElementumDbContext(IPriceHistoryRepository inner, ResiliencePipeline pipeline)
     {
         ArgumentNullException.ThrowIfNull(inner);
         ArgumentNullException.ThrowIfNull(pipeline);

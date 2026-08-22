@@ -1,16 +1,15 @@
 using Elementum.Domain.Entities;
 using Elementum.Domain.Ports.Outbound;
-using Elementum.Infrastructure.Outbound.Data.Interfaces;
 using Elementum.Infrastructure.Outbound.Data.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace Elementum.Infrastructure.Outbound.Data.Repositories;
 
 /// <summary>
-/// Secondary / Driven Outbound Adapter: Implements <see cref="IPriceHistoryRepository"/> and <see cref="IElementumDbContext"/>
+/// Secondary / Driven Outbound Adapter: Implements <see cref="IPriceHistoryRepository"/>
 /// for MySQL persistence and querying via Entity Framework Core.
 /// </summary>
-public class PriceHistoryRepository : IElementumDbContext
+public class PriceHistoryRepository : IPriceHistoryRepository
 {
     private readonly ElementumDbContext _db;
     private readonly IDailyCandleAggregator _candleAggregator;

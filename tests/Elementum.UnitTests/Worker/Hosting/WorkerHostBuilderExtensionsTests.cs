@@ -1,6 +1,6 @@
 using Elementum.Application.Inbound.UseCases.Prices;
+using Elementum.Domain.Ports.Outbound;
 using Elementum.Infrastructure.Outbound.Caching;
-using Elementum.Infrastructure.Outbound.Data.Interfaces;
 using Elementum.Infrastructure.Outbound.Data.Resilience;
 using Elementum.Worker.Hosting;
 using Microsoft.AspNetCore.Builder;
@@ -28,7 +28,7 @@ public class WorkerHostBuilderExtensionsTests
         });
 
         using var scope = provider.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<IElementumDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<IPriceHistoryRepository>();
         var cache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
         var history = scope.ServiceProvider.GetRequiredService<IGetPriceHistoryUseCase>();
 

@@ -1,7 +1,7 @@
 using System.Net.Sockets;
 using Elementum.Domain.Entities;
+using Elementum.Domain.Ports.Outbound;
 using Elementum.Infrastructure.Outbound.Data;
-using Elementum.Infrastructure.Outbound.Data.Interfaces;
 using Elementum.Infrastructure.Outbound.Data.Repositories;
 using Elementum.Infrastructure.Outbound.Data.Resilience;
 using Elementum.Infrastructure.Outbound.Data.Services;
@@ -32,7 +32,7 @@ public sealed class DatabaseResilienceTests : IAsyncLifetime
     {
         await using var provider = CreateResilientProvider(_connectionString);
         await using var scope = provider.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<IElementumDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<IPriceHistoryRepository>();
 
         Assert.IsType<ResilientElementumDbContext>(db);
         var metals = await db.GetMetalsAsync();
