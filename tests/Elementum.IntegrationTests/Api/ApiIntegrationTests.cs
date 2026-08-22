@@ -214,5 +214,28 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         var page1Ids = page1.Items.Select(x => x.Id).ToHashSet();
         var page2Ids = page2.Items.Select(x => x.Id).ToHashSet();
         Assert.Empty(page1Ids.Intersect(page2Ids));
+
+        // HATEOAS Paging Links
+        Assert.NotNull(page1.NextPageUrl);
+        Assert.Contains("skip=2", page1.NextPageUrl);
+        Assert.Null(page1.PrevPageUrl);
+
+        Assert.Null(page2.NextPageUrl);
+        Assert.NotNull(page2.PrevPageUrl);
+        Assert.Contains("skip=0", page2.PrevPageUrl);
+    }
+
+    // [R]IGHT-BICEP: Scalar API documentation endpoint returns HTML UI
+    [Fact]
+    public async Task ScalarApiDocs_WhenDevelopment_ReturnsHtmlPage()
+    {
+        // Act
+        var response = await _client.GetAsync("/scalar/v1");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("text/html", response.Content.Headers.ContentType?.MediaType);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("@scalar/api-reference", content);
     }
 }

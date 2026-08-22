@@ -1,7 +1,7 @@
 namespace Elementum.Application.DTOs;
 
 /// <summary>
-/// Bounded history page: items plus pagination metadata so clients can continue with <c>skip</c>/<c>take</c>.
+/// Bounded history page: items plus pagination metadata and HATEOAS navigation links.
 /// </summary>
 public record PriceHistoryPageDto
 {
@@ -12,4 +12,10 @@ public record PriceHistoryPageDto
     public bool HasMore { get; init; }
     public DateOnly From { get; init; }
     public DateOnly To { get; init; }
+
+    /// <summary>HATEOAS relative URI to the next page of results, or null if on the last page.</summary>
+    public string? NextPageUrl { get; init; }
+
+    /// <summary>HATEOAS relative URI to the previous page of results, or null if on the first page.</summary>
+    public string? PrevPageUrl { get; init; }
 }

@@ -77,15 +77,31 @@ public class GetPriceHistoryUseCase : IGetPriceHistoryUseCase
             ct);
 
         var items = entities.Select(e => e.ToPriceHistoryDto()).ToList();
+        var hasMore = effectiveSkip + items.Count < totalCount;
+        var curParam = string.IsNullOrWhiteSpace(currency) ? "" : $"&currency={Uri.EscapeDataString(currency)}";
+        var fromParam = $"from={firstDate:yyyy-MM-dd}";
+        var toParam = $"&to={lastDate:yyyy-MM-dd}";
+        var takeParam = $"&take={effectiveTake}";
+
+        string? nextPageUrl = hasMore
+            ? $"/api/v1/history/{Uri.EscapeDataString(symbol)}?{fromParam}{toParam}&skip={effectiveSkip + effectiveTake}{takeParam}{curParam}"
+            : null;
+
+        string? prevPageUrl = effectiveSkip > 0
+            ? $"/api/v1/history/{Uri.EscapeDataString(symbol)}?{fromParam}{toParam}&skip={Math.Max(0, effectiveSkip - effectiveTake)}{takeParam}{curParam}"
+            : null;
+
         return new PriceHistoryPageDto
         {
             Items = items,
             Skip = effectiveSkip,
             Take = effectiveTake,
             TotalCount = totalCount,
-            HasMore = effectiveSkip + items.Count < totalCount,
+            HasMore = hasMore,
             From = firstDate,
-            To = lastDate
+            To = lastDate,
+            NextPageUrl = nextPageUrl,
+            PrevPageUrl = prevPageUrl
         };
     }
 }

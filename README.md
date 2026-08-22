@@ -75,15 +75,63 @@
 
 ## Architecture & Design
 
+### C4 Container & Hexagonal Architecture Model
+
 ```mermaid
-graph TD
-    CLI[Elementum.Cli] -->|REST API HTTP| API[Elementum.Api]
-    WORKER[Elementum.Worker] -->|Ingestion & Consolidation| APP[Elementum.Application]
-    API -->|Use Cases| APP
-    APP -->|Domain Models & Ports| DOMAIN[Elementum.Domain]
-    INFRA[Elementum.Infrastructure] -->|Implements Ports| DOMAIN
-    INFRA -->|EF Core / Polly v8| DB[(MySQL 8)]
-    INFRA -->|HTTP / Resilience| EXT[External Metals API]
+flowchart TB
+    subgraph Clients["Presentation & Inbound Adapters"]
+        CLI["Terminal CLI\n(Elementum.Cli)"]
+        BROWSER["Web / Mobile Clients\n(External Consumer)"]
+        WORKER["Daemon Worker\n(Elementum.Worker)"]
+        API["REST API Host\n(Elementum.Api)\n[Rate Limiting, ETags, RFC 7807]"]
+    end
+
+    subgraph Application["Application Layer (Interactors & Ports)"]
+        UC_LIVE["LivePricesUseCase"]
+        UC_HIST["GetPriceHistoryUseCase"]
+        UC_INGEST["IngestPricesUseCase"]
+        PORTS["Inbound & Outbound Ports\n(IPriceHistoryReadRepository, IPriceHistoryWriteRepository,\nIMetalsApiClient, IDistributedLockProvider)"]
+    end
+
+    subgraph Domain["Domain Core (Zero External Dependencies)"]
+        ENTITIES["Entities & Aggregates\n(Metals, PriceHistory, DailyPriceSummary)"]
+        VO["Value Objects\n(Currency, OhlcCandle)"]
+        DS["Domain Services\n(TradingAnalysisCalculator)"]
+    end
+
+    subgraph Infrastructure["Infrastructure Layer (Driven Adapters)"]
+        REPO_READ["ResilientPriceHistoryReadRepository\n[Polly v8 Pipeline, AsNoTracking]"]
+        REPO_WRITE["ResilientPriceHistoryWriteRepository\n[Polly v8, Optimistic Concurrency]"]
+        API_CLIENT["MetalsApiClient\n[Polly Standard Resilience]"]
+        LOCK_PROV["EfDistributedLockProvider\n[MySQL Named Locks]"]
+        CACHE["HybridCache (L1 Memory + L2 Redis)"]
+    end
+
+    subgraph External["External Systems & Persistence"]
+        MYSQL[("MySQL 8.0 Database\n[Normalized Relational Schema]")]
+        REDIS[("Redis 7 (Optional)\n[Distributed L2 Cache]")]
+        EDELMETALLE["External Metals API\n(api.edelmetalle.de)"]
+    end
+
+    CLI -->|HTTP GET /api/v1| API
+    BROWSER -->|HTTP GET /api/v1| API
+    WORKER -->|Periodic Trigger| UC_INGEST
+
+    API --> UC_LIVE
+    API --> UC_HIST
+    UC_LIVE --> PORTS
+    UC_HIST --> PORTS
+    UC_INGEST --> PORTS
+
+    PORTS -.-> Domain
+    Infrastructure -.->|Implements| PORTS
+
+    REPO_READ --> CACHE
+    CACHE --> MYSQL
+    CACHE -.-> REDIS
+    REPO_WRITE --> MYSQL
+    LOCK_PROV --> MYSQL
+    API_CLIENT --> EDELMETALLE
 ```
 
 - **Fail-Fast Configuration:** Zero silent fallbacks. Missing connection strings, invalid URLs, or out-of-range intervals immediately abort host startup with descriptive error messages.

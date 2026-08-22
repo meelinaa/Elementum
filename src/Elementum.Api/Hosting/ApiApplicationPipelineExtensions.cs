@@ -52,6 +52,28 @@ public static class ApiApplicationPipelineExtensions
         if (app.Environment.IsDevelopment())
         {
             app.MapOpenApi();
+            app.MapGet("/scalar/v1", () => Results.Content(
+                """
+                <!doctype html>
+                <html>
+                  <head>
+                    <title>Elementum Precious Metals API Reference</title>
+                    <meta charset="utf-8" />
+                    <meta name="viewport" content="width=device-width, initial-scale=1" />
+                    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪙</text></svg>">
+                    <style>
+                      body { margin: 0; }
+                    </style>
+                  </head>
+                  <body>
+                    <script id="api-reference" data-url="/openapi/v1.json" data-theme="purple"></script>
+                    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+                  </body>
+                </html>
+                """, "text/html")).ExcludeFromDescription();
+
+            app.MapGet("/docs", () => Results.Redirect("/scalar/v1")).ExcludeFromDescription();
+
             // Permissive CORS for local frontend tooling; production uses FrontendPolicy below.
             app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
         }
