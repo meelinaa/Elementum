@@ -23,7 +23,7 @@ public class CachedGetPriceHistoryUseCaseTests
         _cachedUseCase = new CachedGetPriceHistoryUseCase(_innerMock.Object, _cache);
     }
 
-    // [R]IGHT-BICEP & [P]ERFORMANCE: Verifies cache-aside pattern (first call misses and fetches, second hits cache directly)
+    // [R]IGHT-BICEP: Verifies cache-aside pattern (first call misses and fetches from inner, second hits cache directly)
     [Fact]
     public async Task GetLatestBySymbolAsync_FirstCallCallsInner_SecondCallUsesCache()
     {
@@ -53,7 +53,7 @@ public class CachedGetPriceHistoryUseCaseTests
         _innerMock.Verify(x => x.GetLatestBySymbolAsync("XAU", It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    // [R]IGHT-BICEP & [P]ERFORMANCE: Verifies that full list queries are cached across multiple callers
+    // [R]IGHT-BICEP: Verifies that full list queries are cached across multiple callers
     [Fact]
     public async Task GetLatestAllAsync_CachesResultAcrossCalls()
     {

@@ -70,7 +70,7 @@ public class ApiControllerTests
         Assert.Same(dto, ok.Value);
     }
 
-    // [E]RROR: Verifies that GetLiveTradingAnalysis returns HTTP 404 ProblemDetails when symbol is absent
+    // [E]RROR RIGHT-BICEP: Verifies that GetLiveTradingAnalysis returns HTTP 404 ProblemDetails when symbol is absent
     [Fact]
     public async Task GetLiveTradingAnalysis_ReturnsNotFound_WhenNull()
     {
