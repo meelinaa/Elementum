@@ -113,4 +113,67 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         Assert.Equal("Resource not found", problem.Title);
         Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.5.4", problem.Type);
     }
+
+    // [R]IGHT-BICEP: X-Correlation-Id supplied by client is mirrored in HTTP response headers
+    [Fact]
+    public async Task GetLivePrices_WhenCorrelationIdHeaderSupplied_MirrorsInResponse()
+    {
+        // Arrange
+        const string expectedCorrelationId = "test-correlation-trace-12345";
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/prices/live");
+        request.Headers.Add("X-Correlation-Id", expectedCorrelationId);
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(response.Headers.Contains("X-Correlation-Id"));
+        Assert.Equal(expectedCorrelationId, response.Headers.GetValues("X-Correlation-Id").First());
+    }
+
+    // RIGHT-BIC[E]P: chronological inversion (from > to) fails validation with HTTP 400 ValidationProblemDetails
+    [Fact]
+    public async Task GetPriceHistory_WhenFromDateAfterToDate_Returns400ValidationProblemDetails()
+    {
+        // Arrange & Act
+        var response = await _client.GetAsync("/api/v1/history/XAU?from=2026-08-20&to=2026-08-10");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.Equal(400, problem.Status);
+        Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.5.1", problem.Type);
+        Assert.True(problem.Errors.ContainsKey(nameof(DateRangeRequest.From)) || problem.Errors.ContainsKey(""));
+    }
+
+    // RIGHT-[B]ICEP: sequential pagination requests traverse non-overlapping slices with valid HasMore flags
+    [Fact]
+    public async Task GetPriceHistory_WithPagination_ReturnsExpectedPagesAndHasMore()
+    {
+        // Arrange & Act - Fetch Page 1 (skip=0, take=2)
+        var resPage1 = await _client.GetAsync("/api/v1/history/XAU?currency=USD&skip=0&take=2");
+        Assert.Equal(HttpStatusCode.OK, resPage1.StatusCode);
+        var page1 = await resPage1.Content.ReadFromJsonAsync<PriceHistoryPageDto>();
+        Assert.NotNull(page1);
+
+        // Arrange & Act - Fetch Page 2 (skip=2, take=2)
+        var resPage2 = await _client.GetAsync("/api/v1/history/XAU?currency=USD&skip=2&take=2");
+        Assert.Equal(HttpStatusCode.OK, resPage2.StatusCode);
+        var page2 = await resPage2.Content.ReadFromJsonAsync<PriceHistoryPageDto>();
+        Assert.NotNull(page2);
+
+        // Assert
+        Assert.Equal(2, page1.Items.Count);
+        Assert.Single(page2.Items);
+        Assert.Equal(3, page1.TotalCount);
+        Assert.True(page1.HasMore);
+        Assert.False(page2.HasMore);
+
+        // Pages must contain disjoint items
+        var page1Ids = page1.Items.Select(x => x.Id).ToHashSet();
+        var page2Ids = page2.Items.Select(x => x.Id).ToHashSet();
+        Assert.Empty(page1Ids.Intersect(page2Ids));
+    }
 }

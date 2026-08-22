@@ -90,19 +90,49 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
         if (!db.PriceHistory.Any())
         {
-            db.PriceHistory.Add(PriceHistory.Create(
-                metalId: 1,
-                currency: "USD",
-                entryDate: DateOnly.FromDateTime(DateTime.UtcNow),
-                price: 2500.50m,
-                symbol: "FOREXCOM:XAUUSD",
-                openPrice: 2485.00m,
-                highPrice: 2510.00m,
-                lowPrice: 2475.00m,
-                prevClosePrice: 2480.00m,
-                ch: 20.50m,
-                chp: 0.82m,
-                referenceTimestamp: DateTimeOffset.UtcNow.ToUnixTimeSeconds()));
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var nowTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+            db.PriceHistory.AddRange(
+                PriceHistory.Create(
+                    metalId: 1,
+                    currency: "USD",
+                    entryDate: today,
+                    price: 2500.50m,
+                    symbol: "FOREXCOM:XAUUSD",
+                    openPrice: 2485.00m,
+                    highPrice: 2510.00m,
+                    lowPrice: 2475.00m,
+                    prevClosePrice: 2480.00m,
+                    ch: 20.50m,
+                    chp: 0.82m,
+                    referenceTimestamp: nowTimestamp),
+                PriceHistory.Create(
+                    metalId: 1,
+                    currency: "USD",
+                    entryDate: today.AddDays(-1),
+                    price: 2480.00m,
+                    symbol: "FOREXCOM:XAUUSD",
+                    openPrice: 2460.00m,
+                    highPrice: 2490.00m,
+                    lowPrice: 2450.00m,
+                    prevClosePrice: 2455.00m,
+                    ch: 25.00m,
+                    chp: 1.02m,
+                    referenceTimestamp: nowTimestamp - 86400),
+                PriceHistory.Create(
+                    metalId: 1,
+                    currency: "USD",
+                    entryDate: today.AddDays(-2),
+                    price: 2455.00m,
+                    symbol: "FOREXCOM:XAUUSD",
+                    openPrice: 2440.00m,
+                    highPrice: 2465.00m,
+                    lowPrice: 2435.00m,
+                    prevClosePrice: 2430.00m,
+                    ch: 25.00m,
+                    chp: 1.03m,
+                    referenceTimestamp: nowTimestamp - 172800));
 
             db.SaveChanges();
         }

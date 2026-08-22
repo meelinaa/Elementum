@@ -111,6 +111,35 @@ public sealed class PriceHistoryRepositoryMySqlTests(MySqlContainerFixture fixtu
         Assert.DoesNotContain(remaining, p => p.EntryDate < cutoffDate);
     }
 
+    // RIGHT-BI[C]EP: AggregateDailySummaryAsync accurately summarizes hourly ticks into an OHLC candle on MySQL
+    [Fact]
+    public async Task AggregateDailySummaryAsync_ComputesCorrectOhlcOnMySql()
+    {
+        // Arrange
+        await using var db = MySqlTestContext.Create(_connectionString);
+        var repository = new PriceHistoryRepository(db, new DailyCandleAggregator(), new PriceHistoryPruner());
+        var date = new DateOnly(2026, 8, 20);
+
+        // Insert 4 hourly ticks with varying prices across the day
+        db.PriceHistory.AddRange(
+            PriceHistory.Create(1, "USD", date, 2500m, "XAU", referenceTimestamp: 1000L),  // Open
+            PriceHistory.Create(1, "USD", date, 2550m, "XAU", referenceTimestamp: 2000L),  // High
+            PriceHistory.Create(1, "USD", date, 2480m, "XAU", referenceTimestamp: 3000L),  // Low
+            PriceHistory.Create(1, "USD", date, 2520m, "XAU", referenceTimestamp: 4000L)); // Close
+        await db.SaveChangesAsync();
+
+        // Act
+        await repository.AggregateDailySummaryAsync(date);
+
+        // Assert - verify the persisted candle in MySQL
+        var summary = await db.DailyPriceSummaries.FirstOrDefaultAsync(s => s.MetalId == 1 && s.Currency == "USD" && s.EntryDate == date);
+        Assert.NotNull(summary);
+        Assert.Equal(2500m, summary.OpenPrice);
+        Assert.Equal(2550m, summary.HighPrice);
+        Assert.Equal(2480m, summary.LowPrice);
+        Assert.Equal(2520m, summary.ClosePrice);
+    }
+
     private static IReadOnlyList<PriceHistory> CreateTickSet(ElementumDbContext db, long timestamp)
     {
         var payload = new EdelmetalleApiResponse
