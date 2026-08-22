@@ -44,41 +44,76 @@ public class LivePricesUseCase : ILivePricesUseCase
         var normCurrency = Currency.FromCode(
             string.IsNullOrWhiteSpace(currency) ? DomainConstants.Currencies.Eur : currency).Code;
 
-        var overview = await FetchLiveMarketOverviewCoreAsync(cancellationToken);
-        var metal = overview.Items.FirstOrDefault(i => i.Symbol.Equals(normSymbol, StringComparison.OrdinalIgnoreCase));
-        if (metal == null)
+        var quote = await _quotesProvider.GetLiveQuoteAsync(cancellationToken);
+        if (!TryExtractMetalQuote(quote, normSymbol, normCurrency, out var metalName, out var livePrice))
             return null;
 
-        bool isEur = normCurrency == DomainConstants.Currencies.Eur;
-        decimal currentPrice = isEur ? metal.PriceEur : metal.PriceUsd;
-        decimal openPrice = (isEur ? metal.OpenPriceEur : metal.OpenPriceUsd) ?? currentPrice;
-        decimal highPrice = (isEur ? metal.HighPriceEur : metal.HighPriceUsd) ?? currentPrice;
-        decimal lowPrice = (isEur ? metal.LowPriceEur : metal.LowPriceUsd) ?? currentPrice;
-        decimal prevClose = (isEur ? metal.PrevCloseEur : metal.PrevCloseUsd) ?? openPrice;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var yesterday = today.AddDays(-1);
+        var summaries = await _repository.GetDailySummariesAsync(yesterday, today, cancellationToken);
 
-        var analysis = TradingAnalysisCalculator.Calculate(currentPrice, openPrice, highPrice, lowPrice, prevClose);
+        var todayCandle = FindCandle(summaries, normSymbol, normCurrency, today);
+        var yesterdayCandle = FindCandle(summaries, normSymbol, normCurrency, yesterday);
+        var session = ResolveSession(todayCandle, yesterdayCandle, livePrice);
+
+        var analysis = TradingAnalysisCalculator.Calculate(
+            livePrice, session.Open, session.High, session.Low, session.PrevClose);
 
         return new TradingPriceDto
         {
-            Symbol = metal.Symbol,
-            MetalName = metal.Name,
+            Symbol = normSymbol,
+            MetalName = metalName,
             Exchange = DefaultExchangeName,
             Currency = normCurrency,
-            EntryDate = DateOnly.FromDateTime(DateTime.UtcNow),
-            ReferenceTimestamp = overview.Timestamp,
-            Price = currentPrice,
-            OpenPrice = openPrice,
-            HighPrice = highPrice,
-            LowPrice = lowPrice,
-            PrevClosePrice = prevClose,
+            EntryDate = today,
+            ReferenceTimestamp = quote.Timestamp,
+            Price = livePrice,
+            OpenPrice = session.Open,
+            HighPrice = session.High,
+            LowPrice = session.Low,
+            PrevClosePrice = session.PrevClose,
             Ch = analysis.Ch,
             Chp = analysis.Chp,
             DifferencePrevClose = analysis.DiffPrevClose,
             VolatilityRange = analysis.VolatilityRange,
             VolatilityPercent = analysis.VolatilityPercent,
             Status = analysis.Status,
-            ExchangeRateUsdEur = overview.ExchangeRateUsdEur
+            ExchangeRateUsdEur = quote.WechselkursUsdEur
         };
+    }
+
+    private static bool TryExtractMetalQuote(
+        EdelmetalleApiResponse quote,
+        string symbol,
+        string currency,
+        out string name,
+        out decimal livePrice)
+    {
+        bool isEur = string.Equals(currency, DomainConstants.Currencies.Eur, StringComparison.OrdinalIgnoreCase);
+
+        switch (symbol)
+        {
+            case DomainConstants.Symbols.Gold:
+                name = DomainConstants.Names.Gold;
+                livePrice = isEur ? quote.GoldEur : quote.GoldUsd;
+                return true;
+            case DomainConstants.Symbols.Silver:
+                name = DomainConstants.Names.Silver;
+                livePrice = isEur ? quote.SilberEur : quote.SilberUsd;
+                return true;
+            case DomainConstants.Symbols.Platinum:
+                name = DomainConstants.Names.Platinum;
+                livePrice = isEur ? quote.PlatinEur : quote.PlatinUsd;
+                return true;
+            case DomainConstants.Symbols.Palladium:
+                name = DomainConstants.Names.Palladium;
+                livePrice = isEur ? quote.PalladiumEur : quote.PalladiumUsd;
+                return true;
+            default:
+                name = string.Empty;
+                livePrice = 0m;
+                return false;
+        }
     }
 
     private async Task<LiveMarketOverviewDto> FetchLiveMarketOverviewCoreAsync(CancellationToken cancellationToken)
