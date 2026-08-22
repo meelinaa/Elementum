@@ -32,15 +32,30 @@ Liveness and readiness probes for Docker, Kubernetes, and orchestrators (outside
 
 ---
 
+## Currency Parameter Behavior Matrix
+
+| Endpoint | `currency` Parameter | Default / Omitted Behavior | Supported Values |
+|---|---|---|---|
+| `GET /api/v1/prices/live` | *Not applicable* | Always returns complete portfolio in **both EUR and USD** | *None* |
+| `GET /api/v1/prices/trading/{symbol}` | Optional Query (`?currency=`) | Defaults to **`EUR`** | `EUR`, `USD` (others: 400 Bad Request) |
+| `GET /api/v1/history/{symbol}` | Optional Query (`?currency=`) | Returns historical records for **both EUR and USD** | `EUR`, `USD` (others: 400 Bad Request) |
+
+---
+
 ## Live Prices & Trading Endpoints (`LivePricesController`)
 
 ### 1. GET `/api/v1/prices/live`
 
 Retrieves a real-time market overview for all 4 precious metals (Gold, Silver, Platinum, Palladium) in USD and EUR.
 
-- **Response:** `200 OK` → `LiveMarketOverviewDto`
+- **HTTP Caching & Headers:**
+  - `Cache-Control: public, max-age=30, stale-while-revalidate=60`
+  - `ETag: W/"<snapshot_unix_timestamp>"`
+- **Response:**
+  - `200 OK` → `LiveMarketOverviewDto`
+  - `304 Not Modified` → Returned when request header `If-None-Match` matches current ETag (empty body, zero bandwidth).
 
-**Payload Schema:**
+**Payload Schema (`200 OK`):**
 ```json
 {
   "items": [
@@ -69,12 +84,13 @@ Retrieves a real-time market overview for all 4 precious metals (Gold, Silver, P
 
 ---
 
-### 2. GET `/api/v1/prices/live/trading/{symbol}?currency={currency}`
+### 2. GET `/api/v1/prices/trading/{symbol}?currency={currency}`
 
-Calculates real-time trading metrics and technical indicators (OHLC, spread, volatility, bullish/bearish status) for a given metal.
+Calculates real-time trading metrics and technical indicators (OHLC, spread, volatility, bullish/bearish status) for a given metal.  
+*(Also available via backwards-compatible alias `GET /api/v1/prices/live/trading/{symbol}`)*.
 
 - **Route Parameter:** `symbol` (e.g. `XAU`, `XAG`, `XPT`, `XPD`)
-- **Query Parameter:** `currency` (optional: `EUR` [default] or `USD`; other values return `400`)
+- **Query Parameter:** `currency` (optional: `EUR` [default] or `USD`; other values return `400 ValidationProblemDetails`)
 - **Response:**
   - `200 OK` → `TradingPriceDto`
   - `404 Not Found` → `ProblemDetails` with type `https://tools.ietf.org/html/rfc7231#section-6.5.4` (same mapper as the exception path)

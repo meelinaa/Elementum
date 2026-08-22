@@ -23,8 +23,15 @@ public class PriceHistoryController : ControllerBase
 
     /// <summary>
     /// GET /api/v1/history/{symbol}?from=&amp;to=&amp;take=&amp;skip=&amp;currency= —
-    /// bounded tick page as <see cref="PriceHistoryPageDto"/>.
+    /// Returns a bounded historical tick page for a precious metal.
+    /// <para>
+    /// <b>Currency Behavior:</b> When <c>currency</c> is omitted, historical records across <b>both EUR and USD</b> are returned.
+    /// Specifying <c>currency=EUR</c> or <c>currency=USD</c> strictly filters by that currency.
+    /// </para>
     /// </summary>
+    /// <param name="symbolRequest">Precious metal symbol (e.g. XAU, XAG, XPT, XPD).</param>
+    /// <param name="query">Pagination and date-range filters (from, to, skip, take, currency).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     [HttpGet("{symbol}", Order = 10)]
     [RequestTimeout("DataCruncher")]
     public async Task<ActionResult<PriceHistoryPageDto>> GetPriceHistoryByMetalSymbol(

@@ -16,15 +16,19 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         _client = factory.CreateClient();
     }
 
-    // [R]IGHT-BICEP: live prices endpoint returns HTTP 200 with market overview
+    // [R]IGHT-BICEP: live prices endpoint returns HTTP 200 with market overview, Cache-Control, and ETag
     [Fact]
-    public async Task GetLivePrices_ReturnsOk_WithMarketOverview()
+    public async Task GetLivePrices_ReturnsOk_WithMarketOverviewAndCachingHeaders()
     {
         // Arrange & Act
         var response = await _client.GetAsync("/api/v1/prices/live");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(response.Headers.Contains("ETag"));
+        Assert.True(response.Headers.CacheControl?.Public);
+        Assert.Equal(TimeSpan.FromSeconds(30), response.Headers.CacheControl?.MaxAge);
+
         var overview = await response.Content.ReadFromJsonAsync<LiveMarketOverviewDto>();
         Assert.NotNull(overview);
         Assert.NotNull(overview.Items);
@@ -32,7 +36,42 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         Assert.Contains(overview.Items, m => m.Symbol == "XAU");
     }
 
-    // [R]IGHT-BICEP: valid trading symbol returns calculated technical indicators
+    // RIGHT-B[I]CEP: subsequent request with matching If-None-Match header returns HTTP 304 Not Modified
+    [Fact]
+    public async Task GetLivePrices_WhenIfNoneMatchMatchesCurrentEtag_Returns304NotModified()
+    {
+        // Arrange - Initial request to obtain current ETag
+        var initialResponse = await _client.GetAsync("/api/v1/prices/live");
+        Assert.Equal(HttpStatusCode.OK, initialResponse.StatusCode);
+        var etag = initialResponse.Headers.ETag?.ToString();
+        Assert.NotNull(etag);
+
+        // Act - Conditional GET with If-None-Match
+        using var conditionalRequest = new HttpRequestMessage(HttpMethod.Get, "/api/v1/prices/live");
+        conditionalRequest.Headers.TryAddWithoutValidation("If-None-Match", etag);
+        var conditionalResponse = await _client.SendAsync(conditionalRequest);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotModified, conditionalResponse.StatusCode);
+    }
+
+    // [R]IGHT-BICEP: new primary trading route /api/v1/prices/trading/{symbol} returns calculated technical indicators
+    [Fact]
+    public async Task GetLiveTradingAnalysis_UsingDirectTradingRoute_ReturnsTradingPrice()
+    {
+        // Arrange & Act
+        var response = await _client.GetAsync("/api/v1/prices/trading/XAU?currency=EUR");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var dto = await response.Content.ReadFromJsonAsync<TradingPriceDto>();
+        Assert.NotNull(dto);
+        Assert.Equal("XAU", dto.Symbol);
+        Assert.Equal("EUR", dto.Currency);
+        Assert.True(dto.Price > 0);
+    }
+
+    // [R]IGHT-BICEP: valid trading symbol returns calculated technical indicators via legacy route
     [Fact]
     public async Task GetLiveTradingAnalysis_WhenValidSymbol_ReturnsTradingPrice()
     {

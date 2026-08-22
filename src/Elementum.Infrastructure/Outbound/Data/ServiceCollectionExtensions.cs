@@ -95,6 +95,12 @@ public static class ServiceCollectionExtensions
             });
         }
 
+        // Design Decision: Manual Decorator Registration (services.FirstOrDefault / Remove / Add)
+        // RATIONALE vs. Scrutor:
+        // 1. Dependency Minimization: Avoids an external 3rd-party package dependency (Scrutor) for two decorators.
+        // 2. Deterministic & Transparent: Explicit compile-time wiring without runtime assembly scanning or reflection overhead.
+        // 3. Native DI Compatibility: Works natively on Microsoft.Extensions.DependencyInjection with full control over inner lifetime.
+        //
         // Decorate IGetPriceHistoryUseCase with CachedGetPriceHistoryUseCase
         var descriptor = services.FirstOrDefault(d => d.ServiceType == typeof(IGetPriceHistoryUseCase));
         if (descriptor != null)
