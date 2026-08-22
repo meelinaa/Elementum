@@ -392,4 +392,23 @@ public class PriceHistoryRepositoryTests
         var updatedCandle = await context.DailyPriceSummaries.FirstAsync(s => s.MetalId == 1 && s.Currency == "USD");
         Assert.Equal(2530m, updatedCandle.ClosePrice);
     }
+
+    // RIGHT-[B]ICEP: querying by date range with an unmatched currency returns empty list and zero total count
+    [Fact]
+    public async Task GetPriceHistoryByMetalSymbolAndDateRangeAsync_WhenCurrencyUnmatched_ReturnsEmptyAndZeroCount()
+    {
+        // Arrange
+        var (db, repo) = CreateTestSetup();
+
+        db.PriceHistory.Add(Tick(1, new DateOnly(2026, 8, 17), 2500m, currency: "USD", symbol: "XAU", timestamp: 1000L));
+        await db.SaveChangesAsync();
+
+        // Act
+        var (items, totalCount) = await repo.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+            "XAU", new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 20), "EUR", 0, 10);
+
+        // Assert
+        Assert.Empty(items);
+        Assert.Equal(0, totalCount);
+    }
 }

@@ -224,4 +224,25 @@ public class GetPriceHistoryUseCaseTests
         Assert.NotNull(result);
         Assert.Equal(2500m, result.Price);
     }
+
+    // RIGHT-[B]ICEP: when requested currency has zero records for a valid metal, returns empty items and zero TotalCount
+    [Fact]
+    public async Task GetBySymbolAsync_WhenCurrencyHasNoRecords_ReturnsEmptyPageWithZeroCount()
+    {
+        // Arrange
+        var first = new DateOnly(2026, 8, 1);
+        var last = new DateOnly(2026, 8, 17);
+
+        _repositoryMock.Setup(r => r.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
+                "XAU", first, last, "EUR", 0, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Array.Empty<PriceHistory>(), 0));
+
+        // Act
+        var page = await _useCase.GetBySymbolAsync("XAU", "EUR", "2026-08-01", "2026-08-17", skip: 0, take: 10);
+
+        // Assert
+        Assert.Empty(page.Items);
+        Assert.Equal(0, page.TotalCount);
+        Assert.False(page.HasMore);
+    }
 }

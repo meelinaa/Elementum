@@ -76,4 +76,35 @@ public class CachedGetPriceHistoryUseCaseTests
         Assert.Equal(2, call2.Count());
         _innerMock.Verify(x => x.GetLatestAllAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    // RIGHT-BIC[E]P: when distributed L2 cache fails, HybridCache gracefully falls back to inner factory without throwing
+    [Fact]
+    public async Task GetLatestBySymbolAsync_WhenDistributedCacheFails_FallsBackToInnerGracefully()
+    {
+        // Arrange
+        var faultyDistributedCache = new Mock<Microsoft.Extensions.Caching.Distributed.IDistributedCache>();
+        faultyDistributedCache.Setup(d => d.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Redis unavailable"));
+
+        var services = new ServiceCollection();
+        services.AddSingleton(faultyDistributedCache.Object);
+        services.AddHybridCache();
+        var sp = services.BuildServiceProvider();
+        var resilientCache = sp.GetRequiredService<HybridCache>();
+
+        var dto = new PriceHistoryDto { Id = 1, Symbol = "XAU", Price = 2500m, Currency = "USD" };
+        var innerMock = new Mock<IGetPriceHistoryUseCase>();
+        innerMock.Setup(x => x.GetLatestBySymbolAsync("XAU", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(dto);
+
+        var cachedUseCase = new CachedGetPriceHistoryUseCase(innerMock.Object, resilientCache);
+
+        // Act
+        var result = await cachedUseCase.GetLatestBySymbolAsync("XAU");
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(2500m, result.Price);
+        innerMock.Verify(x => x.GetLatestBySymbolAsync("XAU", It.IsAny<CancellationToken>()), Times.Once);
+    }
 }
