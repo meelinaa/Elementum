@@ -11,6 +11,20 @@ public static class CliOutputHelper
     /// <summary>View width for headers/footer. Use <see cref="CliConstants.ViewWidth"/> for layout.</summary>
     public static int ViewWidth => CliConstants.ViewWidth;
 
+    /// <summary>Safely clears the console if not redirected to avoid headless/test runner exceptions.</summary>
+    public static void SafeClear()
+    {
+        try
+        {
+            if (!Console.IsOutputRedirected)
+                Console.Clear();
+        }
+        catch (IOException)
+        {
+            // Suppress when running in non-interactive/redirected environments
+        }
+    }
+
     /// <summary>Message when no daily data is available for the selected metal.</summary>
     public const string NoDataMessageForMetal = "No daily data available for this metal.";
 

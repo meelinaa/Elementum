@@ -14,7 +14,7 @@ public static class DashboardRenderer
     {
         var w = CliConstants.DashboardColumnWidths;
 
-        Console.Clear();
+        CliOutputHelper.SafeClear();
         CliOutputHelper.RenderViewHeader(title);
 
         Console.WriteLine();

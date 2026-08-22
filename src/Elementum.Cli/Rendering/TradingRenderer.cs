@@ -18,7 +18,7 @@ public static class TradingRenderer
         string currencySymbol,
         string viewTitle)
     {
-        Console.Clear();
+        CliOutputHelper.SafeClear();
         CliOutputHelper.RenderViewHeader($"{viewTitle} — {name.ToUpperInvariant()} ({sym})");
 
         if (item == null)

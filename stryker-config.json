@@ -1,0 +1,25 @@
+{
+  "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker-net/master/src/Stryker.Core/Stryker.Core/stryker-config.schema.json",
+  "stryker-config": {
+    "solution": "Elementum.slnx",
+    "project": "Elementum.Domain.csproj",
+    "test-projects": [
+      "tests/Elementum.UnitTests/Elementum.UnitTests.csproj"
+    ],
+    "reporters": [
+      "html",
+      "progress",
+      "cleartext"
+    ],
+    "thresholds": {
+      "high": 80,
+      "low": 60,
+      "break": 0
+    },
+    "mutate": [
+      "src/Elementum.Domain/**/*.cs",
+      "src/Elementum.Application/**/*.cs",
+      "!src/Elementum.Application/Logging/**/*.cs"
+    ]
+  }
+}
