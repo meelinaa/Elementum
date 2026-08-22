@@ -29,7 +29,7 @@ try {
 
 # 2. Start MySQL & Redis Containers
 Write-Host "`n[2/5] Starting MySQL & Redis containers via Docker Compose..." -ForegroundColor Yellow
-docker compose -f $dockerComposeFile up -d mysql redis
+docker compose -f $dockerComposeFile up -d --remove-orphans mysql redis
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  [!] Failed to start Docker services." -ForegroundColor Red
     exit 1
