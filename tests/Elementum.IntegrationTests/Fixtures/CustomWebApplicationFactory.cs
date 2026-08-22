@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -22,8 +23,40 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     private readonly InMemoryDatabaseRoot _dbRoot = new();
     private readonly string _databaseName = "IntegrationTestDb_" + Guid.NewGuid();
 
+    /// <summary>
+    /// Initializes static environment variables for test execution to guarantee valid default configuration
+    /// when the application host bootstraps in isolated CI environments without an appsettings.json file.
+    /// </summary>
+    static CustomWebApplicationFactory()
+    {
+        Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", "Server=localhost;Database=Elementum-Test;User=root;Password=root;");
+        Environment.SetEnvironmentVariable("MetalsApi__BaseUrl", "https://api.edelmetalle.de/public.json");
+        Environment.SetEnvironmentVariable("MetalsApi__Currency", "USD");
+        Environment.SetEnvironmentVariable("RateLimiting__PermitLimit", "100");
+        Environment.SetEnvironmentVariable("RateLimiting__WindowSeconds", "60");
+        Environment.SetEnvironmentVariable("RateLimiting__QueueLimit", "0");
+    }
+
+    /// <summary>
+    /// Configures the web host for integration testing by providing in-memory configuration values,
+    /// swapping MySQL with an EF Core in-memory database, and substituting external HTTP clients with test mocks.
+    /// </summary>
+    /// <param name="builder">The web host builder to configure.</param>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.ConfigureAppConfiguration((_, config) =>
+        {
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:DefaultConnection"] = "Server=localhost;Database=Elementum-Test;User=root;Password=root;",
+                ["MetalsApi:BaseUrl"] = "https://api.edelmetalle.de/public.json",
+                ["MetalsApi:Currency"] = "USD",
+                ["RateLimiting:PermitLimit"] = "100",
+                ["RateLimiting:WindowSeconds"] = "60",
+                ["RateLimiting:QueueLimit"] = "0"
+            });
+        });
+
         builder.ConfigureServices(services =>
         {
             var dbOptionsDescriptor = services.SingleOrDefault(
@@ -65,6 +98,11 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         });
     }
 
+    /// <summary>
+    /// Builds the host instance and initializes test data within the isolated in-memory database.
+    /// </summary>
+    /// <param name="builder">The host builder to instantiate.</param>
+    /// <returns>The constructed host with seeded test data.</returns>
     protected override IHost CreateHost(IHostBuilder builder)
     {
         var host = base.CreateHost(builder);
@@ -75,6 +113,10 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         return host;
     }
 
+    /// <summary>
+    /// Seeds default metals and historical price ticks into the database for integration test assertions.
+    /// </summary>
+    /// <param name="db">The database context instance to populate.</param>
     private static void SeedTestData(ElementumDbContext db)
     {
         if (!db.Metals.Any())
