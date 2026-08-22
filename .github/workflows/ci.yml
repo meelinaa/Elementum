@@ -32,6 +32,7 @@ jobs:
   build-test-security:
     name: Build, Test & Security (blocking)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout Repository
@@ -60,6 +61,7 @@ jobs:
 
       # --- 2. Tests (blocking; includes NetArchTest architecture rules on real production types) ---
       - name: Run Test Suite
+        timeout-minutes: 10
         run: >
           dotnet test Elementum.slnx
           --configuration Release
@@ -87,10 +89,34 @@ jobs:
           name: code-coverage
           path: "${{ runner.temp }}/test-results/**/coverage.cobertura.xml"
           if-no-files-found: ignore
-        # Advisory: coverage is collected. No % gate — architecture tests now match real types,
-        # but a numeric threshold would still be cosmetic until a baseline is chosen.
 
-      # --- 5. Security — vulnerable packages (blocking on High/Critical) ---
+      # --- 3. Code Coverage Threshold Verification (Advisory >= 60%) ---
+      - name: Verify Code Coverage Threshold (Advisory >= 60%)
+        if: always()
+        shell: bash
+        run: |
+          dotnet tool install -g dotnet-reportgenerator-globaltool || true
+          reportgenerator \
+            -reports:"${{ runner.temp }}/test-results/**/coverage.cobertura.xml" \
+            -targetdir:"${{ runner.temp }}/coverage-report" \
+            -reporttypes:"MarkdownSummaryGithub;Cobertura" || true
+
+          if [ -f "${{ runner.temp }}/coverage-report/SummaryGithub.md" ]; then
+            cat "${{ runner.temp }}/coverage-report/SummaryGithub.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ -f "${{ runner.temp }}/coverage-report/Cobertura.xml" ]; then
+            line_rate=$(grep -oPm1 '(?<=line-rate=")[^"]+' "${{ runner.temp }}/coverage-report/Cobertura.xml" 2>/dev/null || echo "0")
+            coverage_pct=$(awk "BEGIN {printf \"%.1f\", $line_rate * 100}")
+            echo "Total line coverage: ${coverage_pct}%"
+            if (( $(echo "$coverage_pct < 60.0" | bc -l 2>/dev/null || echo "0") )); then
+              echo "::warning title=Coverage Advisory::Total line coverage (${coverage_pct}%) is below the 60% advisory threshold."
+            else
+              echo "::notice title=Coverage Threshold::Total line coverage (${coverage_pct}%) meets the advisory >= 60% threshold."
+            fi
+          fi
+
+      # --- 4. Security — vulnerable packages (blocking on High/Critical) ---
       - name: Check NuGet Vulnerabilities
         shell: bash
         run: |
@@ -107,6 +133,24 @@ jobs:
           if echo "$output" | grep -qE '>\s+\S+\s+\S+\s+(Moderate|Low)\s'; then
             echo "::warning::Non-blocking: Moderate or Low severity NuGet vulnerabilities detected."
           fi
+
+      # --- 5. Supply Chain Security — SBOM Generation (SPDX Artifact) ---
+      - name: Generate Software Bill of Materials (SBOM)
+        uses: anchore/sbom-action@v0
+        continue-on-error: true
+        with:
+          path: ./
+          format: spdx-json
+          output-file: "${{ runner.temp }}/elementum-sbom.spdx.json"
+
+      - name: Upload SBOM Artifact
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: software-bill-of-materials
+          path: "${{ runner.temp }}/elementum-sbom.spdx.json"
+          if-no-files-found: ignore
 
   code-quality:
     name: Code Quality (advisory)
