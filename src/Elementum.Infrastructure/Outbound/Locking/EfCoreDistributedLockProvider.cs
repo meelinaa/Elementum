@@ -115,6 +115,14 @@ public class EfCoreDistributedLockProvider : IDistributedLockProvider
 
         public bool IsAcquired => true;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EfCoreDistributedLock"/> class and schedules periodic heartbeat renewals.
+        /// </summary>
+        /// <param name="scopeFactory">The service scope factory used to create isolated database contexts during heartbeat renewals.</param>
+        /// <param name="resource">The unique resource identifier being locked.</param>
+        /// <param name="instanceId">The unique identifier of the acquiring instance.</param>
+        /// <param name="timeout">The lock lease duration.</param>
+        /// <param name="logger">The logger instance for diagnostics.</param>
         public EfCoreDistributedLock(
             IServiceScopeFactory scopeFactory,
             string resource,
@@ -128,14 +136,19 @@ public class EfCoreDistributedLockProvider : IDistributedLockProvider
             _timeout = timeout;
             _logger = logger;
 
-            // Start background heartbeat to renew lock before it expires
-            var renewalInterval = TimeSpan.FromMilliseconds(timeout.TotalMilliseconds / 3);
-            if (renewalInterval > TimeSpan.FromSeconds(1))
+            // Start background heartbeat to renew lock at half the TTL interval
+            var renewalInterval = TimeSpan.FromMilliseconds(timeout.TotalMilliseconds / 2);
+            if (renewalInterval >= TimeSpan.FromMilliseconds(50))
             {
                 _ = RunHeartbeatAsync(renewalInterval, _heartbeatCts.Token);
             }
         }
 
+        /// <summary>
+        /// Continuously extends the lock expiration timestamp at configured periodic intervals until canceled or disposed.
+        /// </summary>
+        /// <param name="interval">The time interval between successive heartbeat renewals.</param>
+        /// <param name="ct">The cancellation token to observe for cancellation requests.</param>
         private async Task RunHeartbeatAsync(TimeSpan interval, CancellationToken ct)
         {
             try
@@ -177,6 +190,10 @@ public class EfCoreDistributedLockProvider : IDistributedLockProvider
             catch (OperationCanceledException) { }
         }
 
+        /// <summary>
+        /// Cancels background heartbeat renewal and safely removes the lock record from the database.
+        /// </summary>
+        /// <returns>A ValueTask representing the asynchronous release operation.</returns>
         public async ValueTask DisposeAsync()
         {
             if (Interlocked.Exchange(ref _disposed, 1) != 0)
@@ -217,6 +234,11 @@ public class EfCoreDistributedLockProvider : IDistributedLockProvider
     private sealed class NoOpDistributedLock : IDistributedLock
     {
         public bool IsAcquired => false;
+
+        /// <summary>
+        /// Completes immediately without action for unacquired locks.
+        /// </summary>
+        /// <returns>A completed ValueTask.</returns>
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 }
