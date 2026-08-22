@@ -1,4 +1,5 @@
 using Elementum.Domain.Exceptions;
+using Elementum.Domain.ValueObjects;
 
 namespace Elementum.Domain.Entities;
 
@@ -109,6 +110,11 @@ public class DailyPriceSummary
 
         UpdatedAtUtc = DateTime.UtcNow;
     }
+
+    /// <summary>
+    /// Converts the entity state into a typed domain value object <see cref="OhlcCandle"/>.
+    /// </summary>
+    public OhlcCandle ToOhlcCandle() => new(OpenPrice, HighPrice, LowPrice, ClosePrice);
 
     private static void ValidateInvariants(
         int metalId,
