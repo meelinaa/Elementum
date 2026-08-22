@@ -10,6 +10,12 @@ namespace Elementum.Cli.Rendering;
 /// </summary>
 public static class DashboardRenderer
 {
+    /// <summary>
+    /// Formats and renders the live market overview table into the console output,
+    /// displaying precious metals prices in USD and EUR alongside percentage changes.
+    /// </summary>
+    /// <param name="overview">The market overview DTO containing live precious metal prices.</param>
+    /// <param name="title">The header title for the dashboard view.</param>
     public static void RenderDashboard(LiveMarketOverviewDto? overview, string title)
     {
         var w = CliConstants.DashboardColumnWidths;
@@ -50,12 +56,6 @@ public static class DashboardRenderer
         }
 
         Console.WriteLine();
-        if (overview != null && overview.ExchangeRateUsdEur > 0)
-        {
-            Console.WriteLine($"  Exchange rate USD/EUR: {overview.ExchangeRateUsdEur:0.0000} (Source: Edelmetalle-API)");
-            Console.WriteLine();
-        }
-
         CliOutputHelper.RenderViewFooter();
     }
 }

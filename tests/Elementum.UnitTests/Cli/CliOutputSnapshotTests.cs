@@ -60,7 +60,7 @@ public class CliOutputSnapshotTests
             Assert.Contains(overview.Items[0].PriceEur.ToString("N2"), output);
             Assert.Contains("XAG", output);
             Assert.Contains("Silver", output);
-            Assert.Contains(overview.ExchangeRateUsdEur.ToString("0.0000"), output);
+            Assert.DoesNotContain("Exchange rate USD/EUR", output);
         }
         finally
         {
