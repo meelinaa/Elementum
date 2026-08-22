@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
 
 namespace Elementum.Api.Hosting;
 
@@ -60,6 +61,9 @@ public static class ApiServiceCollectionExtensions
         services.AddControllers(options =>
         {
             options.Filters.Add<Filters.ValidationFilter>();
+        }).ConfigureApiBehaviorOptions(options =>
+        {
+            options.SuppressModelStateInvalidFilter = true;
         });
         services.AddOpenApi(options =>
         {
@@ -98,17 +102,17 @@ public static class ApiServiceCollectionExtensions
                     ?? httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault()
                     ?? "anonymous";
 
-                var rateLimitConfig = configuration.GetSection(RateLimitingOptions.SectionName).Get<RateLimitingOptions>()
+                var rateLimitOptions = httpContext.RequestServices.GetService<IOptions<RateLimitingOptions>>()?.Value
                     ?? new RateLimitingOptions();
 
                 return RateLimitPartition.GetFixedWindowLimiter(
                     partitionKey: clientIp,
                     factory: _ => new FixedWindowRateLimiterOptions
                     {
-                        PermitLimit = rateLimitConfig.PermitLimit,
-                        Window = TimeSpan.FromSeconds(rateLimitConfig.WindowSeconds),
+                        PermitLimit = rateLimitOptions.PermitLimit,
+                        Window = TimeSpan.FromSeconds(rateLimitOptions.WindowSeconds),
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                        QueueLimit = rateLimitConfig.QueueLimit
+                        QueueLimit = rateLimitOptions.QueueLimit
                     });
             });
         });

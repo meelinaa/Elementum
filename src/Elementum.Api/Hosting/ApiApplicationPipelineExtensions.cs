@@ -39,6 +39,16 @@ public static class ApiApplicationPipelineExtensions
         // Map unhandled exceptions to ProblemDetails via registered IExceptionHandler.
         app.UseExceptionHandler();
 
+        // Enforce Content-Security-Policy, nosniff, and frame embedding protection across all API responses.
+        app.Use(async (context, next) =>
+        {
+            context.Response.Headers.Append("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none';");
+            context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+            context.Response.Headers.Append("X-Frame-Options", "DENY");
+            context.Response.Headers.Append("Referrer-Policy", "no-referrer");
+            await next();
+        });
+
         if (app.Environment.IsDevelopment())
         {
             app.MapOpenApi();
@@ -47,6 +57,7 @@ public static class ApiApplicationPipelineExtensions
         }
         else
         {
+            app.UseHsts();
             app.UseCors("FrontendPolicy");
             // TLS terminates at the reverse proxy (Compose Caddy / load balancer). Do not redirect
             // HTTP→HTTPS inside the container — that would loop or fail on the internal HTTP port.
