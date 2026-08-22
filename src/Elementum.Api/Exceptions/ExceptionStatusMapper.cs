@@ -58,6 +58,16 @@ public static class ExceptionStatusMapper
     private static ExceptionMappingResult Map422(string title) =>
         new(422, title, GetTypeUri(422));
 
+    /// <summary>
+    /// Maps client-initiated request aborts (via <see cref="OperationCanceledException"/> or <see cref="TaskCanceledException"/>)
+    /// to non-standard HTTP 499 (Client Closed Request).
+    /// <para>
+    /// <b>Rationale:</b> When a caller terminates the connection prior to response completion, mapping to HTTP 500 (Internal Server Error)
+    /// or 504 (Gateway Timeout) would corrupt service SLOs/metrics by reporting client cancellations as server failures.
+    /// HTTP 499 is the industry-standard de-facto code (originated by NGINX and recognized by AWS ALB/Cloudflare/Envoy).
+    /// Since 499 is non-RFC (not specified in IETF RFC 7231/9110), the <c>type</c> URI is intentionally left <c>null</c>.
+    /// </para>
+    /// </summary>
     private static ExceptionMappingResult Map499(string title) =>
         new(499, title, null);
 
