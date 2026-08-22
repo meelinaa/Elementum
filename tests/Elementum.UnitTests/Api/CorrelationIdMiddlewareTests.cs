@@ -29,7 +29,7 @@ public class CorrelationIdMiddlewareTests
         Assert.Equal(expectedId, context.Items[CorrelationIdMiddleware.HttpContextItemKey]);
     }
 
-    // [B]OUNDARY RIGHT-BICEP: X-Request-Id header is used as secondary fallback when X-Correlation-Id is missing
+    // RIGHT-[B]ICEP: X-Request-Id header is used as secondary fallback when X-Correlation-Id is missing
     [Fact]
     public async Task InvokeAsync_WhenOnlyRequestIdHeaderPresent_FallsBackToRequestId()
     {
@@ -53,7 +53,7 @@ public class CorrelationIdMiddlewareTests
         Assert.Equal(expectedId, context.Items[CorrelationIdMiddleware.HttpContextItemKey]);
     }
 
-    // [B]OUNDARY RIGHT-BICEP: generates a valid 32-character GUID when no headers are supplied
+    // RIGHT-[B]ICEP: generates a valid 32-character GUID when no headers are supplied
     [Fact]
     public async Task InvokeAsync_WhenNoCorrelationHeaders_GeneratesNewGuid()
     {

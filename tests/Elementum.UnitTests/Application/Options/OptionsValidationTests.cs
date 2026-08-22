@@ -33,7 +33,7 @@ public class OptionsValidationTests
         Assert.Empty(errors);
     }
 
-    // [B]OUNDARY / [E]RROR: Verifies that missing or whitespace BaseUrl fails options validation
+    // RIGHT-[B]ICEP: Verifies that missing or whitespace BaseUrl fails options validation
     [Theory]
     [InlineData(null)]
     [InlineData("")]
@@ -55,7 +55,7 @@ public class OptionsValidationTests
         Assert.Contains(errors, e => e.MemberNames.Contains(nameof(MetalsApiOptions.BaseUrl)));
     }
 
-    // [E]RROR: Verifies that malformed URL format fails validation
+    // RIGHT-BIC[E]P: Verifies that malformed URL format fails validation
     [Fact]
     public void MetalsApiOptions_InvalidUrlFormat_FailsValidation()
     {
@@ -93,7 +93,7 @@ public class OptionsValidationTests
         Assert.Empty(errors);
     }
 
-    // [B]OUNDARY / [E]RROR: Verifies that out-of-range interval values fail validation
+    // RIGHT-[B]ICEP: Verifies that out-of-range interval values fail validation
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
@@ -116,7 +116,7 @@ public class OptionsValidationTests
         Assert.Contains(errors, e => e.MemberNames.Contains(nameof(WorkerScheduleOptions.IngestionIntervalMinutes)));
     }
 
-    // [B]OUNDARY / [E]RROR: Verifies that out-of-range rollup hour values (outside [0, 23]) fail validation
+    // RIGHT-[B]ICEP: Verifies that out-of-range rollup hour values (outside [0, 23]) fail validation
     [Theory]
     [InlineData(-1)]
     [InlineData(24)]
@@ -138,7 +138,7 @@ public class OptionsValidationTests
         Assert.Contains(errors, e => e.MemberNames.Contains(nameof(WorkerScheduleOptions.DailyRollupHour)));
     }
 
-    // [B]OUNDARY / [E]RROR: Verifies that out-of-range retention days fail validation
+    // RIGHT-[B]ICEP: Verifies that out-of-range retention days fail validation
     [Theory]
     [InlineData(0)]
     [InlineData(-5)]
@@ -180,7 +180,7 @@ public class OptionsValidationTests
         Assert.Empty(errors);
     }
 
-    // [B]OUNDARY / [E]RROR: Verifies that non-positive or extreme permit limits fail validation
+    // RIGHT-[B]ICEP: Verifies that non-positive or extreme permit limits fail validation
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
@@ -203,7 +203,7 @@ public class OptionsValidationTests
         Assert.Contains(errors, e => e.MemberNames.Contains(nameof(RateLimitingOptions.PermitLimit)));
     }
 
-    // [B]OUNDARY / [E]RROR: Verifies that invalid rate-limiting window seconds fail validation
+    // RIGHT-[B]ICEP: Verifies that invalid rate-limiting window seconds fail validation
     [Theory]
     [InlineData(0)]
     [InlineData(-10)]
@@ -226,7 +226,7 @@ public class OptionsValidationTests
         Assert.Contains(errors, e => e.MemberNames.Contains(nameof(RateLimitingOptions.WindowSeconds)));
     }
 
-    // [E]RROR: Verifies that missing API base URL from all sources throws CliConfigurationException
+    // RIGHT-BIC[E]P: Verifies that missing API base URL from all sources throws CliConfigurationException
     [Fact]
     public void CliConfig_ResolveApiBaseUrl_WhenBothMissing_ThrowsCliConfigurationException()
     {

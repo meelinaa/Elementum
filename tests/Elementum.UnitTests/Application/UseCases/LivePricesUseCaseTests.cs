@@ -94,7 +94,7 @@ public class LivePricesUseCaseTests
         Assert.Equal(expected.Chp, item.ChpUsd);
     }
 
-    // [E]RROR RIGHT-BICEP: unknown trading symbol returns null so controller can emit 404
+    // RIGHT-BIC[E]P: unknown trading symbol returns null so controller can emit 404
     [Fact]
     public async Task GetLiveTradingAnalysisAsync_WhenMetalNotFound_ReturnsNull()
     {
@@ -128,7 +128,7 @@ public class LivePricesUseCaseTests
         Assert.Equal(DomainConstants.Trading.BullishStatus, result.Status);
     }
 
-    // [E]RROR RIGHT-BICEP: unsupported ISO codes fail in the domain instead of silently falling back to EUR
+    // RIGHT-BIC[E]P: unsupported ISO codes fail in the domain instead of silently falling back to EUR
     [Fact]
     public async Task GetLiveTradingAnalysisAsync_WhenCurrencyUnsupported_ThrowsUnsupportedCurrencyException()
     {
@@ -137,7 +137,7 @@ public class LivePricesUseCaseTests
         _quotesProviderMock.Verify(q => q.GetLiveQuoteAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    // [E]RROR RIGHT-BICEP: provider failures propagate unchanged to API exception handler boundary
+    // RIGHT-BIC[E]P: provider failures propagate unchanged to API exception handler boundary
     [Fact]
     public async Task GetLiveMarketOverviewAsync_WhenProviderThrows_PropagatesException()
     {

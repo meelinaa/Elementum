@@ -85,7 +85,7 @@ public class PriceHistoryMapperTests
         Assert.Equal(0.81m, dto.Chp);
     }
 
-    // [B]OUNDARY / [E]RROR: Verifies that null entity arguments throw ArgumentNullException
+    // RIGHT-[B]ICEP: Verifies that null entity arguments throw ArgumentNullException
     [Fact]
     public void ToPriceHistoryDto_WhenEntityNull_ThrowsArgumentNullException()
     {

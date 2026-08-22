@@ -33,7 +33,7 @@ public class CliConfigTests
         Assert.Equal("http://env/api/", resolved);
     }
 
-    // [B]OUNDARY: Verifies fallback to configuration file when environment variable is null
+    // RIGHT-[B]ICEP: Verifies fallback to configuration file when environment variable is null
     [Fact]
     public void ResolveApiBaseUrl_UsesFileWhenEnvMissing()
     {

@@ -50,7 +50,7 @@ public class GoldApiHealthCheckTests
         Assert.Equal("Edelmetalle API is available.", result.Description);
     }
 
-    // [B]OUNDARY: Verifies that missing BaseUrl returns Degraded without throwing exceptions
+    // RIGHT-[B]ICEP: Verifies that missing BaseUrl returns Degraded without throwing exceptions
     [Theory]
     [InlineData(null)]
     [InlineData("")]
@@ -70,7 +70,7 @@ public class GoldApiHealthCheckTests
         Assert.Equal("Metals API BaseUrl is not configured.", result.Description);
     }
 
-    // [E]RROR: Verifies that non-success HTTP status codes return Degraded
+    // RIGHT-BIC[E]P: Verifies that non-success HTTP status codes return Degraded
     [Fact]
     public async Task CheckHealthAsync_WhenEndpointReturns503_ReturnsDegraded()
     {
@@ -87,7 +87,7 @@ public class GoldApiHealthCheckTests
         Assert.Contains("ServiceUnavailable", result.Description);
     }
 
-    // [E]RROR: Verifies that network/connection exceptions return Unhealthy with exception details
+    // RIGHT-BIC[E]P: Verifies that network/connection exceptions return Unhealthy with exception details
     [Fact]
     public async Task CheckHealthAsync_WhenHttpThrowsException_ReturnsUnhealthy()
     {

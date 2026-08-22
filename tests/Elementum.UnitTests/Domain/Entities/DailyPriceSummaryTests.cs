@@ -26,7 +26,7 @@ public class DailyPriceSummaryTests
         Assert.Equal(1.15m, candle.ExchangeRateUsdEur);
     }
 
-    // [E]RROR: Verifies that invalid Metal ID throws InvalidMetalIdException
+    // RIGHT-BIC[E]P: Verifies that invalid Metal ID throws InvalidMetalIdException
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
@@ -37,7 +37,7 @@ public class DailyPriceSummaryTests
             DailyPriceSummary.Create(metalId, "USD", new DateOnly(2026, 8, 17), 100m, 120m, 90m, 110m));
     }
 
-    // [B]OUNDARY: Verifies that empty, whitespace, or null currency throws DomainValidationException
+    // RIGHT-[B]ICEP: Verifies that empty, whitespace, or null currency throws DomainValidationException
     [Theory]
     [InlineData("")]
     [InlineData(" ")]
@@ -49,7 +49,7 @@ public class DailyPriceSummaryTests
             DailyPriceSummary.Create(1, currency!, new DateOnly(2026, 8, 17), 100m, 120m, 90m, 110m));
     }
 
-    // [E]RROR: Verifies that non-supported ISO currency throws UnsupportedCurrencyException
+    // RIGHT-BIC[E]P: Verifies that non-supported ISO currency throws UnsupportedCurrencyException
     [Theory]
     [InlineData("CHF")]
     [InlineData("GBP")]
@@ -61,7 +61,7 @@ public class DailyPriceSummaryTests
             DailyPriceSummary.Create(1, currency, new DateOnly(2026, 8, 17), 100m, 120m, 90m, 110m));
     }
 
-    // [E]RROR: Verifies that LowPrice greater than HighPrice throws PriceRangeInvalidException
+    // RIGHT-BIC[E]P: Verifies that LowPrice greater than HighPrice throws PriceRangeInvalidException
     [Fact]
     public void Create_LowPriceGreaterThanHighPrice_ThrowsPriceRangeInvalidException()
     {
@@ -107,7 +107,7 @@ public class DailyPriceSummaryTests
         Assert.Equal(90m, candle.LowPrice);
     }
 
-    // [B]OUNDARY: Verifies that price ticks exactly matching High or Low leave extremes unchanged
+    // RIGHT-[B]ICEP: Verifies that price ticks exactly matching High or Low leave extremes unchanged
     [Fact]
     public void ApplyPriceTick_PriceMatchingExtremes_LeavesExtremesAccurate()
     {
@@ -142,7 +142,7 @@ public class DailyPriceSummaryTests
         Assert.True(candle.UpdatedAtUtc >= previousUpdatedAt);
     }
 
-    // [E]RROR: UpdateCandle rejects inverted high/low
+    // RIGHT-BIC[E]P: UpdateCandle rejects inverted high/low
     [Fact]
     public void UpdateCandle_WhenLowGreaterThanHigh_ThrowsPriceRangeInvalidException()
     {

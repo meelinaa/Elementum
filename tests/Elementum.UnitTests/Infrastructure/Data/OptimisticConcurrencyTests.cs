@@ -20,7 +20,7 @@ public class OptimisticConcurrencyTests
         return (db, root, name);
     }
 
-    // [E]RROR / CONCURRENCY: Verifies that stale updates on DailyPriceSummary trigger DbUpdateConcurrencyException
+    // RIGHT-BIC[E]P: Verifies that stale updates on DailyPriceSummary trigger DbUpdateConcurrencyException
     [Fact]
     public async Task DailyPriceSummary_WhenConcurrentModificationsOccur_HasConcurrencyTokenConfigured()
     {

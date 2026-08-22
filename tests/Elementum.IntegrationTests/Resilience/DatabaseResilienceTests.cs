@@ -65,7 +65,7 @@ public sealed class DatabaseResilienceTests : IAsyncLifetime
         Assert.Equal(2500m, tick.Price);
     }
 
-    // [E]RROR RIGHT-BICEP: a killed MySQL session is retried on a new connection and then succeeds
+    // RIGHT-BIC[E]P: a killed MySQL session is retried on a new connection and then succeeds
     [Fact]
     public async Task GetMetalsAsync_WhenConnectionKilled_RetriesAndSucceeds()
     {
@@ -83,7 +83,7 @@ public sealed class DatabaseResilienceTests : IAsyncLifetime
         Assert.Equal(4, metals.Count);
     }
 
-    // [E]RROR RIGHT-BICEP: an unreachable MySQL endpoint exhausts retries and surfaces a transient transport error
+    // RIGHT-BIC[E]P: an unreachable MySQL endpoint exhausts retries and surfaces a transient transport error
     [Fact]
     public async Task GetMetalsAsync_WhenMySqlUnreachable_PropagatesAfterRetries()
     {

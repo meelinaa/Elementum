@@ -56,7 +56,7 @@ public class GetPriceHistoryUseCaseTests
         Assert.Equal(2500m, result.Price);
     }
 
-    // [B]OUNDARY / [E]RROR: Verifies that querying a non-existent metal returns null
+    // RIGHT-[B]ICEP: Verifies that querying a non-existent metal returns null
     [Fact]
     public async Task GetLatestBySymbolAsync_WhenNotFound_ReturnsNull()
     {
@@ -102,7 +102,7 @@ public class GetPriceHistoryUseCaseTests
             Times.Once);
     }
 
-    // [E]RROR RIGHT-BICEP: unsupported currency never reaches the repository
+    // RIGHT-BIC[E]P: unsupported currency never reaches the repository
     [Fact]
     public async Task GetBySymbolAsync_WhenCurrencyUnsupported_ThrowsUnsupportedCurrencyException()
     {
@@ -121,7 +121,7 @@ public class GetPriceHistoryUseCaseTests
             Times.Never);
     }
 
-    // [B]OUNDARY: omitted from/to defaults to the last 30 UTC days with take clamped to DefaultTake
+    // RIGHT-[B]ICEP: omitted from/to defaults to the last 30 UTC days with take clamped to DefaultTake
     [Fact]
     public async Task GetBySymbolAsync_WhenDatesOmitted_DefaultsToLastThirtyDays()
     {
@@ -140,7 +140,7 @@ public class GetPriceHistoryUseCaseTests
         Assert.Empty(page.Items);
     }
 
-    // [B]OUNDARY: take above MaxTake is clamped, not rejected
+    // RIGHT-[B]ICEP: take above MaxTake is clamped, not rejected
     [Fact]
     public async Task GetByDateRangeAsync_WhenTakeExceedsCap_ClampsToMaxTake()
     {

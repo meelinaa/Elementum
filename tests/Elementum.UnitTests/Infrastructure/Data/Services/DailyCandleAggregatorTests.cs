@@ -48,7 +48,7 @@ public class DailyCandleAggregatorTests
         Assert.Equal(2420m, summary.ClosePrice);
     }
 
-    // [B]OUNDARY: Verifies that when no ticks exist for the given date, execution exits without errors or modifications
+    // RIGHT-[B]ICEP: Verifies that when no ticks exist for the given date, execution exits without errors or modifications
     [Fact]
     public async Task AggregateDailySummaryAsync_WhenNoTicks_ExitsCleanly()
     {
@@ -64,7 +64,7 @@ public class DailyCandleAggregatorTests
         Assert.Equal(0, await db.DailyPriceSummaries.CountAsync());
     }
 
-    // [I]NVERSE / IDEMPOTENCY: Verifies that repeated aggregate calls update existing summaries without duplicate rows
+    // RIGHT-B[I]CEP: Verifies that repeated aggregate calls update existing summaries without duplicate rows
     [Fact]
     public async Task AggregateDailySummaryAsync_WhenSummaryExists_UpdatesInPlaceWithoutDuplicates()
     {
@@ -139,7 +139,7 @@ public class DailyCandleAggregatorTests
         Assert.Equal(2550m, summary.ClosePrice);
     }
 
-    // [E]RROR RIGHT-BICEP: DbUpdateConcurrencyException during save is reconciled via reload without throwing
+    // RIGHT-BIC[E]P: DbUpdateConcurrencyException during save is reconciled via reload without throwing
     [Fact]
     public async Task AggregateDailySummaryAsync_WhenConcurrencyConflictOccurs_ReconcilesViaReload()
     {

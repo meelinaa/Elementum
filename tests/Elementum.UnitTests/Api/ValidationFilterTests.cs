@@ -46,7 +46,7 @@ public class ValidationFilterTests
         Assert.Null(context.Result);
     }
 
-    // [E]RROR RIGHT-BICEP: validation failure short-circuits execution with HTTP 400 ValidationProblemDetails
+    // RIGHT-BIC[E]P: validation failure short-circuits execution with HTTP 400 ValidationProblemDetails
     [Fact]
     public async Task OnActionExecutionAsync_WhenValidationFails_ReturnsBadRequestProblemDetails()
     {
@@ -90,7 +90,7 @@ public class ValidationFilterTests
         Assert.Equal("The Symbol field is required.", problem.Errors["Symbol"][0]);
     }
 
-    // [B]OUNDARY RIGHT-BICEP: null arguments are skipped gracefully without throwing NullReferenceException
+    // RIGHT-[B]ICEP: null arguments are skipped gracefully without throwing NullReferenceException
     [Fact]
     public async Task OnActionExecutionAsync_WhenArgumentIsNull_InvokesNextWithoutError()
     {
@@ -117,7 +117,7 @@ public class ValidationFilterTests
         Assert.Null(context.Result);
     }
 
-    // [B]OUNDARY RIGHT-BICEP: arguments without registered validators pass through to next delegate
+    // RIGHT-[B]ICEP: arguments without registered validators pass through to next delegate
     [Fact]
     public async Task OnActionExecutionAsync_WhenNoValidatorRegistered_InvokesNext()
     {

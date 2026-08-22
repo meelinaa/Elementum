@@ -21,7 +21,7 @@ public class DateRangeRequestValidatorTests
         Assert.True(result.IsValid);
     }
 
-    // [B]OUNDARY: omitted from/to is valid — the use case applies the last-30-days default
+    // RIGHT-[B]ICEP: omitted from/to is valid — the use case applies the last-30-days default
     [Fact]
     public void Validate_WhenBothDatesOmitted_PassesValidation()
     {
@@ -30,7 +30,7 @@ public class DateRangeRequestValidatorTests
         Assert.True(result.IsValid);
     }
 
-    // [B]OUNDARY: Verifies that identical start and end dates (single day query) pass validation
+    // RIGHT-[B]ICEP: Verifies that identical start and end dates (single day query) pass validation
     [Fact]
     public void Validate_SingleDayRange_PassesValidation()
     {
@@ -44,7 +44,7 @@ public class DateRangeRequestValidatorTests
         Assert.True(result.IsValid);
     }
 
-    // [E]RROR: Verifies that StartDate after EndDate triggers validation failure
+    // RIGHT-BIC[E]P: Verifies that StartDate after EndDate triggers validation failure
     [Fact]
     public void Validate_WhenStartAfterEnd_FailsValidation()
     {
@@ -59,7 +59,7 @@ public class DateRangeRequestValidatorTests
         Assert.Contains(result.Errors, e => e.ErrorMessage.Contains("From cannot be after To"));
     }
 
-    // [E]RROR: Verifies that invalid date formats (non ISO-8601) fail validation
+    // RIGHT-BIC[E]P: Verifies that invalid date formats (non ISO-8601) fail validation
     [Fact]
     public void Validate_WhenInvalidDateFormat_FailsValidation()
     {
@@ -73,7 +73,7 @@ public class DateRangeRequestValidatorTests
         Assert.False(result.IsValid);
     }
 
-    // [E]RROR: Verifies that dates in the future fail validation
+    // RIGHT-BIC[E]P: Verifies that dates in the future fail validation
     [Fact]
     public void Validate_WhenLastDateInFuture_FailsValidation()
     {

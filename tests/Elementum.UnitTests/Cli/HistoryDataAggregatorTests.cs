@@ -6,7 +6,7 @@ namespace Elementum.UnitTests.Cli;
 
 public class HistoryDataAggregatorTests
 {
-    // [B]OUNDARY: Verifies that null or empty input collections return null without throwing exceptions
+    // RIGHT-[B]ICEP: Verifies that null or empty input collections return null without throwing exceptions
     [Fact]
     public void Aggregate_WhenNullOrEmpty_ReturnsNull()
     {

@@ -37,7 +37,7 @@ public class PriceHistoryRepositoryTests
         long timestamp = 0) =>
         PriceHistory.Create(metalId, currency, date, price, symbol, referenceTimestamp: timestamp);
 
-    // [B]OUNDARY: Verifies that saving an empty list of prices handles the boundary without exceptions or mutations
+    // RIGHT-[B]ICEP: Verifies that saving an empty list of prices handles the boundary without exceptions or mutations
     [Fact]
     public async Task SavePricesAsync_WhenPricesEmpty_DoesNotThrow()
     {
@@ -76,7 +76,7 @@ public class PriceHistoryRepositoryTests
         Assert.Equal("USD", row.Currency);
     }
 
-    // [I]NVERSE / IDEMPOTENCY: Verifies that repeated saves with identical timestamp update existing records idempotently
+    // RIGHT-B[I]CEP: Verifies that repeated saves with identical timestamp update existing records idempotently
     [Fact]
     public async Task SavePricesAsync_WhenCalledMultipleTimes_UpdatesExistingRowIdempotently()
     {
@@ -105,7 +105,7 @@ public class PriceHistoryRepositoryTests
         Assert.Equal(2650.00m, (await db.PriceHistory.FirstAsync()).Price);
     }
 
-    // [B]OUNDARY: Verifies partial versus full metal catalog ingestion boundaries for today's check
+    // RIGHT-[B]ICEP: Verifies partial versus full metal catalog ingestion boundaries for today's check
     [Fact]
     public async Task IsDataAlreadyIngestedToday_PartialVsFullIngestion_ChecksAllCatalogMetals()
     {
@@ -191,7 +191,7 @@ public class PriceHistoryRepositoryTests
         Assert.Equal(2, await db.PriceHistory.CountAsync());
     }
 
-    // [C]ROSS-CHECK: Cross-checks aggregate daily summary output against independently calculated tick extrema
+    // RIGHT-BI[C]EP: Cross-checks aggregate daily summary output against independently calculated tick extrema
     [Fact]
     public async Task AggregateDailySummaryAsync_ComputesMinMaxOpenCloseAccurately()
     {
@@ -265,7 +265,7 @@ public class PriceHistoryRepositoryTests
         Assert.Equal(2, all.Count);
     }
 
-    // [B]OUNDARY: date-range query is inclusive and respects currency
+    // RIGHT-[B]ICEP: date-range query is inclusive and respects currency
     [Fact]
     public async Task GetPriceHistoryByMetalSymbolAndDateRangeAsync_FiltersByInclusiveRangeAndCurrency()
     {
@@ -291,7 +291,7 @@ public class PriceHistoryRepositoryTests
         Assert.Equal(2500m, result.Items[1].Price);
     }
 
-    // [B]OUNDARY: skip/take page the filtered set and report the unpaged total
+    // RIGHT-[B]ICEP: skip/take page the filtered set and report the unpaged total
     [Fact]
     public async Task GetPriceHistoryByMetalSymbolAndDateRangeAsync_WhenSkipAndTake_ReturnsPageAndTotalCount()
     {

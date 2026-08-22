@@ -55,7 +55,7 @@ public class TradingAnalysisCalculatorTests
         Assert.Equal(6.14m, volatilityPercent);
     }
 
-    // [B]OUNDARY: Verifies behavior when all prices are identical (zero movement, zero volatility)
+    // RIGHT-[B]ICEP: Verifies behavior when all prices are identical (zero movement, zero volatility)
     [Fact]
     public void Calculate_ZeroMovementAndZeroVolatility_ReturnsZeroMetricsAndBullishStatus()
     {
@@ -75,7 +75,7 @@ public class TradingAnalysisCalculatorTests
         Assert.Equal(0m, volatilityPercent);
     }
 
-    // [B]OUNDARY / [E]RROR: Verifies that zero open price or zero low price avoids division by zero
+    // RIGHT-[B]ICEP: Verifies that zero open price or zero low price avoids division by zero
     [Fact]
     public void Calculate_ZeroOpenAndLowPrice_DoesNotThrowAndReturnsZeroPercentages()
     {
@@ -98,7 +98,7 @@ public class TradingAnalysisCalculatorTests
         Assert.Equal(0m, volatilityPercent); // Handled safely without DivideByZeroException
     }
 
-    // [C]ROSS-CHECK: Verifies calculation against an independent reference formula
+    // RIGHT-BI[C]EP: Verifies calculation against an independent reference formula
     [Theory]
     [InlineData(2500, 2400, 2600, 2300, 2450)]
     [InlineData(1800, 1850, 1900, 1750, 1820)]

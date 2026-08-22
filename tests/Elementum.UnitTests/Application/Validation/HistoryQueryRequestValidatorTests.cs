@@ -14,7 +14,7 @@ public class HistoryQueryRequestValidatorTests
         Assert.True(_validator.Validate(new HistoryQueryRequest()).IsValid);
     }
 
-    // [E]RROR RIGHT-BICEP: unsupported currency fails on the combined history request, not as a raw query string
+    // RIGHT-BIC[E]P: unsupported currency fails on the combined history request, not as a raw query string
     [Fact]
     public void Validate_WhenCurrencyUnsupported_FailsOnCurrency()
     {
@@ -24,7 +24,7 @@ public class HistoryQueryRequestValidatorTests
         Assert.Contains(result.Errors, e => e.PropertyName == nameof(HistoryQueryRequest.Currency));
     }
 
-    // [E]RROR: invalid from is still rejected after currency is folded into the same model
+    // RIGHT-BIC[E]P: invalid from is still rejected after currency is folded into the same model
     [Fact]
     public void Validate_WhenFromInvalid_FailsOnFrom()
     {

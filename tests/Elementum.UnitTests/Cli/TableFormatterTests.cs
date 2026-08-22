@@ -39,7 +39,7 @@ public class TableFormatterTests
         Assert.Contains("│ A    │ B      │", row);
     }
 
-    // [B]OUNDARY: empty-state row spans all columns and matches a regular row length
+    // RIGHT-[B]ICEP: empty-state row spans all columns and matches a regular row length
     [Fact]
     public void BuildEmptyRow_SpansAllColumns()
     {

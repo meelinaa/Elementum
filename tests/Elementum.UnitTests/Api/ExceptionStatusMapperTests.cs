@@ -71,7 +71,7 @@ public class ExceptionStatusMapperTests
         Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.5.4", mapping.TypeUri);
     }
 
-    // [C]ROSS-CHECK RIGHT-BICEP: controller 404s reuse the KeyNotFoundException mapping, including type URI
+    // RIGHT-BI[C]EP: controller 404s reuse the KeyNotFoundException mapping, including type URI
     [Fact]
     public void ForNotFound_MatchesKeyNotFoundExceptionMapping()
     {
@@ -136,7 +136,7 @@ public class ExceptionStatusMapperTests
         Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.6.5", mapping.TypeUri);
     }
 
-    // [B]OUNDARY RIGHT-BICEP: client cancellation uses non-RFC status 499 and intentionally omits a type URI
+    // RIGHT-[B]ICEP: client cancellation uses non-RFC status 499 and intentionally omits a type URI
     [Fact]
     public void Map_WhenClientCancelled_Returns499WithoutTypeUri()
     {
@@ -152,7 +152,7 @@ public class ExceptionStatusMapperTests
         Assert.Null(mapping.TypeUri);
     }
 
-    // [E]RROR RIGHT-BICEP: unmapped exceptions must fall through to 500 default, not client-error statuses
+    // RIGHT-BIC[E]P: unmapped exceptions must fall through to 500 default, not client-error statuses
     [Fact]
     public void Map_WhenExceptionIsUnknown_Returns500WithInternalErrorMetadata()
     {
@@ -168,7 +168,7 @@ public class ExceptionStatusMapperTests
         Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.6.1", mapping.TypeUri);
     }
 
-    // [E]RROR RIGHT-BICEP: ConfigurationException must map to 500 before the generic ApplicationException 502 arm
+    // RIGHT-BIC[E]P: ConfigurationException must map to 500 before the generic ApplicationException 502 arm
     [Fact]
     public void Map_WhenConfigurationMissing_Returns500Not502()
     {
@@ -184,7 +184,7 @@ public class ExceptionStatusMapperTests
         Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.6.1", mapping.TypeUri);
     }
 
-    // [E]RROR RIGHT-BICEP: generic ApplicationException subclasses (non-configuration) map to 502 upstream error
+    // RIGHT-BIC[E]P: generic ApplicationException subclasses (non-configuration) map to 502 upstream error
     [Fact]
     public void Map_WhenGenericApplicationException_Returns502WithBadGatewayTypeUri()
     {
@@ -200,7 +200,7 @@ public class ExceptionStatusMapperTests
         Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.6.3", mapping.TypeUri);
     }
 
-    // [E]RROR RIGHT-BICEP: TaskCanceledException must match its dedicated switch arm before OperationCanceledException
+    // RIGHT-BIC[E]P: TaskCanceledException must match its dedicated switch arm before OperationCanceledException
     [Fact]
     public void Map_WhenTaskCancelled_Returns499ViaTaskCanceledArm()
     {
@@ -216,7 +216,7 @@ public class ExceptionStatusMapperTests
         Assert.Null(mapping.TypeUri);
     }
 
-    // [C]ROSS-CHECK RIGHT-BICEP: 400 bad-request type URI matches ValidationFilter RFC 7231 section 6.5.1 reference
+    // RIGHT-BI[C]EP: 400 bad-request type URI matches ValidationFilter RFC 7231 section 6.5.1 reference
     [Fact]
     public void Map_WhenArgumentException_TypeUriMatchesValidationFilterBadRequestReference()
     {

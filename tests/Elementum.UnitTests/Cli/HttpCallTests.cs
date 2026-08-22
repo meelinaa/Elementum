@@ -59,7 +59,7 @@ public class HttpCallTests
         Assert.Equal(1, handler.CallCount);
     }
 
-    // [I]NVERSE RIGHT-BICEP: ClearCache drops entries so the next call hits the handler again
+    // RIGHT-B[I]CEP: ClearCache drops entries so the next call hits the handler again
     [Fact]
     public async Task ClearCache_ForcesSubsequentRequest()
     {
@@ -73,7 +73,7 @@ public class HttpCallTests
         Assert.Equal(2, handler.CallCount);
     }
 
-    // [E]RROR RIGHT-BICEP: non-success status is swallowed by the public API and returns null
+    // RIGHT-BIC[E]P: non-success status is swallowed by the public API and returns null
     [Fact]
     public async Task GetLiveMarketOverviewAsync_WhenNotSuccess_ReturnsNull()
     {
@@ -86,7 +86,7 @@ public class HttpCallTests
         Assert.Equal(1, handler.CallCount);
     }
 
-    // [E]RROR RIGHT-BICEP: HttpClient.Timeout cancels a slow handler; the public method returns null
+    // RIGHT-BIC[E]P: HttpClient.Timeout cancels a slow handler; the public method returns null
     [Fact]
     public async Task GetLiveMarketOverviewAsync_WhenHttpClientTimesOut_ReturnsNull()
     {
@@ -102,7 +102,7 @@ public class HttpCallTests
         Assert.Equal(1, handler.CallCount);
     }
 
-    // [C]ROSS-CHECK RIGHT-BICEP: caller CancellationToken is forwarded to SendAsync (cancel returns null quickly)
+    // RIGHT-BI[C]EP: caller CancellationToken is forwarded to SendAsync (cancel returns null quickly)
     [Fact]
     public async Task GetLiveMarketOverviewAsync_WhenCallerCancels_ReturnsNull()
     {

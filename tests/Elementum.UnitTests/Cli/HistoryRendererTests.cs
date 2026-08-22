@@ -5,7 +5,7 @@ namespace Elementum.Cli.Tests;
 
 public class HistoryRendererTests
 {
-    // [B]OUNDARY: view width stays at default for zero entries and scales with entry count
+    // RIGHT-[B]ICEP: view width stays at default for zero entries and scales with entry count
     [Fact]
     public void ComputeHistoryViewWidth_ScalesWithEntryCount_AndNotBelowDefault()
     {
@@ -41,7 +41,7 @@ public class HistoryRendererTests
         Assert.Equal("██──▁▁", spark);
     }
 
-    // [E]RROR: empty input yields an empty sparkline instead of throwing
+    // RIGHT-BIC[E]P: empty input yields an empty sparkline instead of throwing
     [Fact]
     public void BuildSparkline_Empty_ReturnsEmptyString()
     {

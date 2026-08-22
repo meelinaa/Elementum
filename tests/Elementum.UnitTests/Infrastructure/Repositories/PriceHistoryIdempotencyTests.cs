@@ -32,7 +32,7 @@ public class PriceHistoryIdempotencyTests
         return db;
     }
 
-    // [I]NVERSE / IDEMPOTENCY: Verifies that saving the identical timestamped tick payload multiple times is strictly idempotent
+    // RIGHT-B[I]CEP: Verifies that saving the identical timestamped tick payload multiple times is strictly idempotent
     [Fact]
     public async Task SavePricesAsync_WhenRunTwiceWithSameTimestamp_DoesNotCreateDuplicateTicks()
     {
@@ -72,7 +72,7 @@ public class PriceHistoryIdempotencyTests
         Assert.Equal(8, countAfterSecondRun); // Must remain strictly 8 with no duplicates
     }
 
-    // [B]OUNDARY: a different ReferenceTimestamp on the same day inserts new ticks instead of deduplicating
+    // RIGHT-[B]ICEP: a different ReferenceTimestamp on the same day inserts new ticks instead of deduplicating
     [Fact]
     public async Task SavePricesAsync_WhenSameDayButDifferentTimestamp_CreatesAdditionalTicks()
     {

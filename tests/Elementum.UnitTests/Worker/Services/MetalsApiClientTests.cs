@@ -102,7 +102,7 @@ public class MetalsApiClientTests
         Assert.Contains(result, p => p.Metal == "Palladium" && p.Currency == "EUR" && p.Price == 1150.53m);
     }
 
-    // [B]OUNDARY: Verifies handling of minimal empty JSON object with default values
+    // RIGHT-[B]ICEP: Verifies handling of minimal empty JSON object with default values
     [Fact]
     public async Task GetEdelmetallePricesAsync_EmptyJsonObject_DeserializesWithDefaultValues()
     {
@@ -121,7 +121,7 @@ public class MetalsApiClientTests
         Assert.Equal(0m, result.GoldEur);
     }
 
-    // [E]RROR: Verifies that HTTP 500 server error propagates HttpRequestException
+    // RIGHT-BIC[E]P: Verifies that HTTP 500 server error propagates HttpRequestException
     [Fact]
     public async Task GetEdelmetallePricesAsync_WhenHttp500ServerError_ThrowsHttpRequestException()
     {
@@ -135,7 +135,7 @@ public class MetalsApiClientTests
         await Assert.ThrowsAsync<HttpRequestException>(() => client.GetEdelmetallePricesAsync());
     }
 
-    // [E]RROR: Verifies that HTTP 404 Not Found propagates HttpRequestException
+    // RIGHT-BIC[E]P: Verifies that HTTP 404 Not Found propagates HttpRequestException
     [Fact]
     public async Task GetEdelmetallePricesAsync_WhenHttp404NotFound_ThrowsHttpRequestException()
     {
@@ -149,7 +149,7 @@ public class MetalsApiClientTests
         await Assert.ThrowsAsync<HttpRequestException>(() => client.GetEdelmetallePricesAsync());
     }
 
-    // [E]RROR: Verifies that malformed non-JSON payload throws JsonException
+    // RIGHT-BIC[E]P: Verifies that malformed non-JSON payload throws JsonException
     [Fact]
     public async Task GetEdelmetallePricesAsync_WhenMalformedJson_ThrowsJsonException()
     {
@@ -163,7 +163,7 @@ public class MetalsApiClientTests
         await Assert.ThrowsAsync<JsonException>(() => client.GetEdelmetallePricesAsync());
     }
 
-    // [E]RROR: Verifies that cancellation token abort throws OperationCanceledException
+    // RIGHT-BIC[E]P: Verifies that cancellation token abort throws OperationCanceledException
     [Fact]
     public async Task GetEdelmetallePricesAsync_WhenCancelled_ThrowsOperationCanceledException()
     {

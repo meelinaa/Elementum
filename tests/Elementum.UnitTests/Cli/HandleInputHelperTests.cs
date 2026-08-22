@@ -31,7 +31,7 @@ public class HandleInputHelperTests
         Assert.Equal(1, renderCalls);
     }
 
-    // [E]RROR: unknown keys leave selection unchanged and skip rendering
+    // RIGHT-BIC[E]P: unknown keys leave selection unchanged and skip rendering
     [Fact]
     public void HandleInputWithMetals_WhenUnknownKey_DoesNotSetMetalOrInvokeRender()
     {

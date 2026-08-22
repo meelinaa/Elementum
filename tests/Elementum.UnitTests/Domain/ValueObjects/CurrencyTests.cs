@@ -23,7 +23,7 @@ public class CurrencyTests
         Assert.Equal("€", eur.Symbol);
     }
 
-    // [B]OUNDARY: Verifies that empty, whitespace, or null currency codes throw DomainValidationException
+    // RIGHT-[B]ICEP: Verifies that empty, whitespace, or null currency codes throw DomainValidationException
     [Theory]
     [InlineData("")]
     [InlineData(" ")]
@@ -34,7 +34,7 @@ public class CurrencyTests
         Assert.Throws<DomainValidationException>(() => Currency.FromCode(invalidCode!));
     }
 
-    // [E]RROR: Verifies that unsupported or invalid ISO currency codes throw UnsupportedCurrencyException
+    // RIGHT-BIC[E]P: Verifies that unsupported or invalid ISO currency codes throw UnsupportedCurrencyException
     [Theory]
     [InlineData("CHF")]
     [InlineData("GBP")]

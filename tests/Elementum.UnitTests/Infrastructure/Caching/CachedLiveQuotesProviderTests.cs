@@ -69,7 +69,7 @@ public class CachedLiveQuotesProviderTests
         _innerMock.Verify(i => i.GetLiveQuoteAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    // [E]RROR: Verifies that errors from inner provider propagate and do not corrupt cache
+    // RIGHT-BIC[E]P: Verifies that errors from inner provider propagate and do not corrupt cache
     [Fact]
     public async Task GetLiveQuoteAsync_WhenInnerThrows_PropagatesException()
     {

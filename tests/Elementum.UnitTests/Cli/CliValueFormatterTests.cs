@@ -5,7 +5,7 @@ namespace Elementum.UnitTests.Cli;
 
 public class CliValueFormatterTests
 {
-    // [B]OUNDARY: Verifies that null currency inputs return standard placeholder dash
+    // RIGHT-[B]ICEP: Verifies that null currency inputs return standard placeholder dash
     [Fact]
     public void FormatCurrency_WithNull_ReturnsDash()
     {
@@ -28,7 +28,7 @@ public class CliValueFormatterTests
         Assert.Equal(expectedEur, CliValueFormatter.FormatCurrency(val, "€"));
     }
 
-    // [B]OUNDARY: Verifies that null percentage inputs return standard placeholder dash
+    // RIGHT-[B]ICEP: Verifies that null percentage inputs return standard placeholder dash
     [Fact]
     public void FormatPercent_WithNull_ReturnsDash()
     {
@@ -60,7 +60,7 @@ public class CliValueFormatterTests
         Assert.Equal(neg.ToString("0.##") + " %", CliValueFormatter.FormatPercent(neg));
     }
 
-    // [B]OUNDARY: Verifies that null values for signed currency format return standard placeholder dash
+    // RIGHT-[B]ICEP: Verifies that null values for signed currency format return standard placeholder dash
     [Fact]
     public void FormatCurrencyWithSign_WithNull_ReturnsDash()
     {

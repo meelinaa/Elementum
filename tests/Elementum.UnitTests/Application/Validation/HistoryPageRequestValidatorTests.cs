@@ -16,7 +16,7 @@ public class HistoryPageRequestValidatorTests
         Assert.True(result.IsValid);
     }
 
-    // [B]OUNDARY: take above MaxTake is still valid — the use case clamps instead of returning 400
+    // RIGHT-[B]ICEP: take above MaxTake is still valid — the use case clamps instead of returning 400
     [Fact]
     public void Validate_WhenTakeExceedsHardCap_PassesValidation()
     {
@@ -25,7 +25,7 @@ public class HistoryPageRequestValidatorTests
         Assert.True(result.IsValid);
     }
 
-    // [E]RROR: negative skip is rejected at the HTTP boundary
+    // RIGHT-BIC[E]P: negative skip is rejected at the HTTP boundary
     [Fact]
     public void Validate_WhenSkipNegative_FailsValidation()
     {
@@ -35,7 +35,7 @@ public class HistoryPageRequestValidatorTests
         Assert.Contains(result.Errors, e => e.PropertyName == "Skip");
     }
 
-    // [E]RROR: explicit take of 0 is rejected
+    // RIGHT-BIC[E]P: explicit take of 0 is rejected
     [Fact]
     public void Validate_WhenTakeZero_FailsValidation()
     {

@@ -77,7 +77,7 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         Assert.Equal(page.Items.Count, page.TotalCount);
     }
 
-    // [B]OUNDARY: take above the hard cap is accepted and the response reports the clamped take
+    // RIGHT-[B]ICEP: take above the hard cap is accepted and the response reports the clamped take
     [Fact]
     public async Task GetPriceHistoryByMetalSymbol_WhenTakeExceedsCap_ReturnsClampedTake()
     {
@@ -89,7 +89,7 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         Assert.Equal(HistoryQueryLimits.MaxTake, page.Take);
     }
 
-    // [E]RROR: invalid from date is rejected with 400 before the query runs
+    // RIGHT-BIC[E]P: invalid from date is rejected with 400 before the query runs
     [Fact]
     public async Task GetPriceHistoryByMetalSymbol_WhenFromInvalid_Returns400()
     {
@@ -98,7 +98,7 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    // [E]RROR: non-existent trading symbol returns HTTP 404 ProblemDetails
+    // RIGHT-BIC[E]P: non-existent trading symbol returns HTTP 404 ProblemDetails
     [Fact]
     public async Task GetLiveTradingAnalysis_WhenNotFound_Returns404ProblemDetails()
     {

@@ -36,7 +36,7 @@ public class EdelmetalleApiResponseValidatorTests
         result.ShouldNotHaveAnyValidationErrors();
     }
 
-    // [B]OUNDARY / [E]RROR: Verifies that non-positive or obsolete historical timestamps fail validation
+    // RIGHT-[B]ICEP: Verifies that non-positive or obsolete historical timestamps fail validation
     [Theory]
     [InlineData(0)]
     [InlineData(-50)]
@@ -53,7 +53,7 @@ public class EdelmetalleApiResponseValidatorTests
         result.ShouldHaveValidationErrorFor(x => x.Timestamp);
     }
 
-    // [E]RROR: Verifies that timestamps in the future trigger validation failure
+    // RIGHT-BIC[E]P: Verifies that timestamps in the future trigger validation failure
     [Fact]
     public void Validate_FutureTimestamp_ShouldHaveValidationError()
     {
@@ -68,7 +68,7 @@ public class EdelmetalleApiResponseValidatorTests
         result.ShouldHaveValidationErrorFor(x => x.Timestamp);
     }
 
-    // [B]OUNDARY / [E]RROR: Verifies that non-positive or implausibly high gold prices fail validation
+    // RIGHT-[B]ICEP: Verifies that non-positive or implausibly high gold prices fail validation
     [Theory]
     [InlineData(0)]
     [InlineData(-10)]
@@ -85,7 +85,7 @@ public class EdelmetalleApiResponseValidatorTests
         result.ShouldHaveValidationErrorFor(x => x.GoldUsd);
     }
 
-    // [B]OUNDARY / [E]RROR: Verifies that anomalous exchange rate quotes trigger validation failure
+    // RIGHT-[B]ICEP: Verifies that anomalous exchange rate quotes trigger validation failure
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]

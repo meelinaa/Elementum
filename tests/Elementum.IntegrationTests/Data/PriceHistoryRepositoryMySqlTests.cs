@@ -18,7 +18,7 @@ public sealed class PriceHistoryRepositoryMySqlTests(MySqlContainerFixture fixtu
 
     public Task DisposeAsync() => Task.CompletedTask;
 
-    // [I]NVERSE / IDEMPOTENCY: MySQL upsert keeps a single tick per (metal, currency, timestamp)
+    // RIGHT-B[I]CEP: MySQL upsert keeps a single tick per (metal, currency, timestamp)
     [Fact]
     public async Task SavePricesAsync_WhenRunTwiceWithSameTimestamp_DoesNotCreateDuplicateTicks()
     {
@@ -36,7 +36,7 @@ public sealed class PriceHistoryRepositoryMySqlTests(MySqlContainerFixture fixtu
         Assert.Equal(8, countAfterSecondRun);
     }
 
-    // [B]OUNDARY: a different ReferenceTimestamp on the same day inserts additional ticks
+    // RIGHT-[B]ICEP: a different ReferenceTimestamp on the same day inserts additional ticks
     [Fact]
     public async Task SavePricesAsync_WhenSameDayButDifferentTimestamp_CreatesAdditionalTicks()
     {
@@ -88,7 +88,7 @@ public sealed class PriceHistoryRepositoryMySqlTests(MySqlContainerFixture fixtu
         Assert.Equal(2510m, row.Price);
     }
 
-    // [B]OUNDARY: ExecuteDeleteAsync removes only ticks strictly older than the cutoff date
+    // RIGHT-[B]ICEP: ExecuteDeleteAsync removes only ticks strictly older than the cutoff date
     [Fact]
     public async Task PruneHourlyDataOlderThanAsync_DeletesRowsOlderThanCutoffViaExecuteDelete()
     {

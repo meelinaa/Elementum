@@ -28,7 +28,7 @@ public class SymbolRequestValidatorTests
         Assert.True(result.IsValid);
     }
 
-    // [B]OUNDARY RIGHT-BICEP: symbol at exactly MaxLength(15) is the last acceptable inbound value
+    // RIGHT-[B]ICEP: symbol at exactly MaxLength(15) is the last acceptable inbound value
     [Fact]
     public void Validate_WhenSymbolIsExactly15Characters_PassesValidation()
     {
@@ -43,7 +43,7 @@ public class SymbolRequestValidatorTests
         Assert.True(result.IsValid);
     }
 
-    // [E]RROR RIGHT-BICEP: invalid symbols must fail with at least one validation error message
+    // RIGHT-BIC[E]P: invalid symbols must fail with at least one validation error message
     [Theory]
     [InlineData("")]
     [InlineData(" ")]

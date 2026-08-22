@@ -18,7 +18,7 @@ public class PriceHistoryPrunerTests
         return db;
     }
 
-    // [B]OUNDARY RIGHT-BICEP: EntryDate equal to cutoff is retained; only strictly older rows are deleted (off-by-one)
+    // RIGHT-[B]ICEP: EntryDate equal to cutoff is retained; only strictly older rows are deleted (off-by-one)
     [Fact]
     public async Task PruneHourlyDataOlderThanAsync_WhenEntryDateEqualsCutoff_RetainsRecordAndDeletesOnlyOlder()
     {
@@ -45,7 +45,7 @@ public class PriceHistoryPrunerTests
         Assert.Equal(2, await db.PriceHistory.CountAsync());
     }
 
-    // [B]OUNDARY RIGHT-BICEP: when all records are on or after cutoff date, zero deletions and unchanged row count
+    // RIGHT-[B]ICEP: when all records are on or after cutoff date, zero deletions and unchanged row count
     [Fact]
     public async Task PruneHourlyDataOlderThanAsync_WhenNoStaleRecords_ReturnsZero()
     {
@@ -67,7 +67,7 @@ public class PriceHistoryPrunerTests
         Assert.Equal(1, await db.PriceHistory.CountAsync());
     }
 
-    // [I]NVERSE RIGHT-BICEP: after partial manual deletion, re-run pruner removes exactly the remaining stale rows
+    // RIGHT-B[I]CEP: after partial manual deletion, re-run pruner removes exactly the remaining stale rows
     [Fact]
     public async Task PruneHourlyDataOlderThanAsync_WhenPartiallyDeleted_ReRunRemovesRemainingStaleRows()
     {

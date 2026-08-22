@@ -5,7 +5,7 @@ namespace Elementum.Application.Tests.Validation;
 
 public class CurrencyRequestTests
 {
-    // [B]OUNDARY: omitted currency is null for history (all codes) and EUR for trading
+    // RIGHT-[B]ICEP: omitted currency is null for history (all codes) and EUR for trading
     [Fact]
     public void NormalizedOrNull_WhenOmitted_ReturnsNull()
     {

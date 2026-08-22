@@ -75,7 +75,7 @@ public class IngestPricesUseCaseTests
         _writeRepositoryMock.Verify(r => r.SavePricesAsync(It.Is<IReadOnlyList<PriceHistory>>(l => l.Count == 8), It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    // [E]RROR RIGHT-BICEP: validation failure on corrupted payload aborts persistence and is not a silent return
+    // RIGHT-BIC[E]P: validation failure on corrupted payload aborts persistence and is not a silent return
     [Fact]
     public async Task ExecuteAsync_WhenEdelmetalleReturnsInvalidData_ThrowsUpstreamValidationException()
     {
@@ -95,7 +95,7 @@ public class IngestPricesUseCaseTests
         _writeRepositoryMock.Verify(r => r.SavePricesAsync(It.IsAny<IReadOnlyList<PriceHistory>>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    // [B]OUNDARY / FALLBACK: Verifies that null primary payload triggers fallback to secondary GetPricesAsync
+    // RIGHT-[B]ICEP: Verifies that null primary payload triggers fallback to secondary GetPricesAsync
     [Fact]
     public async Task ExecuteAsync_WhenEdelmetalleNull_FallsBackToGetPricesAsync()
     {
@@ -152,7 +152,7 @@ public class IngestPricesUseCaseTests
         _writeRepositoryMock.Verify(r => r.PruneHourlyDataOlderThanAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    // [B]OUNDARY RIGHT-BICEP: DailyRollupHour above 23 skips rollup/prune even after successful tick save (crash-between-steps scenario)
+    // RIGHT-[B]ICEP: DailyRollupHour above 23 skips rollup/prune even after successful tick save (crash-between-steps scenario)
     [Fact]
     public async Task ExecuteAsync_WhenRollupHourNotReached_SavesTicksWithoutRollupOrPrune()
     {
@@ -197,7 +197,7 @@ public class IngestPricesUseCaseTests
         _writeRepositoryMock.Verify(r => r.PruneHourlyDataOlderThanAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    // [E]RROR RIGHT-BICEP: when both primary and fallback APIs return no data, persistence must be skipped
+    // RIGHT-BIC[E]P: when both primary and fallback APIs return no data, persistence must be skipped
     [Fact]
     public async Task ExecuteAsync_WhenEdelmetalleNullAndFallbackEmpty_DoesNotSave()
     {
@@ -217,7 +217,7 @@ public class IngestPricesUseCaseTests
         _writeRepositoryMock.Verify(r => r.AggregateDailySummaryAsync(It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    // [B]OUNDARY RIGHT-BICEP: RetentionDays <= 0 falls back to seven-day default when pruning hourly ticks
+    // RIGHT-[B]ICEP: RetentionDays <= 0 falls back to seven-day default when pruning hourly ticks
     [Fact]
     public async Task ExecuteAsync_WhenRetentionDaysZero_UsesSevenDayDefaultForPrune()
     {
@@ -283,7 +283,7 @@ public class IngestPricesUseCaseTests
         _writeRepositoryMock.Verify(r => r.SavePricesAsync(It.IsAny<IReadOnlyList<PriceHistory>>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    // [E]RROR RIGHT-BICEP: a persist that does not cover every catalog metal is a countable upstream failure
+    // RIGHT-BIC[E]P: a persist that does not cover every catalog metal is a countable upstream failure
     [Fact]
     public async Task ExecuteAsync_WhenSavedTicksDoNotCoverCatalog_ThrowsIncompleteDailyCatalog()
     {
@@ -311,7 +311,7 @@ public class IngestPricesUseCaseTests
         _writeRepositoryMock.Verify(r => r.SavePricesAsync(It.IsAny<IReadOnlyList<PriceHistory>>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    // [I]NVERSE RIGHT-BICEP: after a partial run (ticks saved, rollup skipped), the next run completes rollup and prune
+    // RIGHT-B[I]CEP: after a partial run (ticks saved, rollup skipped), the next run completes rollup and prune
     [Fact]
     public async Task ExecuteAsync_WhenPriorRunSavedTicksOnly_SubsequentRunCompletesRollupAndPrune()
     {

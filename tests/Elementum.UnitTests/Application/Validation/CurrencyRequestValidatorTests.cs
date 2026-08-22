@@ -32,7 +32,7 @@ public class CurrencyRequestValidatorTests
         Assert.True(result.IsValid);
     }
 
-    // [E]RROR RIGHT-BICEP: unsupported or malformed codes fail at the HTTP boundary before the domain
+    // RIGHT-BIC[E]P: unsupported or malformed codes fail at the HTTP boundary before the domain
     [Theory]
     [InlineData("GBP")]
     [InlineData("JPY")]

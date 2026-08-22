@@ -16,7 +16,7 @@ public class RateLimitingIntegrationTests : IClassFixture<CustomWebApplicationFa
         _factory = factory;
     }
 
-    // [B]OUNDARY: exceeding PermitLimit returns HTTP 429 Too Many Requests
+    // RIGHT-[B]ICEP: exceeding PermitLimit returns HTTP 429 Too Many Requests
     [Fact]
     public async Task RateLimiter_WhenPermitLimitExceeded_Returns429TooManyRequests()
     {

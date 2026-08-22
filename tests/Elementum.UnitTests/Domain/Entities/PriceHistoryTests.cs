@@ -31,7 +31,7 @@ public class PriceHistoryTests
         Assert.Equal(2490m, priceHistory.LowPrice);
     }
 
-    // [B]OUNDARY: Verifies that flat prices where High == Low == Price are accepted at boundary
+    // RIGHT-[B]ICEP: Verifies that flat prices where High == Low == Price are accepted at boundary
     [Fact]
     public void Create_WhenHighLowAndPriceAreEqual_InstantiatesSuccessfully()
     {
@@ -54,7 +54,7 @@ public class PriceHistoryTests
         Assert.Equal(flatPrice, priceHistory.LowPrice);
     }
 
-    // [E]RROR: Verifies that non-positive Metal ID throws InvalidMetalIdException
+    // RIGHT-BIC[E]P: Verifies that non-positive Metal ID throws InvalidMetalIdException
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
@@ -68,7 +68,7 @@ public class PriceHistoryTests
             PriceHistory.Create(invalidMetalId, "USD", date, 2000m));
     }
 
-    // [E]RROR: Verifies that non-positive Price throws InvalidPriceException
+    // RIGHT-BIC[E]P: Verifies that non-positive Price throws InvalidPriceException
     [Theory]
     [InlineData(0)]
     [InlineData(-100)]
@@ -82,7 +82,7 @@ public class PriceHistoryTests
             PriceHistory.Create(1, "USD", date, invalidPrice));
     }
 
-    // [E]RROR: Verifies that LowPrice greater than HighPrice throws PriceRangeInvalidException
+    // RIGHT-BIC[E]P: Verifies that LowPrice greater than HighPrice throws PriceRangeInvalidException
     [Fact]
     public void Create_WhenLowPriceGreaterThanHighPrice_ThrowsPriceRangeInvalidException()
     {
@@ -94,7 +94,7 @@ public class PriceHistoryTests
             PriceHistory.Create(1, "USD", date, 2000m, lowPrice: 2100m, highPrice: 2000m));
     }
 
-    // [E]RROR: Verifies that unsupported currency strings throw UnsupportedCurrencyException
+    // RIGHT-BIC[E]P: Verifies that unsupported currency strings throw UnsupportedCurrencyException
     [Theory]
     [InlineData("CHF")]
     [InlineData("GBP")]

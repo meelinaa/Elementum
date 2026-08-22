@@ -19,7 +19,7 @@ public sealed class UniqueIndexMySqlTests : IAsyncLifetime
 
     public Task DisposeAsync() => Task.CompletedTask;
 
-    // [E]RROR RIGHT-BICEP: duplicate (MetalId, Currency, ReferenceTimestamp) is rejected by MySQL unique index
+    // RIGHT-BIC[E]P: duplicate (MetalId, Currency, ReferenceTimestamp) is rejected by MySQL unique index
     [Fact]
     public async Task PriceHistory_DuplicateMetalCurrencyTimestamp_ThrowsDbUpdateException()
     {
@@ -36,7 +36,7 @@ public sealed class UniqueIndexMySqlTests : IAsyncLifetime
         Assert.Equal(1062, ((MySqlException)ex.InnerException!).Number);
     }
 
-    // [E]RROR RIGHT-BICEP: duplicate daily candle (MetalId, Currency, EntryDate) is rejected by unique index
+    // RIGHT-BIC[E]P: duplicate daily candle (MetalId, Currency, EntryDate) is rejected by unique index
     [Fact]
     public async Task DailyPriceSummary_DuplicateMetalCurrencyDate_ThrowsDbUpdateException()
     {
@@ -74,7 +74,7 @@ public sealed class UniqueIndexMySqlTests : IAsyncLifetime
         Assert.Equal(3, columnCount);
     }
 
-    // [E]RROR RIGHT-BICEP: duplicate metals.symbol is rejected by the unique index
+    // RIGHT-BIC[E]P: duplicate metals.symbol is rejected by the unique index
     [Fact]
     public async Task Metals_DuplicateSymbol_ThrowsDbUpdateException()
     {

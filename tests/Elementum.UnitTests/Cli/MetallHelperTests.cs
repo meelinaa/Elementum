@@ -28,7 +28,7 @@ public class MetallHelperTests
         Assert.Equal(expected, MetallHelper.FromKey(c));
     }
 
-    // [B]OUNDARY / [E]RROR: Verifies that unrecognized keyboard characters return null
+    // RIGHT-[B]ICEP: Verifies that unrecognized keyboard characters return null
     [Fact]
     public void FromKey_ReturnsNullForUnknown()
     {

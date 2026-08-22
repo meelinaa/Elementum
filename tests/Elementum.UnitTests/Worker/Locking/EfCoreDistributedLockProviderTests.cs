@@ -42,7 +42,7 @@ public class EfCoreDistributedLockProviderTests
         Assert.True(handle.IsAcquired);
     }
 
-    // [E]RROR: acquiring an active lock returns an unacquired handle
+    // RIGHT-BIC[E]P: acquiring an active lock returns an unacquired handle
     [Fact]
     public async Task TryAcquireLockAsync_WhenLockAlreadyActive_ReturnsUnacquired()
     {
@@ -55,7 +55,7 @@ public class EfCoreDistributedLockProviderTests
         Assert.False(handle2.IsAcquired);
     }
 
-    // [E]RROR: expired locks are reclaimed by new callers
+    // RIGHT-BIC[E]P: expired locks are reclaimed by new callers
     [Fact]
     public async Task TryAcquireLockAsync_WhenLockExpired_TakesOverLock()
     {
@@ -72,7 +72,7 @@ public class EfCoreDistributedLockProviderTests
         Assert.True(handle2.IsAcquired);
     }
 
-    // [I]NVERSE: Verifies that disposing/releasing a lock makes the resource immediately available again
+    // RIGHT-B[I]CEP: Verifies that disposing/releasing a lock makes the resource immediately available again
     [Fact]
     public async Task DisposeAsync_ReleasesLockForOtherInstances()
     {
@@ -88,7 +88,7 @@ public class EfCoreDistributedLockProviderTests
         Assert.True(handle2.IsAcquired);
     }
 
-    // [P]ERFORMANCE: under concurrent parallel attempts, exactly one lock is granted
+    // RIGHT-BICE[P]: under concurrent parallel attempts, exactly one lock is granted
     [Fact]
     public async Task TryAcquireLockAsync_ParallelAttempts_OnlyOneAcquiresLock()
     {
@@ -130,7 +130,7 @@ public class EfCoreDistributedLockProviderTests
         Assert.True(lockRecord.ExpiresAtUtc > DateTime.UtcNow);
     }
 
-    // [E]RROR: concurrent takeover on an expired lock grants exactly one handle (DbUpdateConcurrency safety)
+    // RIGHT-BIC[E]P: concurrent takeover on an expired lock grants exactly one handle (DbUpdateConcurrency safety)
     [Fact]
     public async Task TryAcquireLockAsync_ParallelExpiredLockTakeover_OnlyOneAcquiresLock()
     {
@@ -157,7 +157,7 @@ public class EfCoreDistributedLockProviderTests
         }
     }
 
-    // [E]RROR: database failures during lock acquisition return an unacquired handle instead of throwing
+    // RIGHT-BIC[E]P: database failures during lock acquisition return an unacquired handle instead of throwing
     [Fact]
     public async Task TryAcquireLockAsync_WhenDatabaseSaveFails_ReturnsUnacquired()
     {
@@ -180,7 +180,7 @@ public class EfCoreDistributedLockProviderTests
         Assert.False(handle.IsAcquired);
     }
 
-    // [C]ROSS-CHECK: lock handles are IAsyncDisposable only — sync Dispose would block on EF (sync-over-async)
+    // RIGHT-BI[C]EP: lock handles are IAsyncDisposable only — sync Dispose would block on EF (sync-over-async)
     [Fact]
     public void IDistributedLock_DoesNotImplementIDisposable()
     {

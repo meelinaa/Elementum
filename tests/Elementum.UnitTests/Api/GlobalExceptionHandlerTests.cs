@@ -34,7 +34,7 @@ public class GlobalExceptionHandlerTests
         Assert.Equal("GET /api/v1/prices/live", _capturedContext.ProblemDetails.Instance);
     }
 
-    // [B]OUNDARY RIGHT-BICEP: production responses must omit exception detail for security
+    // RIGHT-[B]ICEP: production responses must omit exception detail for security
     [Fact]
     public async Task TryHandleAsync_WhenProduction_OmitsExceptionDetail()
     {
@@ -50,7 +50,7 @@ public class GlobalExceptionHandlerTests
         Assert.Null(_capturedContext!.ProblemDetails.Detail);
     }
 
-    // [B]OUNDARY RIGHT-BICEP: development responses include exception message as detail for diagnostics
+    // RIGHT-[B]ICEP: development responses include exception message as detail for diagnostics
     [Fact]
     public async Task TryHandleAsync_WhenDevelopment_IncludesExceptionMessageAsDetail()
     {

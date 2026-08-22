@@ -43,7 +43,7 @@ public class MetalsIngestionJobTests
         lockMock.Verify(l => l.DisposeAsync(), Times.Once);
     }
 
-    // [B]OUNDARY / CONCURRENCY: Verifies that job skips execution safely when another worker instance holds the lock
+    // RIGHT-[B]ICEP: Verifies that job skips execution safely when another worker instance holds the lock
     [Fact]
     public async Task RunAsync_WhenLockAlreadyHeldByAnotherInstance_SkipsExecution()
     {
@@ -67,7 +67,7 @@ public class MetalsIngestionJobTests
         lockMock.Verify(l => l.DisposeAsync(), Times.Once);
     }
 
-    // [E]RROR RIGHT-BICEP: use case exceptions propagate and lock handle is still disposed via await using
+    // RIGHT-BIC[E]P: use case exceptions propagate and lock handle is still disposed via await using
     [Fact]
     public async Task RunAsync_WhenUseCaseFails_RethrowsExceptionAndDisposesLock()
     {
@@ -92,7 +92,7 @@ public class MetalsIngestionJobTests
         lockMock.Verify(l => l.DisposeAsync(), Times.Once);
     }
 
-    // [E]RROR RIGHT-BICEP: upstream validation failures increment the error metric and do not count saved prices
+    // RIGHT-BIC[E]P: upstream validation failures increment the error metric and do not count saved prices
     [Fact]
     public async Task RunAsync_WhenUpstreamValidationFails_RecordsErrorAndRethrows()
     {

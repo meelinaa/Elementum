@@ -14,7 +14,7 @@ public class ExceptionMappingIntegrationTests : IClassFixture<CustomWebApplicati
         _client = factory.CreateClient();
     }
 
-    // [B]OUNDARY RIGHT-BICEP: symbol at MaxLength(15)+1 must be rejected with 400 before controller execution
+    // RIGHT-[B]ICEP: symbol at MaxLength(15)+1 must be rejected with 400 before controller execution
     [Fact]
     public async Task GetPriceHistory_WhenSymbolExceedsMaxLength_Returns400ValidationProblemDetails()
     {
@@ -51,7 +51,7 @@ public class ExceptionMappingIntegrationTests : IClassFixture<CustomWebApplicati
         Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.5.4", problem.Type);
     }
 
-    // [E]RROR RIGHT-BICEP: currency other than USD/EUR is rejected at the HTTP boundary (400), analog to SymbolRequest
+    // RIGHT-BIC[E]P: currency other than USD/EUR is rejected at the HTTP boundary (400), analog to SymbolRequest
     [Theory]
     [InlineData("EURO")]
     [InlineData("GBP")]
@@ -67,7 +67,7 @@ public class ExceptionMappingIntegrationTests : IClassFixture<CustomWebApplicati
         Assert.True(problem.Errors.ContainsKey("Currency"));
     }
 
-    // [E]RROR RIGHT-BICEP: history uses the same CurrencyRequest validator as trading
+    // RIGHT-BIC[E]P: history uses the same CurrencyRequest validator as trading
     [Fact]
     public async Task GetPriceHistory_WhenCurrencyUnsupported_Returns400ValidationProblemDetails()
     {
@@ -91,7 +91,7 @@ public class UpstreamFailureExceptionMappingIntegrationTests : IClassFixture<Ups
         _client = factory.CreateClient();
     }
 
-    // [E]RROR RIGHT-BICEP: empty upstream response propagates as 502 through GlobalExceptionHandler, not 500
+    // RIGHT-BIC[E]P: empty upstream response propagates as 502 through GlobalExceptionHandler, not 500
     [Fact]
     public async Task GetLivePrices_WhenUpstreamReturnsEmpty_Returns502ProblemDetails()
     {
@@ -117,7 +117,7 @@ public class UpstreamTimeoutExceptionMappingIntegrationTests : IClassFixture<Ups
         _client = factory.CreateClient();
     }
 
-    // [E]RROR RIGHT-BICEP: upstream timeout propagates as 504 gateway timeout through the HTTP pipeline
+    // RIGHT-BIC[E]P: upstream timeout propagates as 504 gateway timeout through the HTTP pipeline
     [Fact]
     public async Task GetLivePrices_WhenUpstreamTimesOut_Returns504ProblemDetails()
     {
@@ -142,7 +142,7 @@ public class UpstreamUnexpectedFailureExceptionMappingIntegrationTests : IClassF
         _client = factory.CreateClient();
     }
 
-    // [E]RROR RIGHT-BICEP: unmapped upstream exceptions fall back to 500 internal server error
+    // RIGHT-BIC[E]P: unmapped upstream exceptions fall back to 500 internal server error
     [Fact]
     public async Task GetLivePrices_WhenUpstreamThrowsUnexpectedException_Returns500ProblemDetails()
     {

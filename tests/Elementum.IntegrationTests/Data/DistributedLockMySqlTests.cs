@@ -42,7 +42,7 @@ public sealed class DistributedLockMySqlTests(MySqlContainerFixture fixture) : I
         Assert.True(handle.IsAcquired);
     }
 
-    // [E]RROR: a second caller against an active row is rejected
+    // RIGHT-BIC[E]P: a second caller against an active row is rejected
     [Fact]
     public async Task TryAcquireLockAsync_WhenLockAlreadyActive_ReturnsUnacquired()
     {
@@ -53,7 +53,7 @@ public sealed class DistributedLockMySqlTests(MySqlContainerFixture fixture) : I
         Assert.False(handle2.IsAcquired);
     }
 
-    // [I]NVERSE: dispose deletes the row so another instance can acquire
+    // RIGHT-B[I]CEP: dispose deletes the row so another instance can acquire
     [Fact]
     public async Task DisposeAsync_ReleasesLockForOtherInstances()
     {
@@ -65,7 +65,7 @@ public sealed class DistributedLockMySqlTests(MySqlContainerFixture fixture) : I
         Assert.True(handle2.IsAcquired);
     }
 
-    // [P]ERFORMANCE: concurrent inserts collide on PK; exactly one handle is acquired
+    // RIGHT-BICE[P]: concurrent inserts collide on PK; exactly one handle is acquired
     [Fact]
     public async Task TryAcquireLockAsync_ParallelAttempts_OnlyOneAcquiresLock()
     {
@@ -79,7 +79,7 @@ public sealed class DistributedLockMySqlTests(MySqlContainerFixture fixture) : I
             await handle.DisposeAsync();
     }
 
-    // [E]RROR: concurrent takeover of an expired lock grants exactly one winner via concurrency token / PK
+    // RIGHT-BIC[E]P: concurrent takeover of an expired lock grants exactly one winner via concurrency token / PK
     [Fact]
     public async Task TryAcquireLockAsync_ParallelExpiredLockTakeover_OnlyOneAcquiresLock()
     {
