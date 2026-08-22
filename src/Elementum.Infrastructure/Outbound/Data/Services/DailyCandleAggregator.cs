@@ -68,7 +68,7 @@ public class DailyCandleAggregator : IDailyCandleAggregator
     }
 
     /// <inheritdoc />
-    public async Task UpdateSummaryForTickAsync(
+    public async Task StageSummaryTickAsync(
         ElementumDbContext db,
         int metalId,
         string currency,

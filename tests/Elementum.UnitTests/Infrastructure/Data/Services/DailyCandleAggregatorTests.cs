@@ -94,9 +94,9 @@ public class DailyCandleAggregatorTests
         Assert.Equal(2600m, updated.ClosePrice);
     }
 
-    // [R]IGHT-BICEP: Verifies that UpdateSummaryForTickAsync initializes new summary on first tick of the day
+    // [R]IGHT-BICEP: Verifies that StageSummaryTickAsync initializes new summary on first tick of the day
     [Fact]
-    public async Task UpdateSummaryForTickAsync_WhenNoExistingSummary_CreatesNewDailySummary()
+    public async Task StageSummaryTickAsync_WhenNoExistingSummary_CreatesNewDailySummary()
     {
         // Arrange
         using var db = CreateInMemoryDbContext();
@@ -104,7 +104,7 @@ public class DailyCandleAggregatorTests
         var aggregator = new DailyCandleAggregator();
 
         // Act
-        await aggregator.UpdateSummaryForTickAsync(db, 1, "USD", date, 2500m, 1.15m, isCloseHour: false, CancellationToken.None);
+        await aggregator.StageSummaryTickAsync(db, 1, "USD", date, 2500m, 1.15m, isCloseHour: false, CancellationToken.None);
         await db.SaveChangesAsync();
 
         // Assert
@@ -116,20 +116,20 @@ public class DailyCandleAggregatorTests
         Assert.Equal(2500m, summary.ClosePrice);
     }
 
-    // [R]IGHT-BICEP: Verifies that UpdateSummaryForTickAsync updates existing summary on subsequent tick
+    // [R]IGHT-BICEP: Verifies that StageSummaryTickAsync updates existing summary on subsequent tick
     [Fact]
-    public async Task UpdateSummaryForTickAsync_WhenSummaryExists_UpdatesHighAndClosePrice()
+    public async Task StageSummaryTickAsync_WhenSummaryExists_UpdatesHighAndClosePrice()
     {
         // Arrange
         using var db = CreateInMemoryDbContext();
         var date = new DateOnly(2026, 8, 17);
         var aggregator = new DailyCandleAggregator();
 
-        await aggregator.UpdateSummaryForTickAsync(db, 1, "USD", date, 2500m, 1.15m, isCloseHour: false, CancellationToken.None);
+        await aggregator.StageSummaryTickAsync(db, 1, "USD", date, 2500m, 1.15m, isCloseHour: false, CancellationToken.None);
         await db.SaveChangesAsync();
 
         // Act - Subsequent tick with higher price and closing hour
-        await aggregator.UpdateSummaryForTickAsync(db, 1, "USD", date, 2550m, 1.15m, isCloseHour: true, CancellationToken.None);
+        await aggregator.StageSummaryTickAsync(db, 1, "USD", date, 2550m, 1.15m, isCloseHour: true, CancellationToken.None);
         await db.SaveChangesAsync();
 
         // Assert

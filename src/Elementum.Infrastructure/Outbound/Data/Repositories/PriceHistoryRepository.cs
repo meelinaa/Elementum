@@ -102,7 +102,7 @@ public class PriceHistoryRepository : IPriceHistoryRepository
                 existingByKey[key] = price;
             }
 
-            await _candleAggregator.UpdateSummaryForTickAsync(
+            await _candleAggregator.StageSummaryTickAsync(
                 _db, price.MetalId, price.Currency, price.EntryDate, price.Price, 1.0m, isCloseHour, cancellationToken);
         }
 

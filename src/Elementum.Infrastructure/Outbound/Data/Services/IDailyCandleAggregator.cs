@@ -14,9 +14,10 @@ public interface IDailyCandleAggregator
     Task AggregateDailySummaryAsync(ElementumDbContext db, DateOnly date, CancellationToken ct = default);
 
     /// <summary>
-    /// Updates or creates a daily candle summary in real-time when a new price tick arrives.
+    /// Stages a price tick onto the daily summary candle within the EF Core change tracker (pending mutation).
+    /// Does not call <c>SaveChangesAsync</c>; the caller is responsible for committing the changes in a unit-of-work transaction.
     /// </summary>
-    Task UpdateSummaryForTickAsync(
+    Task StageSummaryTickAsync(
         ElementumDbContext db,
         int metalId,
         string currency,
