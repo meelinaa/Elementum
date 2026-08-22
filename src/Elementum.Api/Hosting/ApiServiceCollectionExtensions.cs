@@ -81,6 +81,7 @@ public static class ApiServiceCollectionExtensions
             options.OnRejected = async (context, cancellationToken) =>
             {
                 context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                context.HttpContext.Response.Headers.RetryAfter = "60";
                 var problemDetails = new ProblemDetails
                 {
                     Type = "https://tools.ietf.org/html/rfc9110#section-15.5.20",

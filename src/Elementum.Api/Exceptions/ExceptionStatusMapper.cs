@@ -12,6 +12,7 @@ public static class ExceptionStatusMapper
     private const string TitleInvalidRequest = "Invalid request";
     private const string TitleDomainValidation = "Domain validation error";
     private const string TitleUpstreamError = "Upstream service error";
+    private const string TitleServiceUnavailable = "Service unavailable";
     private const string TitleResourceNotFound = "Resource not found";
     private const string TitleRequestCancelled = "Request cancelled";
     private const string TitleGatewayTimeout = "Gateway timeout";
@@ -33,6 +34,7 @@ public static class ExceptionStatusMapper
             TaskCanceledException => Map499(TitleRequestCancelled),
             OperationCanceledException => Map499(TitleRequestCancelled),
             TimeoutException => Map504(TitleGatewayTimeout),
+            Polly.CircuitBreaker.BrokenCircuitException => Map503(TitleServiceUnavailable),
             KeyNotFoundException => Map404(TitleResourceNotFound),
             DomainException => Map422(TitleDomainValidation),
             ExternalApiException => Map502(TitleUpstreamError),
@@ -57,6 +59,9 @@ public static class ExceptionStatusMapper
 
     private static ExceptionMappingResult Map422(string title) =>
         new(422, title, GetTypeUri(422));
+
+    private static ExceptionMappingResult Map503(string title) =>
+        new(StatusCodes.Status503ServiceUnavailable, title, GetTypeUri(StatusCodes.Status503ServiceUnavailable));
 
     /// <summary>
     /// Maps client-initiated request aborts (via <see cref="OperationCanceledException"/> or <see cref="TaskCanceledException"/>)

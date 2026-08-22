@@ -67,6 +67,40 @@ public class GlobalExceptionHandlerTests
         Assert.Equal(message, _capturedContext!.ProblemDetails.Detail);
     }
 
+    // [R]IGHT-BICEP: 503 Service Unavailable sets Retry-After header for transient backoff
+    [Fact]
+    public async Task TryHandleAsync_When503ServiceUnavailable_SetsRetryAfterHeader()
+    {
+        // Arrange
+        var handler = CreateHandler(environmentName: Environments.Production);
+        var context = CreateHttpContext("GET", "/api/v1/prices/live");
+        var exception = new Polly.CircuitBreaker.BrokenCircuitException("Circuit is open");
+
+        // Act
+        await handler.TryHandleAsync(context, exception, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status503ServiceUnavailable, context.Response.StatusCode);
+        Assert.Equal("5", context.Response.Headers.RetryAfter.ToString());
+    }
+
+    // [R]IGHT-BICEP: 504 Gateway Timeout sets Retry-After header
+    [Fact]
+    public async Task TryHandleAsync_When504GatewayTimeout_SetsRetryAfterHeader()
+    {
+        // Arrange
+        var handler = CreateHandler(environmentName: Environments.Production);
+        var context = CreateHttpContext("GET", "/api/v1/prices/live");
+        var exception = new TimeoutException("Upstream timeout");
+
+        // Act
+        await handler.TryHandleAsync(context, exception, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status504GatewayTimeout, context.Response.StatusCode);
+        Assert.Equal("5", context.Response.Headers.RetryAfter.ToString());
+    }
+
     private GlobalExceptionHandler CreateHandler(string environmentName)
     {
         _capturedContext = null;

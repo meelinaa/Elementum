@@ -27,6 +27,16 @@ public sealed class GlobalExceptionHandler(
 
         httpContext.Response.StatusCode = mapping.StatusCode;
 
+        // Provide dynamic Retry-After header for transient upstream errors and rate limits
+        if (mapping.StatusCode is StatusCodes.Status503ServiceUnavailable or StatusCodes.Status504GatewayTimeout)
+        {
+            httpContext.Response.Headers.RetryAfter = "5";
+        }
+        else if (mapping.StatusCode == StatusCodes.Status429TooManyRequests)
+        {
+            httpContext.Response.Headers.RetryAfter = "60";
+        }
+
         var problemDetails = mapping.ToProblemDetails(
             detail: environment.IsDevelopment() ? exception.Message : null,
             instance: $"{httpContext.Request.Method} {httpContext.Request.Path}");
