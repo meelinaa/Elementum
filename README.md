@@ -258,16 +258,20 @@ dotnet test Elementum.slnx --configuration Release
 ## Screenshots
 
 ### Main Menu
-<img width="1008" height="487" alt="Main Menu" src="https://github.com/user-attachments/assets/b1d5c4a5-f4fd-4a2e-b925-6cc1038ac9f6" />
+<img width="739" height="320" alt="Main Menu" src="https://github.com/user-attachments/assets/a9ea5dfd-c581-428c-9dba-4b6ef02084f8" />
 
 ### Dashboard
-<img width="883" height="425" alt="Dashboard" src="https://github.com/user-attachments/assets/1ae8e25b-0cac-494c-8197-5d5f6d8392ce" />
+<img width="659" height="361" alt="Dashboard" src="https://github.com/user-attachments/assets/e3ad751a-b890-4092-b6bb-621e39305fcf" />
 
 ### Trading View
-<img width="873" height="1033" alt="Trading View" src="https://github.com/user-attachments/assets/b414a7e9-2201-4798-a06b-e1279f1382e4" />
+<img width="656" height="683" alt="Trading View" src="https://github.com/user-attachments/assets/36b3509f-7d97-4e68-9ba0-871b8b3702cf" />
 
 ### History View
-<img width="891" height="719" alt="History View" src="https://github.com/user-attachments/assets/cd4b6a6c-e794-4e60-a339-f7e126d9d5f5" />
+<img width="656" height="381" alt="History View" src="https://github.com/user-attachments/assets/a58f83b0-673a-4d6b-96e1-c3e71931f0c8" />
+<img width="658" height="607" alt="History View" src="https://github.com/user-attachments/assets/65937289-fe81-490f-a02c-6b15d545720f" />
+
+### Info
+<img width="654" height="380" alt="Info" src="https://github.com/user-attachments/assets/4a8131b1-0dec-4615-884c-ba5763e3dee0" />
 
 ---
 
