@@ -31,15 +31,8 @@ public class LivePricesUseCase : ILivePricesUseCase
     }
 
     /// <inheritdoc />
-    public async Task<LiveMarketOverviewDto> GetLiveMarketOverviewAsync(CancellationToken cancellationToken = default)
-    {
-        var quote = await _quotesProvider.GetLiveQuoteAsync(cancellationToken);
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var yesterday = today.AddDays(-1);
-        var summaries = await _repository.GetDailySummariesAsync(yesterday, today, cancellationToken);
-
-        return MapOverview(quote, today, yesterday, summaries);
-    }
+    public Task<LiveMarketOverviewDto> GetLiveMarketOverviewAsync(CancellationToken cancellationToken = default) =>
+        FetchLiveMarketOverviewCoreAsync(cancellationToken);
 
     /// <inheritdoc />
     public async Task<TradingPriceDto?> GetLiveTradingAnalysisAsync(
@@ -51,7 +44,7 @@ public class LivePricesUseCase : ILivePricesUseCase
         var normCurrency = Currency.FromCode(
             string.IsNullOrWhiteSpace(currency) ? DomainConstants.Currencies.Eur : currency).Code;
 
-        var overview = await GetLiveMarketOverviewAsync(cancellationToken);
+        var overview = await FetchLiveMarketOverviewCoreAsync(cancellationToken);
         var metal = overview.Items.FirstOrDefault(i => i.Symbol.Equals(normSymbol, StringComparison.OrdinalIgnoreCase));
         if (metal == null)
             return null;
@@ -86,6 +79,16 @@ public class LivePricesUseCase : ILivePricesUseCase
             Status = analysis.Status,
             ExchangeRateUsdEur = overview.ExchangeRateUsdEur
         };
+    }
+
+    private async Task<LiveMarketOverviewDto> FetchLiveMarketOverviewCoreAsync(CancellationToken cancellationToken)
+    {
+        var quote = await _quotesProvider.GetLiveQuoteAsync(cancellationToken);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var yesterday = today.AddDays(-1);
+        var summaries = await _repository.GetDailySummariesAsync(yesterday, today, cancellationToken);
+
+        return MapOverview(quote, today, yesterday, summaries);
     }
 
     private static LiveMarketOverviewDto MapOverview(
