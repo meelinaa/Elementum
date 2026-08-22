@@ -63,7 +63,15 @@ public class DailyCandleAggregator : IDailyCandleAggregator
             {
                 await entry.ReloadAsync(ct);
             }
-            await db.SaveChangesAsync(ct);
+
+            try
+            {
+                await db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // If a concurrent process updated the candle again during reload, accept the persisted state
+            }
         }
     }
 

@@ -116,7 +116,15 @@ public class PriceHistoryRepository : IPriceHistoryRepository
             {
                 await entry.ReloadAsync(cancellationToken);
             }
-            await _db.SaveChangesAsync(cancellationToken);
+
+            try
+            {
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // Second concurrent modification: state already overwritten by concurrent process, suppress conflict
+            }
         }
     }
 
