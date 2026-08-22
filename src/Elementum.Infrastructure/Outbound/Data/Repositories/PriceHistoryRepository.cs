@@ -1,7 +1,9 @@
+using Elementum.Application.Options;
 using Elementum.Domain.Entities;
 using Elementum.Domain.Ports.Outbound;
 using Elementum.Infrastructure.Outbound.Data.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Elementum.Infrastructure.Outbound.Data.Repositories;
 
@@ -11,14 +13,18 @@ namespace Elementum.Infrastructure.Outbound.Data.Repositories;
 /// </summary>
 public class PriceHistoryRepository : IPriceHistoryRepository
 {
+    private const int DefaultDailyRollupHour = 22;
+
     private readonly ElementumDbContext _db;
     private readonly IDailyCandleAggregator _candleAggregator;
     private readonly IPriceHistoryPruner _pruner;
+    private readonly int _dailyRollupHour;
 
     public PriceHistoryRepository(
         ElementumDbContext db,
         IDailyCandleAggregator candleAggregator,
-        IPriceHistoryPruner pruner)
+        IPriceHistoryPruner pruner,
+        IOptions<WorkerScheduleOptions>? options = null)
     {
         ArgumentNullException.ThrowIfNull(db);
         ArgumentNullException.ThrowIfNull(candleAggregator);
@@ -27,6 +33,7 @@ public class PriceHistoryRepository : IPriceHistoryRepository
         _db = db;
         _candleAggregator = candleAggregator;
         _pruner = pruner;
+        _dailyRollupHour = options?.Value?.DailyRollupHour ?? DefaultDailyRollupHour;
     }
 
     /// <inheritdoc />
@@ -71,7 +78,7 @@ public class PriceHistoryRepository : IPriceHistoryRepository
         var existingByKey = existingRows
             .GroupBy(x => (x.MetalId, x.Currency, x.ReferenceTimestamp))
             .ToDictionary(g => g.Key, g => g.First());
-        var isCloseHour = DateTime.UtcNow.Hour >= 22;
+        var isCloseHour = DateTime.UtcNow.Hour >= _dailyRollupHour;
 
         foreach (var price in candidates)
         {

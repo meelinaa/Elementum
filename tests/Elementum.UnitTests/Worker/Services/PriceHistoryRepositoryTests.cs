@@ -353,4 +353,43 @@ public class PriceHistoryRepositoryTests
         Assert.Contains(result, s => s.Currency == "EUR" && s.OpenPrice == 2100m);
         Assert.All(result, s => Assert.Equal("XAU", s.Metal?.Symbol));
     }
+
+    // [R]IGHT-BICEP: SavePricesAsync uses configured DailyRollupHour to decide isCloseHour
+    [Fact]
+    public async Task SavePricesAsync_WhenDailyRollupHourConfigured_UpdatesCandleClosePrice()
+    {
+        var options = new DbContextOptionsBuilder<ElementumDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        var context = new ElementumDbContext(options);
+        context.Metals.Add(new Metals { Id = 1, Symbol = "XAU", Name = "Gold" });
+        await context.SaveChangesAsync();
+
+        var scheduleOptions = Microsoft.Extensions.Options.Options.Create(new Elementum.Application.Options.WorkerScheduleOptions
+        {
+            DailyRollupHour = 0,
+            IngestionIntervalMinutes = 60,
+            RetentionDays = 7
+        });
+
+        var aggregator = new DailyCandleAggregator();
+        var pruner = new PriceHistoryPruner();
+        var repo = new PriceHistoryRepository(context, aggregator, pruner, scheduleOptions);
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var initialCandle = DailyPriceSummary.Create(1, "USD", today, 2500m, 2550m, 2480m, 2510m);
+        context.DailyPriceSummaries.Add(initialCandle);
+        await context.SaveChangesAsync();
+
+        var newTick = new List<PriceHistory>
+        {
+            PriceHistory.Create(1, "USD", today, 2530m, "XAUUSD", referenceTimestamp: 5000L)
+        };
+
+        await repo.SavePricesAsync(newTick, CancellationToken.None);
+
+        var updatedCandle = await context.DailyPriceSummaries.FirstAsync(s => s.MetalId == 1 && s.Currency == "USD");
+        Assert.Equal(2530m, updatedCandle.ClosePrice);
+    }
 }
