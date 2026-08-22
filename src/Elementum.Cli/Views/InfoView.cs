@@ -1,35 +1,28 @@
-using Elementum.Cli.Constants;
 using Elementum.Cli.Input;
-using Elementum.Cli.Output;
+using Elementum.Cli.Rendering;
 using Elementum.Cli.Views.Interfaces;
 
 namespace Elementum.Cli.Views;
 
 /// <summary>
-/// Static info screen: app title, section title, and GoldAPI.com data policy (no API call).
+/// Detail view displaying static system architecture, functionality guide, and project composition.
 /// </summary>
 public class InfoView : IDetailView
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// Renders the informational overview screen containing architecture, features, and project layers.
+    /// </summary>
+    /// <returns>A completed task representing the asynchronous render operation.</returns>
     public Task RenderAsync()
     {
-        Console.Clear();
-
-        CliOutputHelper.RenderViewHeader(CliStrings.InfoHeader);
-
-        CliOutputHelper.RenderSectionTitle(CliStrings.InfoSectionTitle);
-        Console.WriteLine(CliStrings.InfoAppLine);
-        Console.WriteLine(CliStrings.InfoDescriptionLine);
-        Console.WriteLine(CliStrings.InfoBoxBottom);
-        Console.WriteLine();
-        Console.WriteLine(CliStrings.InfoGoldapiDailyLine);
-        Console.WriteLine(CliStrings.InfoGoldapiQuotaLine);
-
-        CliOutputHelper.RenderViewFooter();
+        InfoRenderer.RenderInfo();
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Processes keyboard input when viewing the Info screen (e.g. Escape/Arrow navigation).
+    /// </summary>
+    /// <param name="key">The key pressed by the user.</param>
     public void HandleInput(ConsoleKeyInfo key)
     {
         HandleInputHelper.HandleInput(key);

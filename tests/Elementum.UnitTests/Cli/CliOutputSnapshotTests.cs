@@ -191,4 +191,32 @@ public class CliOutputSnapshotTests
             Console.SetOut(originalOut);
         }
     }
+
+    // [R]IGHT-BICEP: InfoRenderer renders expected About Elementum view header and text
+    [Fact]
+    public void InfoRenderer_RendersExpectedSnapshot()
+    {
+        // Arrange
+        var originalOut = Console.Out;
+        using var sw = new StringWriter();
+        Console.SetOut(sw);
+
+        try
+        {
+            // Act
+            InfoRenderer.RenderInfo();
+
+            var output = sw.ToString();
+
+            // Assert
+            Assert.Contains("INFO — SYSTEM ARCHITECTURE & FEATURES", output);
+            Assert.Contains("About Elementum", output);
+            Assert.Contains("Gold (XAU)", output);
+            Assert.Contains("Clean Architecture", output);
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
+    }
 }
