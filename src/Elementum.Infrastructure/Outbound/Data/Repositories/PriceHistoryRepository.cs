@@ -142,6 +142,7 @@ public class PriceHistoryRepository : IPriceHistoryRepository
         DateOnly toDate,
         CancellationToken ct = default) =>
         await _db.DailyPriceSummaries
+            .AsNoTrackingWithIdentityResolution()
             .Include(s => s.Metal)
             .Where(s => s.EntryDate >= fromDate && s.EntryDate <= toDate)
             .OrderBy(s => s.EntryDate)
@@ -150,11 +151,14 @@ public class PriceHistoryRepository : IPriceHistoryRepository
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<Metals>> GetMetalsAsync(CancellationToken ct = default) =>
-        await _db.Metals.ToListAsync(ct);
+        await _db.Metals
+            .AsNoTrackingWithIdentityResolution()
+            .ToListAsync(ct);
 
     /// <inheritdoc />
     public async Task<PriceHistory?> GetPriceHistoryByMetalSymbolLatest(string symbol, CancellationToken ct) =>
         await _db.PriceHistory
+            .AsNoTrackingWithIdentityResolution()
             .Include(x => x.Metal)
             .Where(x => x.Metal != null && x.Metal.Symbol == symbol)
             .OrderByDescending(x => x.EntryDate)
@@ -164,11 +168,12 @@ public class PriceHistoryRepository : IPriceHistoryRepository
     public async Task<IReadOnlyList<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken ct)
     {
         var latestByMetal = _db.PriceHistory
+            .AsNoTracking()
             .GroupBy(x => x.MetalId)
             .Select(g => new { MetalId = g.Key, MaxTimestamp = g.Max(x => x.ReferenceTimestamp) });
 
         return await (
-            from p in _db.PriceHistory.Include(x => x.Metal)
+            from p in _db.PriceHistory.AsNoTrackingWithIdentityResolution().Include(x => x.Metal)
             join latest in latestByMetal
                 on new { p.MetalId, p.ReferenceTimestamp }
                 equals new { latest.MetalId, ReferenceTimestamp = latest.MaxTimestamp }
@@ -183,6 +188,7 @@ public class PriceHistoryRepository : IPriceHistoryRepository
         CancellationToken ct = default)
     {
         var query = _db.PriceHistory
+            .AsNoTrackingWithIdentityResolution()
             .Include(x => x.Metal)
             .Where(x => x.Metal != null && x.Metal.Symbol == symbol);
 
@@ -206,6 +212,7 @@ public class PriceHistoryRepository : IPriceHistoryRepository
         CancellationToken ct = default)
     {
         var query = _db.PriceHistory
+            .AsNoTrackingWithIdentityResolution()
             .Include(x => x.Metal)
             .Where(x => x.Metal != null &&
                         x.Metal.Symbol == symbol &&
