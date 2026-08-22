@@ -205,7 +205,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   docker-build:
-    name: Docker build (no push)
+    name: Docker Build & Vulnerability Scan
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -216,3 +216,25 @@ jobs:
 
       - name: Build Worker image
         run: docker build -f src/Elementum.Worker/Dockerfile -t elementum-worker:ci .
+
+      - name: Scan API Image with Trivy
+        uses: aquasecurity/trivy-action@master
+        continue-on-error: true
+        with:
+          image-ref: elementum-api:ci
+          format: table
+          exit-code: 0
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+
+      - name: Scan Worker Image with Trivy
+        uses: aquasecurity/trivy-action@master
+        continue-on-error: true
+        with:
+          image-ref: elementum-worker:ci
+          format: table
+          exit-code: 0
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
