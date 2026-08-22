@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Elementum.Domain/Elementum.Domain.csproj" />
+    <Project Path="src/Elementum.Application/Elementum.Application.csproj" />
+    <Project Path="src/Elementum.Infrastructure/Elementum.Infrastructure.csproj" />
+    <Project Path="src/Elementum.Api/Elementum.Api.csproj" />
+    <Project Path="src/Elementum.Worker/Elementum.Worker.csproj" />
+    <Project Path="src/Elementum.Cli/Elementum.Cli.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Elementum.UnitTests/Elementum.UnitTests.csproj" />
+    <Project Path="tests/Elementum.IntegrationTests/Elementum.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

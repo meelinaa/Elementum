@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="NetArchTest.Rules" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Elementum.Domain\Elementum.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Elementum.Application\Elementum.Application.csproj" />
+    <ProjectReference Include="..\..\src\Elementum.Infrastructure\Elementum.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Elementum.Api\Elementum.Api.csproj" />
+    <ProjectReference Include="..\..\src\Elementum.Worker\Elementum.Worker.csproj" />
+    <ProjectReference Include="..\..\src\Elementum.Cli\Elementum.Cli.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,48 @@
+using Polly;
+using Polly.Retry;
+
+namespace Elementum.Infrastructure.Outbound.Data.Resilience;
+
+/// <summary>
+/// Shared database resilience: defines which exceptions are transient and builds a Polly v8 resilience pipeline.
+/// Used by API and Worker when registering the DbContext with retry (see AddElementumDbContext overload with configureResilience).
+/// </summary>
+public static class DatabaseResiliencePolicy
+{
+    /// <summary>
+    /// Returns true if the exception is considered transient and worth retrying (e.g. connection lost, deadlock).
+    /// Uses MySqlConnector's <see cref="MySqlConnector.MySqlException.IsTransient"/>; does not retry on timeout or cancellation.
+    /// </summary>
+    public static bool IsTransientException(Exception ex)
+    {
+        if (ex is MySqlConnector.MySqlException mySql && mySql.IsTransient)
+            return true;
+        if (ex is System.IO.IOException or System.Net.Sockets.SocketException)
+            return true;
+        if (ex is TimeoutException or OperationCanceledException)
+            return false;
+        if (ex.InnerException != null)
+            return IsTransientException(ex.InnerException);
+        return false;
+    }
+
+    /// <summary>
+    /// Builds a Polly v8 <see cref="ResiliencePipeline"/> from <paramref name="options"/>.
+    /// Used when registering <see cref="ResilientElementumDbContext"/> (API or Worker).
+    /// </summary>
+    public static ResiliencePipeline BuildRetryPipeline(ElementumDbContextResilienceOptions options)
+    {
+        return new ResiliencePipelineBuilder()
+            .AddRetry(new RetryStrategyOptions
+            {
+                ShouldHandle = new PredicateBuilder().Handle<Exception>(IsTransientException),
+                MaxRetryAttempts = options.MaxRetryCount,
+                BackoffType = options.UseExponentialBackoff
+                    ? DelayBackoffType.Exponential
+                    : DelayBackoffType.Constant,
+                Delay = options.InitialDelay,
+                UseJitter = options.UseExponentialBackoff
+            })
+            .Build();
+    }
+}

@@ -21,6 +21,9 @@ local.env
 *.local
 *.secret
 
+docs/
+
 appsettings.json
+appsettings.Development.json
 
 
