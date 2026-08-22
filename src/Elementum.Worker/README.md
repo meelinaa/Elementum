@@ -8,7 +8,7 @@ Background ingestion and data consolidation daemon for **Elementum**. Periodical
 
 1. **Scheduled Ingestion Job (`MetalsIngestionJob`):**
    - Fetches live quotes from the external Metals API.
-   - Persists price history ticks to MySQL with Polly resilience retries.
+   - Persists price history ticks to MySQL with Polly v8 resilience retries.
 2. **Distributed Locking (`IDistributedLockProvider`):**
    - Prevents concurrent ingestion runs when scaled across multiple instances.
 3. **Daily Candle Consolidation & Retention:**

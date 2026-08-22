@@ -1,9 +1,10 @@
 using Polly;
+using Polly.Retry;
 
 namespace Elementum.Infrastructure.Outbound.Data.Resilience;
 
 /// <summary>
-/// Shared database resilience: defines which exceptions are transient and builds a Polly retry policy.
+/// Shared database resilience: defines which exceptions are transient and builds a Polly v8 resilience pipeline.
 /// Used by API and Worker when registering the DbContext with retry (see AddElementumDbContext overload with configureResilience).
 /// </summary>
 public static class DatabaseResiliencePolicy
@@ -26,20 +27,22 @@ public static class DatabaseResiliencePolicy
     }
 
     /// <summary>
-    /// Builds a Polly retry policy from <paramref name="options"/>. Used when registering <see cref="ResilientElementumDbContext"/> (API or Worker).
+    /// Builds a Polly v8 <see cref="ResiliencePipeline"/> from <paramref name="options"/>.
+    /// Used when registering <see cref="ResilientElementumDbContext"/> (API or Worker).
     /// </summary>
-    public static IAsyncPolicy BuildRetryPolicy(ElementumDbContextResilienceOptions options)
+    public static ResiliencePipeline BuildRetryPipeline(ElementumDbContextResilienceOptions options)
     {
-        // Delay after each failed attempt: exponential (delay * 2^attempt) or constant.
-        Func<int, TimeSpan> delay = options.UseExponentialBackoff
-            ? (int attempt) => TimeSpan.FromMilliseconds(options.InitialDelay.TotalMilliseconds * Math.Pow(2, attempt))
-            : (int _) => options.InitialDelay;
-
-        return Policy
-            .Handle<Exception>(IsTransientException)
-            .WaitAndRetryAsync(
-                options.MaxRetryCount,
-                delay,
-                onRetry: (_, timeSpan, attempt, _) => { /* optional: log retry */ });
+        return new ResiliencePipelineBuilder()
+            .AddRetry(new RetryStrategyOptions
+            {
+                ShouldHandle = new PredicateBuilder().Handle<Exception>(IsTransientException),
+                MaxRetryAttempts = options.MaxRetryCount,
+                BackoffType = options.UseExponentialBackoff
+                    ? DelayBackoffType.Exponential
+                    : DelayBackoffType.Constant,
+                Delay = options.InitialDelay,
+                UseJitter = options.UseExponentialBackoff
+            })
+            .Build();
     }
 }

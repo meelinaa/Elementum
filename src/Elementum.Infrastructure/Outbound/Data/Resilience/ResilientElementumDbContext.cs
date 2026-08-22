@@ -5,21 +5,21 @@ using Polly;
 namespace Elementum.Infrastructure.Outbound.Data.Resilience;
 
 /// <summary>
-/// Decorator that implements <see cref="IElementumDbContext"/> and wraps every port call in a Polly retry policy.
+/// Decorator that implements <see cref="IElementumDbContext"/> and wraps every port call in a Polly v8 resilience pipeline.
 /// Queries are materialized inside the inner repository so retry covers the actual database work — there is no IQueryable passthrough.
 /// </summary>
 public sealed class ResilientElementumDbContext : IElementumDbContext
 {
     private readonly IElementumDbContext _inner;
-    private readonly IAsyncPolicy _policy;
+    private readonly ResiliencePipeline _pipeline;
 
-    public ResilientElementumDbContext(IElementumDbContext inner, IAsyncPolicy policy)
+    public ResilientElementumDbContext(IElementumDbContext inner, ResiliencePipeline pipeline)
     {
         ArgumentNullException.ThrowIfNull(inner);
-        ArgumentNullException.ThrowIfNull(policy);
+        ArgumentNullException.ThrowIfNull(pipeline);
 
         _inner = inner;
-        _policy = policy;
+        _pipeline = pipeline;
     }
 
     public Task<IReadOnlyList<Metals>> GetMetalsAsync(CancellationToken ct = default) =>
@@ -65,9 +65,9 @@ public sealed class ResilientElementumDbContext : IElementumDbContext
     public Task<IReadOnlyList<DailyPriceSummary>> GetDailySummariesAsync(DateOnly fromDate, DateOnly toDate, CancellationToken ct = default) =>
         ExecuteAsync(innerCt => _inner.GetDailySummariesAsync(fromDate, toDate, innerCt), ct);
 
-    private Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> action, CancellationToken ct) =>
-        _policy.ExecuteAsync(action, ct);
+    private async Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> action, CancellationToken ct) =>
+        await _pipeline.ExecuteAsync(async token => await action(token), ct);
 
-    private Task ExecuteAsync(Func<CancellationToken, Task> action, CancellationToken ct) =>
-        _policy.ExecuteAsync(action, ct);
+    private async Task ExecuteAsync(Func<CancellationToken, Task> action, CancellationToken ct) =>
+        await _pipeline.ExecuteAsync(async token => { await action(token); }, ct);
 }

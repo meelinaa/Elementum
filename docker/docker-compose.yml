@@ -94,8 +94,6 @@ services:
     restart: unless-stopped
     ports:
       - "${WORKER_PORT:-5094}:5094"
-    env_file:
-      - ../src/Elementum.Worker/.env
     environment:
       # Listen on the container port (host maps WORKER_PORT → 5094).
       Urls: "http://+:5094"

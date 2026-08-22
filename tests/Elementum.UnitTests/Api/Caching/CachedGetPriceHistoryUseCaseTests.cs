@@ -16,9 +16,7 @@ public class CachedGetPriceHistoryUseCaseTests
     public CachedGetPriceHistoryUseCaseTests()
     {
         var services = new ServiceCollection();
-#pragma warning disable EXTEXP0018
         services.AddHybridCache();
-#pragma warning restore EXTEXP0018
         var sp = services.BuildServiceProvider();
         _cache = sp.GetRequiredService<HybridCache>();
 

@@ -8,9 +8,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
 
-// Optional local secrets file (development); production should use environment or key vault.
-WorkerDotNetEnvConfiguration.LoadOptionalEnvFile();
-
 var isSingleRun = args.Any(a => a.Equals("--run-once", StringComparison.OrdinalIgnoreCase) ||
                                 a.Equals("--once", StringComparison.OrdinalIgnoreCase) ||
                                 a.Equals("-1", StringComparison.OrdinalIgnoreCase));

@@ -5,7 +5,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
-    <NoWarn>$(NoWarn);EXTEXP0018</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

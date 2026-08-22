@@ -36,7 +36,7 @@
 
 > **Problem:** Tracking precious metal spot prices over time (per metal, currency, and historical trends) usually requires manually aggregating fragmented data sources, dealing with API rate limits, and lacking consolidated technical analytics.
 >
-> **Solution:** **Elementum** automates periodic background price ingestion, consolidates daily candle data, and exposes real-time market overviews and technical trading indicators through a high-performance REST API and an interactive Terminal UI (CLI) — powered by a shared MySQL database with Polly resilience, HybridCache L1/L2 caching, distributed locking, and IP-based rate limiting.
+> **Solution:** **Elementum** automates periodic background price ingestion, consolidates daily candle data, and exposes real-time market overviews and technical trading indicators through a high-performance REST API and an interactive Terminal UI (CLI) — powered by a shared MySQL database with Polly v8 resilience, HybridCache L1/L2 caching, distributed locking, and IP-based rate limiting.
 
 - **Stack:** .NET 10 (C# 13), ASP.NET Core, MySQL 8, Entity Framework Core, Docker & Docker Compose.
 - **Key Capabilities:** Versioned endpoints (`/api/v1`), live market overviews (USD & EUR), real-time technical trading metrics (OHLC, spread, volatility %, bullish/bearish indicators), historical tick queries with `from`/`to` and `skip`/`take`, fail-fast configuration validation, Kubernetes-style health probes (`/health/live`, `/health/ready`), and 1-command Docker Compose deployment.
@@ -51,7 +51,7 @@
 |-----------|-------|-------------|
 | **Elementum.Domain** | Domain | Pure enterprise business models (`Metals`, `PriceHistory`, `DailyPriceSummary`), value object (`Currency`), domain service (`TradingAnalysisCalculator`), domain constants, and ports (`IPriceHistoryRepository`, `IMetalsApiClient`, `IDistributedLockProvider`). |
 | **Elementum.Application** | Application | Use cases (`IngestPricesUseCase`, `LivePricesUseCase`, `GetPriceHistoryUseCase`), DTOs, mappers, and fail-fast options. |
-| **Elementum.Infrastructure** | Infrastructure (Driven Adapters) | EF Core MySQL, Polly 7, `MetalsApiClient`, HybridCache preview (L1 + optional Redis L2), EF distributed lock. |
+| **Elementum.Infrastructure** | Infrastructure (Driven Adapters) | EF Core MySQL, Polly v8 (`Microsoft.Extensions.Http.Resilience`), `MetalsApiClient`, HybridCache (L1 + optional Redis L2), EF distributed lock. |
 | **Elementum.Api** | Presentation (Driving Adapter) | ASP.NET Core REST API exposing live prices, trading indicators, and historical data with IP-based Rate Limiting. |
 | **Elementum.Worker** | Presentation (Driving Adapter) | Background daemon for periodic price ingestion, candle consolidation, retention cleanup, and `System.Diagnostics.Metrics` instrumentation (`IngestionMetrics`). |
 | **Elementum.Cli** | Presentation (Driving Adapter) | Interactive Console TUI client with real-time dashboard, trading indicators, metal master data, and charts. |
@@ -66,8 +66,8 @@
 - **API & Security:** ASP.NET Core (REST), OpenAPI, IP-based Rate Limiting (`Microsoft.AspNetCore.RateLimiting`), RFC 7807 `ProblemDetails`, per-request timeouts
 - **Configuration:** Fail-Fast Options Pattern with DataAnnotations validation (`ValidateDataAnnotations().ValidateOnStart()`)
 - **Data & Persistence:** MySQL 8, Entity Framework Core, structured initialization & migrations
-- **Caching & Concurrency:** Microsoft HybridCache **preview** (`9.0.0-preview.9.24556.5`): L1 memory + optional L2 Redis. Distributed locking is **MySQL/EF**, not Redis.
-- **Resilience:** Polly **7.2.4** (not v8): HTTP timeout + retry + circuit breaker; database retries via Polly 7 on the port decorator.
+- **Caching & Concurrency:** Microsoft HybridCache (`Microsoft.Extensions.Caching.Hybrid` 10.9.0): L1 memory + optional L2 Redis. Distributed locking is **MySQL/EF**, not Redis.
+- **Resilience:** Polly **v8** via `Microsoft.Extensions.Http.Resilience` (`AddStandardResilienceHandler`): HTTP timeout + retry + circuit breaker. Database retries via Polly v8 `ResiliencePipeline` on the port decorator.
 - **Observability:** Serilog with `X-Correlation-ID`, health probes (`/health/live`, `/health/ready`). Worker metrics are `System.Diagnostics.Metrics` (`IngestionMetrics`) only — **no OpenTelemetry SDK, collector, or Prometheus endpoint**.
 - **Testing:** xUnit. HTTP tests use `WebApplicationFactory` + EF **InMemory**. Persistence/migration tests use **Testcontainers MySQL**.
 
@@ -82,7 +82,7 @@ graph TD
     API -->|Use Cases| APP
     APP -->|Domain Models & Ports| DOMAIN[Elementum.Domain]
     INFRA[Elementum.Infrastructure] -->|Implements Ports| DOMAIN
-    INFRA -->|EF Core / Polly 7| DB[(MySQL 8)]
+    INFRA -->|EF Core / Polly v8| DB[(MySQL 8)]
     INFRA -->|HTTP / Resilience| EXT[External Metals API]
 ```
 
@@ -104,7 +104,7 @@ Elementum/
 │   ├── .env.example
 │   └── README.md
 ├── Directory.Build.props               # TreatWarningsAsErrors (Release), Central Package Management
-├── Directory.Packages.props            # Single NuGet version list (EF 9 vs net10 skew)
+├── Directory.Packages.props            # Central Package Management — single NuGet version list (EF 9 / Pomelo 9 vs net10 skew documented)
 ├── nuget.config
 ├── src/                                # Source projects
 │   ├── Elementum.Domain/               # Domain entities, value objects, constants & ports

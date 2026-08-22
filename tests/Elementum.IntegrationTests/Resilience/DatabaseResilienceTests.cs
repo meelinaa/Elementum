@@ -111,13 +111,13 @@ public sealed class DatabaseResilienceTests : IAsyncLifetime
         int maxRetryCount = 3)
     {
         var repository = new PriceHistoryRepository(db, new DailyCandleAggregator(), new PriceHistoryPruner());
-        var policy = DatabaseResiliencePolicy.BuildRetryPolicy(new ElementumDbContextResilienceOptions
+        var pipeline = DatabaseResiliencePolicy.BuildRetryPipeline(new ElementumDbContextResilienceOptions
         {
             MaxRetryCount = maxRetryCount,
             InitialDelay = TimeSpan.FromMilliseconds(20),
             UseExponentialBackoff = false
         });
-        return new ResilientElementumDbContext(repository, policy);
+        return new ResilientElementumDbContext(repository, pipeline);
     }
 
     private static ServiceProvider CreateResilientProvider(string connectionString)

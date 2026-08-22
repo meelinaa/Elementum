@@ -14,8 +14,6 @@ using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Polly;
-using Polly.Extensions.Http;
 
 namespace Elementum.Infrastructure.Outbound.Data;
 
@@ -44,9 +42,28 @@ public static class ServiceCollectionExtensions
 
         services.AddMemoryCache();
 
-        // Register HTTP client for GoldAPI with combined Polly resilience policy (Timeout + Exponential Backoff Retry + Circuit Breaker)
+        // Register HTTP client for GoldAPI with Polly v8 standard resilience pipeline (Timeout + Retry + Circuit Breaker)
         services.AddHttpClient("GoldApi")
-            .AddPolicyHandler(GetResiliencePolicy());
+            .AddStandardResilienceHandler(options =>
+            {
+                // Total request timeout (outer): 30s (default) — keeps the overall cap.
+                options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(30);
+
+                // Per-attempt timeout: 10s (matches the previous Polly 7 timeout policy).
+                options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(10);
+
+                // Retry: 3 attempts, exponential backoff with jitter (same semantics as before).
+                options.Retry.MaxRetryAttempts = 3;
+                options.Retry.UseJitter = true;
+                options.Retry.BackoffType = Polly.DelayBackoffType.Exponential;
+                options.Retry.Delay = TimeSpan.FromSeconds(2);
+
+                // Circuit breaker: open after 5 failures within a 1-minute sampling window.
+                options.CircuitBreaker.FailureRatio = 1.0;   // trip on consecutive failures
+                options.CircuitBreaker.MinimumThroughput = 5; // at least 5 calls before tripping
+                options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(2);
+                options.CircuitBreaker.BreakDuration = TimeSpan.FromMinutes(1);
+            });
 
         // Register HybridCache (L1 Memory + L2 Redis with Stampede Protection)
         services.AddElementumHybridCaching(redisConnectionString);
@@ -55,7 +72,7 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registers .NET 9/10 HybridCache with L1 (In-Memory) + optional L2 (Redis) and Stampede Protection.
+    /// Registers HybridCache with L1 (In-Memory) + optional L2 (Redis) and Stampede Protection.
     /// Decorates <see cref="IGetPriceHistoryUseCase"/> with <see cref="CachedGetPriceHistoryUseCase"/>.
     /// </summary>
     public static IServiceCollection AddElementumHybridCaching(
@@ -141,8 +158,8 @@ public static class ServiceCollectionExtensions
             {
                 var inner = sp.GetRequiredService<PriceHistoryRepository>();
                 var opts = sp.GetRequiredService<IOptions<ElementumDbContextResilienceOptions>>().Value;
-                var policy = DatabaseResiliencePolicy.BuildRetryPolicy(opts);
-                return new ResilientElementumDbContext(inner, policy);
+                var pipeline = DatabaseResiliencePolicy.BuildRetryPipeline(opts);
+                return new ResilientElementumDbContext(inner, pipeline);
             });
         }
         else
@@ -151,25 +168,5 @@ public static class ServiceCollectionExtensions
         }
 
         return services;
-    }
-
-    private static IAsyncPolicy<HttpResponseMessage> GetResiliencePolicy()
-    {
-        var timeoutPolicy = Policy.TimeoutAsync<HttpResponseMessage>(TimeSpan.FromSeconds(10));
-
-        var retryPolicy = HttpPolicyExtensions
-            .HandleTransientHttpError()
-            .Or<Polly.Timeout.TimeoutRejectedException>()
-            .WaitAndRetryAsync(3, retryAttempt =>
-                TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)) + TimeSpan.FromMilliseconds(Random.Shared.Next(0, 100)));
-
-        var circuitBreakerPolicy = HttpPolicyExtensions
-            .HandleTransientHttpError()
-            .Or<Polly.Timeout.TimeoutRejectedException>()
-            .CircuitBreakerAsync(
-                handledEventsAllowedBeforeBreaking: 5,
-                durationOfBreak: TimeSpan.FromMinutes(1));
-
-        return Policy.WrapAsync(circuitBreakerPolicy, retryPolicy, timeoutPolicy);
     }
 }
