@@ -32,9 +32,6 @@ public static class ServiceCollectionExtensions
     {
         services.AddElementumDbContext(connectionString, configureResilience);
 
-        // Register ISP-segregated secondary ports — resolved from the already-registered IPriceHistoryRepository.
-        services.AddScoped<IPriceHistoryReadRepository>(sp => sp.GetRequiredService<IPriceHistoryRepository>());
-        services.AddScoped<IPriceHistoryWriteRepository>(sp => sp.GetRequiredService<IPriceHistoryRepository>());
         services.AddSingleton<IMetalsApiClient, MetalsApiClient>();
         services.AddSingleton<IDistributedLockProvider, EfCoreDistributedLockProvider>();
 
@@ -158,16 +155,31 @@ public static class ServiceCollectionExtensions
         if (configureResilience != null)
         {
             services.Configure(configureResilience);
-            services.AddScoped<IPriceHistoryRepository>(sp =>
+            services.AddScoped<IPriceHistoryReadRepository>(sp =>
             {
                 var inner = sp.GetRequiredService<PriceHistoryRepository>();
                 var opts = sp.GetRequiredService<IOptions<ElementumDbContextResilienceOptions>>().Value;
                 var pipeline = DatabaseResiliencePolicy.BuildRetryPipeline(opts);
-                return new ResilientElementumDbContext(inner, pipeline);
+                return new ResilientPriceHistoryReadRepository(inner, pipeline);
+            });
+            services.AddScoped<IPriceHistoryWriteRepository>(sp =>
+            {
+                var inner = sp.GetRequiredService<PriceHistoryRepository>();
+                var opts = sp.GetRequiredService<IOptions<ElementumDbContextResilienceOptions>>().Value;
+                var pipeline = DatabaseResiliencePolicy.BuildRetryPipeline(opts);
+                return new ResilientPriceHistoryWriteRepository(inner, pipeline);
+            });
+            services.AddScoped<IPriceHistoryRepository>(sp =>
+            {
+                var read = sp.GetRequiredService<IPriceHistoryReadRepository>();
+                var write = sp.GetRequiredService<IPriceHistoryWriteRepository>();
+                return new ResilientElementumDbContext(read, write);
             });
         }
         else
         {
+            services.AddScoped<IPriceHistoryReadRepository, PriceHistoryRepository>();
+            services.AddScoped<IPriceHistoryWriteRepository, PriceHistoryRepository>();
             services.AddScoped<IPriceHistoryRepository, PriceHistoryRepository>();
         }
 

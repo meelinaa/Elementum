@@ -5,35 +5,44 @@ using Polly;
 namespace Elementum.Infrastructure.Outbound.Data.Resilience;
 
 /// <summary>
-/// Decorator that wraps <see cref="IPriceHistoryRepository"/> and retries every port call
-/// through a Polly v8 resilience pipeline. Queries are materialized inside the inner repository
-/// so retry covers the actual database work — there is no IQueryable passthrough.
+/// Composite Decorator: Combines <see cref="ResilientPriceHistoryReadRepository"/> and <see cref="ResilientPriceHistoryWriteRepository"/>
+/// into the unified <see cref="IPriceHistoryRepository"/> port.
+/// Preserves Interface Segregation Principle (ISP) by delegating to segregated read and write decorators.
 /// </summary>
 public sealed class ResilientElementumDbContext : IPriceHistoryRepository
 {
-    private readonly IPriceHistoryRepository _inner;
-    private readonly ResiliencePipeline _pipeline;
+    private readonly IPriceHistoryReadRepository _readRepo;
+    private readonly IPriceHistoryWriteRepository _writeRepo;
 
     public ResilientElementumDbContext(IPriceHistoryRepository inner, ResiliencePipeline pipeline)
+        : this(new ResilientPriceHistoryReadRepository(inner, pipeline),
+               new ResilientPriceHistoryWriteRepository(inner, pipeline))
     {
-        ArgumentNullException.ThrowIfNull(inner);
-        ArgumentNullException.ThrowIfNull(pipeline);
-
-        _inner = inner;
-        _pipeline = pipeline;
     }
 
+    public ResilientElementumDbContext(
+        IPriceHistoryReadRepository readRepo,
+        IPriceHistoryWriteRepository writeRepo)
+    {
+        ArgumentNullException.ThrowIfNull(readRepo);
+        ArgumentNullException.ThrowIfNull(writeRepo);
+
+        _readRepo = readRepo;
+        _writeRepo = writeRepo;
+    }
+
+    // Read Port Delegation
     public Task<IReadOnlyList<Metals>> GetMetalsAsync(CancellationToken ct = default) =>
-        ExecuteAsync(innerCt => _inner.GetMetalsAsync(innerCt), ct);
+        _readRepo.GetMetalsAsync(ct);
 
     public Task<bool> IsDataAlreadyIngestedToday(CancellationToken ct = default) =>
-        ExecuteAsync(innerCt => _inner.IsDataAlreadyIngestedToday(innerCt), ct);
+        _readRepo.IsDataAlreadyIngestedToday(ct);
 
     public Task<IReadOnlyList<PriceHistory>> GetPriceHistoryByMetalSymbolAsync(
         string symbol,
         string? currency = null,
         CancellationToken ct = default) =>
-        ExecuteAsync(innerCt => _inner.GetPriceHistoryByMetalSymbolAsync(symbol, currency, innerCt), ct);
+        _readRepo.GetPriceHistoryByMetalSymbolAsync(symbol, currency, ct);
 
     public Task<(IReadOnlyList<PriceHistory> Items, int TotalCount)> GetPriceHistoryByMetalSymbolAndDateRangeAsync(
         string symbol,
@@ -43,32 +52,24 @@ public sealed class ResilientElementumDbContext : IPriceHistoryRepository
         int skip,
         int take,
         CancellationToken ct = default) =>
-        ExecuteAsync(
-            innerCt => _inner.GetPriceHistoryByMetalSymbolAndDateRangeAsync(
-                symbol, firstDate, lastDate, currency, skip, take, innerCt),
-            ct);
+        _readRepo.GetPriceHistoryByMetalSymbolAndDateRangeAsync(symbol, firstDate, lastDate, currency, skip, take, ct);
 
     public Task<PriceHistory?> GetPriceHistoryByMetalSymbolLatest(string symbol, CancellationToken ct) =>
-        ExecuteAsync(innerCt => _inner.GetPriceHistoryByMetalSymbolLatest(symbol, innerCt), ct);
+        _readRepo.GetPriceHistoryByMetalSymbolLatest(symbol, ct);
 
     public Task<IReadOnlyList<PriceHistory>> GetPriceHistoryAllLatest(CancellationToken ct) =>
-        ExecuteAsync(innerCt => _inner.GetPriceHistoryAllLatest(innerCt), ct);
-
-    public Task SavePricesAsync(IReadOnlyList<PriceHistory> prices, CancellationToken cancellationToken = default) =>
-        ExecuteAsync(innerCt => _inner.SavePricesAsync(prices, innerCt), cancellationToken);
-
-    public Task AggregateDailySummaryAsync(DateOnly date, CancellationToken ct = default) =>
-        ExecuteAsync(innerCt => _inner.AggregateDailySummaryAsync(date, innerCt), ct);
-
-    public Task<int> PruneHourlyDataOlderThanAsync(DateTime thresholdUtc, CancellationToken ct = default) =>
-        ExecuteAsync(innerCt => _inner.PruneHourlyDataOlderThanAsync(thresholdUtc, innerCt), ct);
+        _readRepo.GetPriceHistoryAllLatest(ct);
 
     public Task<IReadOnlyList<DailyPriceSummary>> GetDailySummariesAsync(DateOnly fromDate, DateOnly toDate, CancellationToken ct = default) =>
-        ExecuteAsync(innerCt => _inner.GetDailySummariesAsync(fromDate, toDate, innerCt), ct);
+        _readRepo.GetDailySummariesAsync(fromDate, toDate, ct);
 
-    private async Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> action, CancellationToken ct) =>
-        await _pipeline.ExecuteAsync(async token => await action(token), ct);
+    // Write Port Delegation
+    public Task SavePricesAsync(IReadOnlyList<PriceHistory> prices, CancellationToken cancellationToken = default) =>
+        _writeRepo.SavePricesAsync(prices, cancellationToken);
 
-    private async Task ExecuteAsync(Func<CancellationToken, Task> action, CancellationToken ct) =>
-        await _pipeline.ExecuteAsync(async token => { await action(token); }, ct);
+    public Task AggregateDailySummaryAsync(DateOnly date, CancellationToken ct = default) =>
+        _writeRepo.AggregateDailySummaryAsync(date, ct);
+
+    public Task<int> PruneHourlyDataOlderThanAsync(DateTime thresholdUtc, CancellationToken ct = default) =>
+        _writeRepo.PruneHourlyDataOlderThanAsync(thresholdUtc, ct);
 }

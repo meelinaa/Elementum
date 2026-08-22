@@ -24,6 +24,8 @@ internal static class QueryableBoundaryRules
             typeof(IPriceHistoryReadRepository),
             typeof(IPriceHistoryWriteRepository),
             typeof(IPriceHistoryRepository),
+            typeof(ResilientPriceHistoryReadRepository),
+            typeof(ResilientPriceHistoryWriteRepository),
             typeof(ResilientElementumDbContext),
             typeof(PriceHistoryRepository)
         ];
